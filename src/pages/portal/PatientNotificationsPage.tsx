@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Bell, Check, CalendarDays, User, AlertCircle, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { notificationsApi } from "@/services/api";
+import PatientPortalLayout from "@/components/portal/PatientPortalLayout";
+import { patientPortalApi } from "@/services/api";
 import type { Notification } from "@/services/api";
+import { Bell, CalendarDays, AlertCircle, User, Check, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const iconMap: Record<string, typeof Bell> = {
   appointment: CalendarDays,
@@ -13,25 +13,20 @@ const iconMap: Record<string, typeof Bell> = {
   system: Settings,
 };
 
-const NotificationsPage = () => {
+const PatientNotificationsPage = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    notificationsApi.list().then(res => {
+    patientPortalApi.getNotifications().then(res => {
       setNotifications(res.data);
       setLoading(false);
     });
   }, []);
 
-  const markAllRead = () => {
-    notificationsApi.markAllAsRead();
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
-  };
-
   return (
-    <DashboardLayout>
-      <div className="max-w-2xl space-y-4">
+    <PatientPortalLayout>
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Notificaciones</h1>
@@ -39,8 +34,8 @@ const NotificationsPage = () => {
               {notifications.filter(n => !n.read).length} sin leer
             </p>
           </div>
-          <Button variant="ghost" size="sm" className="gap-1 text-primary" onClick={markAllRead}>
-            <Check className="w-4 h-4" /> Marcar todas como leídas
+          <Button variant="ghost" size="sm" className="gap-1 text-primary">
+            <Check className="w-4 h-4" /> Marcar todas
           </Button>
         </div>
 
@@ -50,22 +45,16 @@ const NotificationsPage = () => {
           </div>
         ) : (
           <div className="space-y-2">
-            {notifications.map((n) => {
+            {notifications.map(n => {
               const Icon = iconMap[n.type] || Bell;
               return (
                 <div
                   key={n.id}
-                  className={`flex items-start gap-4 p-4 rounded-xl border transition-colors cursor-pointer ${
+                  className={`flex items-start gap-4 p-4 rounded-xl border transition-colors ${
                     n.read ? "border-border bg-card" : "border-primary/20 bg-primary/5"
                   }`}
-                  onClick={() => {
-                    notificationsApi.markAsRead(n.id);
-                    setNotifications(notifications.map(x => x.id === n.id ? { ...x, read: true } : x));
-                  }}
                 >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                    n.read ? "bg-muted" : "bg-primary/10"
-                  }`}>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${n.read ? "bg-muted" : "bg-primary/10"}`}>
                     <Icon className={`w-5 h-5 ${n.read ? "text-muted-foreground" : "text-primary"}`} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -82,8 +71,8 @@ const NotificationsPage = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </PatientPortalLayout>
   );
 };
 
-export default NotificationsPage;
+export default PatientNotificationsPage;

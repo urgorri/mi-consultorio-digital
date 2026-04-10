@@ -1,0 +1,130 @@
+import { useState, useEffect } from "react";
+import PatientPortalLayout from "@/components/portal/PatientPortalLayout";
+import { useParams, Link } from "react-router-dom";
+import { appointmentsApi } from "@/services/api";
+import type { Appointment } from "@/services/api";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, CalendarDays, Clock, MapPin, User, AlertCircle } from "lucide-react";
+
+const statusColors: Record<string, string> = {
+  confirmada: "bg-success/10 text-success",
+  pendiente: "bg-warning/10 text-warning",
+  cancelada: "bg-destructive/10 text-destructive",
+  completada: "bg-muted text-muted-foreground",
+};
+
+const PatientAppointmentDetailPage = () => {
+  const { id } = useParams();
+  const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      appointmentsApi.getById(id).then(res => {
+        setAppointment(res.data);
+        setLoading(false);
+      }).catch(() => setLoading(false));
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <PatientPortalLayout>
+        <div className="space-y-4">
+          <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+          <div className="h-48 bg-muted rounded-xl animate-pulse" />
+        </div>
+      </PatientPortalLayout>
+    );
+  }
+
+  if (!appointment) {
+    return (
+      <PatientPortalLayout>
+        <div className="text-center py-16">
+          <AlertCircle className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-muted-foreground">Cita no encontrada</p>
+          <Link to="/portal">
+            <Button variant="outline" className="mt-4">Volver</Button>
+          </Link>
+        </div>
+      </PatientPortalLayout>
+    );
+  }
+
+  const isPast = appointment.status === "completada" || appointment.status === "cancelada";
+
+  return (
+    <PatientPortalLayout>
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Link to="/portal">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          </Link>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-foreground">Detalle de cita</h1>
+          </div>
+          <span className={`text-xs font-medium px-3 py-1.5 rounded-full ${statusColors[appointment.status]}`}>
+            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+          </span>
+        </div>
+
+        <div className="bg-card rounded-xl border border-border p-6 space-y-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-accent flex items-center justify-center">
+              <User className="w-7 h-7 text-primary" />
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-foreground">{appointment.professionalName}</p>
+              <p className="text-sm text-muted-foreground">{appointment.type}</p>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-4 pt-2">
+            <div className="flex items-center gap-3 p-3 bg-accent/50 rounded-lg">
+              <CalendarDays className="w-5 h-5 text-primary" />
+              <div>
+                <p className="text-xs text-muted-foreground">Fecha</p>
+                <p className="text-sm font-medium text-foreground">
+                  {new Date(appointment.date).toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-accent/50 rounded-lg">
+              <Clock className="w-5 h-5 text-primary" />
+              <div>
+                <p className="text-xs text-muted-foreground">Hora</p>
+                <p className="text-sm font-medium text-foreground">{appointment.time} - {appointment.endTime}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-accent/50 rounded-lg">
+              <MapPin className="w-5 h-5 text-primary" />
+              <div>
+                <p className="text-xs text-muted-foreground">Ubicación</p>
+                <p className="text-sm font-medium text-foreground">{appointment.locationName}</p>
+              </div>
+            </div>
+          </div>
+
+          {appointment.reason && (
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Motivo</p>
+              <p className="text-sm text-foreground">{appointment.reason}</p>
+            </div>
+          )}
+        </div>
+
+        {!isPast && (
+          <div className="flex gap-3">
+            <Button variant="outline" className="flex-1">Reprogramar</Button>
+            <Button variant="destructive" className="flex-1">Cancelar cita</Button>
+          </div>
+        )}
+      </div>
+    </PatientPortalLayout>
+  );
+};
+
+export default PatientAppointmentDetailPage;
