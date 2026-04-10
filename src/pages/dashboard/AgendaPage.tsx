@@ -1,35 +1,73 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Clock } from "lucide-react";
+import { appointmentsApi } from "@/services/api";
+import type { Appointment } from "@/services/api";
 
 type ViewType = "dia" | "semana" | "mes";
 
-const todayAppointments = [
-  { time: "09:00", end: "09:30", patient: "Carlos Ruiz", type: "General", status: "confirmada" },
-  { time: "09:30", end: "10:00", patient: "María Santos", type: "Seguimiento", status: "confirmada" },
-  { time: "10:30", end: "11:00", patient: "Laura Martínez", type: "General", status: "confirmada" },
-  { time: "11:00", end: "11:30", patient: "Pedro Sánchez", type: "Seguimiento", status: "pendiente" },
-  { time: "14:00", end: "14:45", patient: "Ana Rodríguez", type: "Primera vez", status: "confirmada" },
-  { time: "15:00", end: "15:30", patient: "Miguel Torres", type: "General", status: "confirmada" },
-];
-
 const hours = Array.from({ length: 10 }, (_, i) => `${(i + 8).toString().padStart(2, "0")}:00`);
+const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 const statusColors: Record<string, string> = {
   confirmada: "bg-primary/10 border-primary/30 text-primary",
   pendiente: "bg-warning/10 border-warning/30 text-warning",
+  completada: "bg-success/10 border-success/30 text-success",
+  cancelada: "bg-destructive/10 border-destructive/30 text-destructive",
 };
 
 const AgendaPage = () => {
   const [view, setView] = useState<ViewType>("dia");
-  const today = new Date();
-  const formattedDate = today.toLocaleDateString("es-MX", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+  useEffect(() => {
+    appointmentsApi.list().then(res => setAppointments(res.data));
+  }, []);
+
+  const formatDate = (d: Date) => d.toISOString().split("T")[0];
+
+  const navigate = (dir: number) => {
+    const d = new Date(currentDate);
+    if (view === "dia") d.setDate(d.getDate() + dir);
+    else if (view === "semana") d.setDate(d.getDate() + dir * 7);
+    else d.setMonth(d.getMonth() + dir);
+    setCurrentDate(d);
+  };
+
+  const formattedDate = currentDate.toLocaleDateString("es-MX", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
+
+  const todayAppts = appointments.filter(a => a.date === formatDate(currentDate));
+
+  // Week dates
+  const getWeekDates = () => {
+    const d = new Date(currentDate);
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diff);
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      return date;
+    });
+  };
+
+  // Month dates
+  const getMonthDays = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const offset = firstDay === 0 ? 6 : firstDay - 1;
+    const days: (Date | null)[] = [];
+    for (let i = 0; i < offset; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
+    return days;
+  };
 
   return (
     <DashboardLayout>
@@ -60,43 +98,127 @@ const AgendaPage = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" className="h-8 w-8">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <Button variant="outline" size="sm">Hoy</Button>
-          <Button variant="outline" size="icon" className="h-8 w-8">
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Hoy</Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(1)}>
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
 
         {/* Day view */}
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
-          <div className="divide-y divide-border">
-            {hours.map((hour) => {
-              const apt = todayAppointments.find((a) => a.time.startsWith(hour.slice(0, 2)));
-              return (
-                <div key={hour} className="flex min-h-[72px]">
-                  <div className="w-20 shrink-0 px-3 py-3 text-sm text-muted-foreground border-r border-border">
+        {view === "dia" && (
+          <div className="bg-card rounded-xl border border-border overflow-hidden">
+            <div className="divide-y divide-border">
+              {hours.map((hour) => {
+                const hourAppts = todayAppts.filter(a => a.time.startsWith(hour.slice(0, 2)));
+                return (
+                  <div key={hour} className="flex min-h-[72px]">
+                    <div className="w-20 shrink-0 px-3 py-3 text-sm text-muted-foreground border-r border-border">
+                      {hour}
+                    </div>
+                    <div className="flex-1 p-2 space-y-1">
+                      {hourAppts.map(apt => (
+                        <div key={apt.id} className={`p-3 rounded-lg border ${statusColors[apt.status]} cursor-pointer hover:opacity-90 transition-opacity`}>
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">{apt.patientName}</p>
+                            <span className="text-xs">{apt.type}</span>
+                          </div>
+                          <p className="text-xs mt-1 flex items-center gap-1 opacity-70">
+                            <Clock className="w-3 h-3" /> {apt.time} - {apt.endTime}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Week view */}
+        {view === "semana" && (
+          <div className="bg-card rounded-xl border border-border overflow-hidden overflow-x-auto">
+            <div className="grid grid-cols-[80px_repeat(7,1fr)] min-w-[800px]">
+              <div className="border-b border-r border-border p-2" />
+              {getWeekDates().map((date, i) => {
+                const isToday = formatDate(date) === formatDate(new Date());
+                return (
+                  <div key={i} className={`border-b border-r border-border p-2 text-center ${isToday ? "bg-primary/5" : ""}`}>
+                    <p className="text-xs text-muted-foreground">{weekDays[i]}</p>
+                    <p className={`text-sm font-semibold ${isToday ? "text-primary" : "text-foreground"}`}>{date.getDate()}</p>
+                  </div>
+                );
+              })}
+              {hours.slice(0, 8).map(hour => (
+                <>
+                  <div key={hour} className="border-r border-b border-border px-2 py-3 text-xs text-muted-foreground">
                     {hour}
                   </div>
-                  <div className="flex-1 p-2">
-                    {apt && (
-                      <div className={`p-3 rounded-lg border ${statusColors[apt.status]} cursor-pointer hover:opacity-90 transition-opacity`}>
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium">{apt.patient}</p>
-                          <span className="text-xs">{apt.type}</span>
-                        </div>
-                        <p className="text-xs mt-1 flex items-center gap-1 opacity-70">
-                          <Clock className="w-3 h-3" /> {apt.time} - {apt.end}
-                        </p>
+                  {getWeekDates().map((date, di) => {
+                    const dayAppts = appointments.filter(a => a.date === formatDate(date) && a.time.startsWith(hour.slice(0, 2)));
+                    return (
+                      <div key={`${hour}-${di}`} className="border-r border-b border-border p-1 min-h-[60px]">
+                        {dayAppts.map(apt => (
+                          <div key={apt.id} className={`p-1.5 rounded text-xs border mb-1 ${statusColors[apt.status]}`}>
+                            <p className="font-medium truncate">{apt.patientName}</p>
+                            <p className="opacity-70">{apt.time}</p>
+                          </div>
+                        ))}
                       </div>
+                    );
+                  })}
+                </>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Month view */}
+        {view === "mes" && (
+          <div className="bg-card rounded-xl border border-border overflow-hidden">
+            <div className="p-4 text-center border-b border-border">
+              <p className="font-semibold text-foreground capitalize">
+                {currentDate.toLocaleDateString("es-MX", { month: "long", year: "numeric" })}
+              </p>
+            </div>
+            <div className="grid grid-cols-7">
+              {weekDays.map(d => (
+                <div key={d} className="border-b border-r border-border p-2 text-center text-xs font-medium text-muted-foreground">
+                  {d}
+                </div>
+              ))}
+              {getMonthDays().map((date, i) => {
+                const dayAppts = date ? appointments.filter(a => a.date === formatDate(date)) : [];
+                const isToday = date && formatDate(date) === formatDate(new Date());
+                return (
+                  <div
+                    key={i}
+                    className={`border-b border-r border-border p-2 min-h-[80px] ${!date ? "bg-muted/30" : ""} ${isToday ? "bg-primary/5" : ""}`}
+                  >
+                    {date && (
+                      <>
+                        <p className={`text-sm mb-1 ${isToday ? "font-bold text-primary" : "text-foreground"}`}>
+                          {date.getDate()}
+                        </p>
+                        {dayAppts.slice(0, 2).map(apt => (
+                          <div key={apt.id} className={`text-xs p-1 rounded mb-0.5 truncate ${statusColors[apt.status]}`}>
+                            {apt.time} {apt.patientName.split(" ")[0]}
+                          </div>
+                        ))}
+                        {dayAppts.length > 2 && (
+                          <p className="text-xs text-muted-foreground">+{dayAppts.length - 2} más</p>
+                        )}
+                      </>
                     )}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </DashboardLayout>
   );
