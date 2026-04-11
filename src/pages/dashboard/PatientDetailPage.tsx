@@ -6,6 +6,8 @@ import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, Plus, Edit } from "luci
 import { Link, useParams } from "react-router-dom";
 import { patientsApi, appointmentsApi, consultationsApi } from "@/services/api";
 import type { Patient, Appointment, Consultation } from "@/services/api";
+import EditPatientDialog from "@/components/dialogs/EditPatientDialog";
+import NewAppointmentDialog from "@/components/dialogs/NewAppointmentDialog";
 
 const statusColors: Record<string, string> = {
   completada: "bg-success/10 text-success",
@@ -20,6 +22,8 @@ const PatientDetailPage = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
+  const [newApptOpen, setNewApptOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -60,8 +64,11 @@ const PatientDetailPage = () => {
               {new Date().getFullYear() - new Date(patient.birthDate).getFullYear()} años · {patient.gender} · Paciente #{id}
             </p>
           </div>
-          <Button size="sm" variant="outline" className="gap-1">
+          <Button size="sm" variant="outline" className="gap-1" onClick={() => setEditOpen(true)}>
             <Edit className="w-4 h-4" /> Editar
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1" onClick={() => setNewApptOpen(true)}>
+            <Calendar className="w-4 h-4" /> Agendar cita
           </Button>
           <Link to="/dashboard/consultas/nueva">
             <Button size="sm" className="gap-1">
@@ -166,6 +173,19 @@ const PatientDetailPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <EditPatientDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        patient={patient}
+        onUpdated={(p) => setPatient(p)}
+      />
+
+      <NewAppointmentDialog
+        open={newApptOpen}
+        onOpenChange={setNewApptOpen}
+        onCreated={(apt) => setAppointments(prev => [...prev, apt])}
+      />
     </DashboardLayout>
   );
 };

@@ -6,11 +6,13 @@ import { Search, Plus, User, Phone, Mail, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { patientsApi } from "@/services/api";
 import type { Patient } from "@/services/api";
+import NewPatientDialog from "@/components/dialogs/NewPatientDialog";
 
 const PatientsPage = () => {
   const [search, setSearch] = useState("");
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newOpen, setNewOpen] = useState(false);
 
   useEffect(() => {
     patientsApi.list({ search: search || undefined }).then(res => {
@@ -27,7 +29,7 @@ const PatientsPage = () => {
             <h1 className="text-2xl font-bold text-foreground">Pacientes</h1>
             <p className="text-sm text-muted-foreground">{patients.length} pacientes registrados</p>
           </div>
-          <Button size="sm" className="gap-1">
+          <Button size="sm" className="gap-1" onClick={() => setNewOpen(true)}>
             <Plus className="w-4 h-4" /> Nuevo paciente
           </Button>
         </div>
@@ -88,6 +90,12 @@ const PatientsPage = () => {
           </div>
         )}
       </div>
+
+      <NewPatientDialog
+        open={newOpen}
+        onOpenChange={setNewOpen}
+        onCreated={(p) => setPatients(prev => [p, ...prev])}
+      />
     </DashboardLayout>
   );
 };
