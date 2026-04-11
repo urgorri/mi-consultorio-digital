@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+// Auth context for MiConsultorio
 import type { User } from "@/services/api/types";
 import { authApi } from "@/services/api/client";
 
