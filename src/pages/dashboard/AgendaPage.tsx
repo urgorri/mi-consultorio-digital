@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Clock } from "lucide-react";
 import { appointmentsApi } from "@/services/api";
 import type { Appointment } from "@/services/api";
+import NewAppointmentDialog from "@/components/dialogs/NewAppointmentDialog";
+import AppointmentDetailDialog from "@/components/dialogs/AppointmentDetailDialog";
 
 type ViewType = "dia" | "semana" | "mes";
 
@@ -21,6 +23,9 @@ const AgendaPage = () => {
   const [view, setView] = useState<ViewType>("dia");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [newOpen, setNewOpen] = useState(false);
+  const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   useEffect(() => {
     appointmentsApi.list().then(res => setAppointments(res.data));
@@ -42,7 +47,6 @@ const AgendaPage = () => {
 
   const todayAppts = appointments.filter(a => a.date === formatDate(currentDate));
 
-  // Week dates
   const getWeekDates = () => {
     const d = new Date(currentDate);
     const day = d.getDay();
@@ -56,7 +60,6 @@ const AgendaPage = () => {
     });
   };
 
-  // Month dates
   const getMonthDays = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -67,6 +70,15 @@ const AgendaPage = () => {
     for (let i = 0; i < offset; i++) days.push(null);
     for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
     return days;
+  };
+
+  const openApptDetail = (apt: Appointment) => {
+    setSelectedAppt(apt);
+    setDetailOpen(true);
+  };
+
+  const handleStatusChange = (id: string, status: Appointment["status"]) => {
+    setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
   };
 
   return (
@@ -91,7 +103,7 @@ const AgendaPage = () => {
                 </button>
               ))}
             </div>
-            <Button size="sm" className="gap-1">
+            <Button size="sm" className="gap-1" onClick={() => setNewOpen(true)}>
               <Plus className="w-4 h-4" /> Nueva cita
             </Button>
           </div>
@@ -120,7 +132,11 @@ const AgendaPage = () => {
                     </div>
                     <div className="flex-1 p-2 space-y-1">
                       {hourAppts.map(apt => (
-                        <div key={apt.id} className={`p-3 rounded-lg border ${statusColors[apt.status]} cursor-pointer hover:opacity-90 transition-opacity`}>
+                        <div
+                          key={apt.id}
+                          onClick={() => openApptDetail(apt)}
+                          className={`p-3 rounded-lg border ${statusColors[apt.status]} cursor-pointer hover:opacity-90 transition-opacity`}
+                        >
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium">{apt.patientName}</p>
                             <span className="text-xs">{apt.type}</span>
@@ -153,8 +169,8 @@ const AgendaPage = () => {
                 );
               })}
               {hours.slice(0, 8).map(hour => (
-                <>
-                  <div key={hour} className="border-r border-b border-border px-2 py-3 text-xs text-muted-foreground">
+                <div key={hour} className="contents">
+                  <div className="border-r border-b border-border px-2 py-3 text-xs text-muted-foreground">
                     {hour}
                   </div>
                   {getWeekDates().map((date, di) => {
@@ -162,7 +178,11 @@ const AgendaPage = () => {
                     return (
                       <div key={`${hour}-${di}`} className="border-r border-b border-border p-1 min-h-[60px]">
                         {dayAppts.map(apt => (
-                          <div key={apt.id} className={`p-1.5 rounded text-xs border mb-1 ${statusColors[apt.status]}`}>
+                          <div
+                            key={apt.id}
+                            onClick={() => openApptDetail(apt)}
+                            className={`p-1.5 rounded text-xs border mb-1 cursor-pointer hover:opacity-80 ${statusColors[apt.status]}`}
+                          >
                             <p className="font-medium truncate">{apt.patientName}</p>
                             <p className="opacity-70">{apt.time}</p>
                           </div>
@@ -170,7 +190,7 @@ const AgendaPage = () => {
                       </div>
                     );
                   })}
-                </>
+                </div>
               ))}
             </div>
           </div>
@@ -204,7 +224,11 @@ const AgendaPage = () => {
                           {date.getDate()}
                         </p>
                         {dayAppts.slice(0, 2).map(apt => (
-                          <div key={apt.id} className={`text-xs p-1 rounded mb-0.5 truncate ${statusColors[apt.status]}`}>
+                          <div
+                            key={apt.id}
+                            onClick={() => openApptDetail(apt)}
+                            className={`text-xs p-1 rounded mb-0.5 truncate cursor-pointer hover:opacity-80 ${statusColors[apt.status]}`}
+                          >
                             {apt.time} {apt.patientName.split(" ")[0]}
                           </div>
                         ))}
@@ -220,6 +244,20 @@ const AgendaPage = () => {
           </div>
         )}
       </div>
+
+      <NewAppointmentDialog
+        open={newOpen}
+        onOpenChange={setNewOpen}
+        defaultDate={formatDate(currentDate)}
+        onCreated={(apt) => setAppointments(prev => [...prev, apt])}
+      />
+
+      <AppointmentDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        appointment={selectedAppt}
+        onStatusChange={handleStatusChange}
+      />
     </DashboardLayout>
   );
 };
