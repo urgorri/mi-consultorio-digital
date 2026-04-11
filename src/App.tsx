@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -37,42 +39,44 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          {/* Public */}
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/registro" element={<RegisterPage />} />
-          <Route path="/recuperar-contrasena" element={<PasswordRecoveryPage />} />
-          <Route path="/agendar" element={<BookingPage />} />
+        <AuthProvider>
+          <Routes>
+            {/* Public */}
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/registro" element={<RegisterPage />} />
+            <Route path="/recuperar-contrasena" element={<PasswordRecoveryPage />} />
+            <Route path="/agendar" element={<BookingPage />} />
 
-          {/* Professional Dashboard */}
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/dashboard/agenda" element={<AgendaPage />} />
-          <Route path="/dashboard/pacientes" element={<PatientsPage />} />
-          <Route path="/dashboard/pacientes/:id" element={<PatientDetailPage />} />
-          <Route path="/dashboard/consultas" element={<NewConsultationPage />} />
-          <Route path="/dashboard/consultas/nueva" element={<NewConsultationPage />} />
-          <Route path="/dashboard/consultas/:id" element={<ConsultationDetailPage />} />
-          <Route path="/dashboard/diagnosticos" element={<DiagnosesPage />} />
-          <Route path="/dashboard/reportes" element={<ReportsPage />} />
-          <Route path="/dashboard/notificaciones" element={<NotificationsPage />} />
-          <Route path="/dashboard/configuracion" element={<SettingsPage />} />
+            {/* Professional Dashboard */}
+            <Route path="/dashboard" element={<ProtectedRoute allowedRoles={["profesional"]}><DashboardPage /></ProtectedRoute>} />
+            <Route path="/dashboard/agenda" element={<ProtectedRoute allowedRoles={["profesional"]}><AgendaPage /></ProtectedRoute>} />
+            <Route path="/dashboard/pacientes" element={<ProtectedRoute allowedRoles={["profesional"]}><PatientsPage /></ProtectedRoute>} />
+            <Route path="/dashboard/pacientes/:id" element={<ProtectedRoute allowedRoles={["profesional"]}><PatientDetailPage /></ProtectedRoute>} />
+            <Route path="/dashboard/consultas" element={<ProtectedRoute allowedRoles={["profesional"]}><NewConsultationPage /></ProtectedRoute>} />
+            <Route path="/dashboard/consultas/nueva" element={<ProtectedRoute allowedRoles={["profesional"]}><NewConsultationPage /></ProtectedRoute>} />
+            <Route path="/dashboard/consultas/:id" element={<ProtectedRoute allowedRoles={["profesional"]}><ConsultationDetailPage /></ProtectedRoute>} />
+            <Route path="/dashboard/diagnosticos" element={<ProtectedRoute allowedRoles={["profesional"]}><DiagnosesPage /></ProtectedRoute>} />
+            <Route path="/dashboard/reportes" element={<ProtectedRoute allowedRoles={["profesional"]}><ReportsPage /></ProtectedRoute>} />
+            <Route path="/dashboard/notificaciones" element={<ProtectedRoute allowedRoles={["profesional"]}><NotificationsPage /></ProtectedRoute>} />
+            <Route path="/dashboard/configuracion" element={<ProtectedRoute allowedRoles={["profesional"]}><SettingsPage /></ProtectedRoute>} />
 
-          {/* Patient Portal */}
-          <Route path="/portal" element={<PatientDashboardPage />} />
-          <Route path="/portal/historial" element={<PatientHistoryPage />} />
-          <Route path="/portal/notificaciones" element={<PatientNotificationsPage />} />
-          <Route path="/portal/perfil" element={<PatientProfilePage />} />
-          <Route path="/portal/citas/:id" element={<PatientAppointmentDetailPage />} />
+            {/* Patient Portal */}
+            <Route path="/portal" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientDashboardPage /></ProtectedRoute>} />
+            <Route path="/portal/historial" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientHistoryPage /></ProtectedRoute>} />
+            <Route path="/portal/notificaciones" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientNotificationsPage /></ProtectedRoute>} />
+            <Route path="/portal/perfil" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientProfilePage /></ProtectedRoute>} />
+            <Route path="/portal/citas/:id" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientAppointmentDetailPage /></ProtectedRoute>} />
 
-          {/* Admin */}
-          <Route path="/admin" element={<AdminSystemPage />} />
-          <Route path="/admin/usuarios" element={<AdminUsersPage />} />
-          <Route path="/admin/auditoria" element={<AdminAuditPage />} />
-          <Route path="/admin/notificaciones" element={<AdminNotificationsPage />} />
+            {/* Admin */}
+            <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminSystemPage /></ProtectedRoute>} />
+            <Route path="/admin/usuarios" element={<ProtectedRoute allowedRoles={["admin"]}><AdminUsersPage /></ProtectedRoute>} />
+            <Route path="/admin/auditoria" element={<ProtectedRoute allowedRoles={["admin"]}><AdminAuditPage /></ProtectedRoute>} />
+            <Route path="/admin/notificaciones" element={<ProtectedRoute allowedRoles={["admin"]}><AdminNotificationsPage /></ProtectedRoute>} />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

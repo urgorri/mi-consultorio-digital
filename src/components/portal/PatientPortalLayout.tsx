@@ -1,7 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Stethoscope, CalendarDays, Bell, User, LogOut, Menu, X, Clock } from "lucide-react";
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { icon: CalendarDays, label: "Mis citas", path: "/portal" },
@@ -17,6 +17,16 @@ interface PatientPortalLayoutProps {
 const PatientPortalLayout = ({ children }: PatientPortalLayoutProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const initials = user ? `${user.firstName[0]}${user.lastName[0]}` : "PA";
+  const displayName = user ? `${user.firstName} ${user.lastName}` : "Paciente";
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,9 +47,7 @@ const PatientPortalLayout = ({ children }: PatientPortalLayoutProps) => {
                   key={item.path}
                   to={item.path}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-accent text-primary"
-                      : "text-muted-foreground hover:bg-accent/50"
+                    isActive ? "bg-accent text-primary" : "text-muted-foreground hover:bg-accent/50"
                   }`}
                 >
                   <item.icon className="w-4 h-4" />
@@ -52,13 +60,13 @@ const PatientPortalLayout = ({ children }: PatientPortalLayoutProps) => {
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                <span className="text-xs font-bold text-primary-foreground">LM</span>
+                <span className="text-xs font-bold text-primary-foreground">{initials}</span>
               </div>
-              <span className="text-sm font-medium text-foreground">Laura Martínez</span>
+              <span className="text-sm font-medium text-foreground">{displayName}</span>
             </div>
-            <Link to="/" className="hidden md:flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            <button onClick={handleLogout} className="hidden md:flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
               <LogOut className="w-4 h-4" />
-            </Link>
+            </button>
             <button className="md:hidden text-foreground" onClick={() => setMenuOpen(!menuOpen)}>
               {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -83,13 +91,13 @@ const PatientPortalLayout = ({ children }: PatientPortalLayoutProps) => {
                 </Link>
               );
             })}
-            <Link
-              to="/"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground"
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground w-full"
             >
               <LogOut className="w-5 h-5" />
               Cerrar sesión
-            </Link>
+            </button>
           </nav>
         )}
       </header>

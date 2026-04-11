@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, FileText, Bell, Activity, Stethoscope,
-  Menu, X, LogOut, Shield, ChevronDown,
+  LayoutDashboard, Users, FileText, Bell, Shield,
+  Menu, X, LogOut,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Sistema", path: "/admin" },
@@ -20,6 +20,16 @@ interface AdminLayoutProps {
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const displayName = user ? `${user.firstName} ${user.lastName}` : "Admin";
+  const initials = user ? `${user.firstName[0]}${user.lastName[0]}` : "AD";
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -60,10 +70,13 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         </nav>
 
         <div className="p-3 border-t border-sidebar-border">
-          <Link to="/" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors w-full"
+          >
             <LogOut className="w-5 h-5" />
             Cerrar sesión
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -79,9 +92,9 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           <div className="flex-1" />
           <button className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
-              <span className="text-xs font-bold text-destructive">AD</span>
+              <span className="text-xs font-bold text-destructive">{initials}</span>
             </div>
-            <span className="hidden md:block text-sm font-medium text-foreground">Administrador</span>
+            <span className="hidden md:block text-sm font-medium text-foreground">{displayName}</span>
           </button>
         </header>
 

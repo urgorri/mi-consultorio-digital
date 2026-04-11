@@ -1,18 +1,49 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Stethoscope, Eye, EyeOff } from "lucide-react";
+import { Stethoscope, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { login, user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // If already logged in, redirect
+  if (user) {
+    const redirectMap = { profesional: "/dashboard", paciente: "/portal", admin: "/admin" };
+    navigate(redirectMap[user.role], { replace: true });
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: integrate auth
+    setLoading(true);
+    const result = await login(email, password);
+    setLoading(false);
+
+    if (result.success) {
+      // After login, user state is set — we read from localStorage to get role
+      const stored = localStorage.getItem("mc_auth_user");
+      if (stored) {
+        const u = JSON.parse(stored);
+        const redirectMap: Record<string, string> = { profesional: "/dashboard", paciente: "/portal", admin: "/admin" };
+        navigate(redirectMap[u.role] || "/dashboard", { replace: true });
+      }
+    } else {
+      toast({
+        title: "Error de autenticación",
+        description: result.error || "Credenciales inválidas",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -86,7 +117,8 @@ const LoginPage = () => {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full" size="lg">
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Iniciar sesión
             </Button>
           </form>
@@ -97,6 +129,16 @@ const LoginPage = () => {
               Regístrate aquí
             </Link>
           </p>
+
+          <div className="mt-8 p-4 rounded-lg bg-muted/50 border border-border">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Cuentas de prueba:</p>
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p><span className="font-medium text-foreground">Profesional:</span> dra.garcia@email.com</p>
+              <p><span className="font-medium text-foreground">Paciente:</span> laura@email.com</p>
+              <p><span className="font-medium text-foreground">Admin:</span> admin@miconsultorio.com</p>
+              <p className="text-muted-foreground/70 mt-1">Contraseña: cualquiera</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
