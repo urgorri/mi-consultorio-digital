@@ -1,22 +1,12 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard,
-  CalendarDays,
-  Users,
-  ClipboardList,
-  Settings,
-  Bell,
-  BarChart3,
-  Stethoscope,
-  Menu,
-  X,
-  LogOut,
-  Search,
-  ChevronDown,
+  LayoutDashboard, CalendarDays, Users, ClipboardList, Settings,
+  Bell, BarChart3, Stethoscope, Menu, X, LogOut, Search, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Inicio", path: "/dashboard" },
@@ -36,10 +26,19 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const initials = user ? `${user.firstName[0]}${user.lastName[0]}` : "MC";
+  const displayName = user ? `${user.firstName} ${user.lastName}` : "Usuario";
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground transform transition-transform lg:translate-x-0 lg:static lg:inset-auto ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -77,13 +76,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </nav>
 
         <div className="p-3 border-t border-sidebar-border">
-          <Link
-            to="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors w-full"
           >
             <LogOut className="w-5 h-5" />
             Cerrar sesión
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -91,17 +90,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="fixed inset-0 z-40 bg-foreground/20 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 border-b border-border bg-card flex items-center px-4 gap-4 shrink-0">
           <button className="lg:hidden text-foreground" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex-1">
-            <Input
-              placeholder="Buscar pacientes, citas..."
-              className="max-w-sm bg-background"
-            />
+            <Input placeholder="Buscar pacientes, citas..." className="max-w-sm bg-background" />
           </div>
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="w-5 h-5" />
@@ -109,9 +104,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </Button>
           <button className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-xs font-bold text-primary-foreground">MG</span>
+              <span className="text-xs font-bold text-primary-foreground">{initials}</span>
             </div>
-            <span className="hidden md:block text-sm font-medium text-foreground">Dra. García</span>
+            <span className="hidden md:block text-sm font-medium text-foreground">{displayName}</span>
             <ChevronDown className="w-4 h-4 text-muted-foreground hidden md:block" />
           </button>
         </header>
