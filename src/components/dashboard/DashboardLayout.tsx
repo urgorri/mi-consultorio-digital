@@ -3,9 +3,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, CalendarDays, Users, ClipboardList, Settings,
   Bell, BarChart3, Stethoscope, Menu, X, LogOut, Search, ChevronDown,
+  User, Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
