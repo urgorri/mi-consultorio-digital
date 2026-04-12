@@ -3,9 +3,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, CalendarDays, Users, ClipboardList, Settings,
   Bell, BarChart3, Stethoscope, Menu, X, LogOut, Search, ChevronDown,
+  User, Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
@@ -102,13 +104,45 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <Bell className="w-5 h-5" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
           </Button>
-          <button className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-xs font-bold text-primary-foreground">{initials}</span>
-            </div>
-            <span className="hidden md:block text-sm font-medium text-foreground">{displayName}</span>
-            <ChevronDown className="w-4 h-4 text-muted-foreground hidden md:block" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-accent transition-colors">
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                  <span className="text-xs font-bold text-primary-foreground">{initials}</span>
+                </div>
+                <span className="hidden md:block text-sm font-medium text-foreground">{displayName}</span>
+                <ChevronDown className="w-4 h-4 text-muted-foreground hidden md:block" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <p className="text-sm font-medium">{displayName}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/dashboard/configuracion")}>
+                <User className="w-4 h-4 mr-2" /> Mi perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/dashboard/configuracion")}>
+                <Settings className="w-4 h-4 mr-2" /> Configuración
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/dashboard/notificaciones")}>
+                <Bell className="w-4 h-4 mr-2" /> Notificaciones
+              </DropdownMenuItem>
+              {user?.role === "admin" && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/admin")}>
+                    <Shield className="w-4 h-4 mr-2" /> Panel de administración
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                <LogOut className="w-4 h-4 mr-2" /> Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
 
         <main className="flex-1 overflow-auto p-4 md:p-6">
