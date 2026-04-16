@@ -9,8 +9,6 @@ import { Save, Plus, MapPin, Clock, Stethoscope } from "lucide-react";
 import NewLocationDialog from "@/components/dialogs/NewLocationDialog";
 import NewAppointmentTypeDialog from "@/components/dialogs/NewAppointmentTypeDialog";
 import { useToast } from "@/hooks/use-toast";
-import NewLocationDialog from "@/components/dialogs/NewLocationDialog";
-import NewAppointmentTypeDialog from "@/components/dialogs/NewAppointmentTypeDialog";
 
 const SettingsPage = () => {
   const [locationOpen, setLocationOpen] = useState(false);
