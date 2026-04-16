@@ -138,11 +138,15 @@ export const consultationsApi = {
 
 // ===== DIAGNOSES =====
 export const diagnosesApi = {
-  async search(query: string) {
+  async search(query: string, codingSystems?: string[]) {
     await delay(200);
-    if (!query) return success(mockDiagnoses);
+    let results = [...mockDiagnoses];
+    if (codingSystems && codingSystems.length > 0) {
+      results = results.filter(d => codingSystems.includes(d.codingSystem));
+    }
+    if (!query) return success(results);
     const q = query.toLowerCase();
-    return success(mockDiagnoses.filter(d =>
+    return success(results.filter(d =>
       d.code.toLowerCase().includes(q) || d.name.toLowerCase().includes(q)
     ));
   },
