@@ -5,13 +5,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Plus, MapPin, Clock } from "lucide-react";
+import { Save, Plus, MapPin, Clock, Stethoscope } from "lucide-react";
+import NewLocationDialog from "@/components/dialogs/NewLocationDialog";
+import NewAppointmentTypeDialog from "@/components/dialogs/NewAppointmentTypeDialog";
+import { useToast } from "@/hooks/use-toast";
 import NewLocationDialog from "@/components/dialogs/NewLocationDialog";
 import NewAppointmentTypeDialog from "@/components/dialogs/NewAppointmentTypeDialog";
 
 const SettingsPage = () => {
   const [locationOpen, setLocationOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
+  const [cie10, setCie10] = useState(true);
+  const [cie11, setCie11] = useState(false);
+  const [snomedCt, setSnomedCt] = useState(false);
+  const { toast } = useToast();
 
   return (
     <DashboardLayout>
@@ -27,6 +34,7 @@ const SettingsPage = () => {
             <TabsTrigger value="consultorio">Consultorio</TabsTrigger>
             <TabsTrigger value="horarios">Horarios</TabsTrigger>
             <TabsTrigger value="citas">Tipos de cita</TabsTrigger>
+            <TabsTrigger value="diagnosticos">Diagnósticos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="perfil" className="mt-4 space-y-4">
