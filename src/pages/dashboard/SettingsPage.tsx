@@ -136,6 +136,55 @@ const SettingsPage = () => {
               ))}
             </div>
           </TabsContent>
+
+          <TabsContent value="diagnosticos" className="mt-4 space-y-4">
+            <div className="bg-card rounded-xl border border-border p-5 space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Stethoscope className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Sistemas de codificación diagnóstica</h3>
+                  <p className="text-sm text-muted-foreground">Selecciona los sistemas que utilizarás al registrar diagnósticos</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border border-border rounded-lg p-4">
+                  <div>
+                    <p className="font-medium text-foreground">CIE-10</p>
+                    <p className="text-sm text-muted-foreground">Clasificación Internacional de Enfermedades, 10ª revisión</p>
+                  </div>
+                  <Switch checked={cie10} onCheckedChange={setCie10} />
+                </div>
+                <div className="flex items-center justify-between border border-border rounded-lg p-4">
+                  <div>
+                    <p className="font-medium text-foreground">CIE-11</p>
+                    <p className="text-sm text-muted-foreground">Clasificación Internacional de Enfermedades, 11ª revisión</p>
+                  </div>
+                  <Switch checked={cie11} onCheckedChange={setCie11} />
+                </div>
+                <div className="flex items-center justify-between border border-border rounded-lg p-4">
+                  <div>
+                    <p className="font-medium text-foreground">SNOMED CT</p>
+                    <p className="text-sm text-muted-foreground">Nomenclatura Sistematizada de Medicina — Términos Clínicos</p>
+                  </div>
+                  <Switch checked={snomedCt} onCheckedChange={setSnomedCt} />
+                </div>
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">
+                  <strong>Nota:</strong> Los sistemas activos aplican solo al registro de nuevos diagnósticos. 
+                  Siempre podrás ver todos los diagnósticos de tus pacientes sin importar el sistema con el que fueron registrados.
+                </p>
+              </div>
+
+              <Button className="gap-1" onClick={() => toast({ title: "Configuración guardada", description: "Tus preferencias de codificación han sido actualizadas." })}>
+                <Save className="w-4 h-4" /> Guardar preferencias
+              </Button>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
