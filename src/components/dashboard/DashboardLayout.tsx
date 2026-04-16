@@ -1,24 +1,22 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, CalendarDays, Users, ClipboardList, Settings,
-  Bell, BarChart3, Stethoscope, Menu, X, LogOut, Search, ChevronDown,
-  User, Shield,
+  LayoutDashboard, CalendarDays, Users, ClipboardList,
+  BarChart3, Stethoscope, Menu, X, LogOut, Search, ChevronDown,
+  User, Shield, Settings, Bell,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import NotificationsDropdown from "./NotificationsDropdown";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Inicio", path: "/dashboard" },
   { icon: CalendarDays, label: "Agenda", path: "/dashboard/agenda" },
   { icon: Users, label: "Pacientes", path: "/dashboard/pacientes" },
   { icon: ClipboardList, label: "Consultas", path: "/dashboard/consultas" },
-  { icon: Search, label: "Diagnósticos", path: "/dashboard/diagnosticos" },
   { icon: BarChart3, label: "Reportes", path: "/dashboard/reportes" },
-  { icon: Bell, label: "Notificaciones", path: "/dashboard/notificaciones" },
-  { icon: Settings, label: "Configuración", path: "/dashboard/configuracion" },
+  { icon: Search, label: "Diagnósticos", path: "/dashboard/diagnosticos" },
 ];
 
 interface DashboardLayoutProps {
@@ -77,15 +75,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           })}
         </nav>
 
-        <div className="p-3 border-t border-sidebar-border">
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors w-full"
-          >
-            <LogOut className="w-5 h-5" />
-            Cerrar sesión
-          </button>
-        </div>
       </aside>
 
       {sidebarOpen && (
@@ -100,10 +89,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="flex-1">
             <Input placeholder="Buscar pacientes, citas..." className="max-w-sm bg-background" />
           </div>
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
-          </Button>
+          <NotificationsDropdown />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-accent transition-colors">
