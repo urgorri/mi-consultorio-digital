@@ -28,6 +28,7 @@ export interface Professional extends User {
   specialty: string;
   licenseNumber: string;
   locations: Location[];
+  codingConfig: ProfessionalCodingConfig;
 }
 
 export interface Patient {
@@ -86,10 +87,19 @@ export interface Consultation {
   notes?: string;
 }
 
+export type CodingSystem = "CIE-10" | "CIE-11" | "SNOMED-CT";
+
 export interface Diagnosis {
   code: string;
   name: string;
   category?: string;
+  codingSystem: CodingSystem;
+}
+
+export interface ProfessionalCodingConfig {
+  cie10: boolean;
+  cie11: boolean;
+  snomedCt: boolean;
 }
 
 export interface Location {
