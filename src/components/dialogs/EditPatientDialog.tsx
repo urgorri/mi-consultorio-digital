@@ -123,6 +123,28 @@ const EditPatientDialog = ({ open, onOpenChange, patient, onUpdated }: EditPatie
             <Label>Condiciones preexistentes</Label>
             <Textarea value={form.conditions} onChange={e => update("conditions", e.target.value)} rows={2} />
           </div>
+
+          <div className="space-y-2 pt-2 border-t border-border">
+            <Label className="text-sm">Asociación</Label>
+            <p className="text-xs text-muted-foreground">Modificá los ámbitos en los que está registrado este paciente.</p>
+            <div className="space-y-2 mt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox checked={isPrivate} onCheckedChange={(v) => setIsPrivate(!!v)} />
+                <span className="text-sm">Paciente privado (solo yo lo veo)</span>
+              </label>
+              {availableClinics.map(c => (
+                <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox checked={clinicIds.includes(c.id)} onCheckedChange={() => toggleClinic(c.id)} />
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: `hsl(${c.color})` }}
+                  />
+                  <span className="text-sm">{c.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</Button>

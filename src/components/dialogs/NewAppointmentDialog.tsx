@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { patientsApi } from "@/services/api";
+import { useClinicFilter } from "@/contexts/ClinicFilterContext";
 import type { Patient, Appointment } from "@/services/api/types";
 
 interface NewAppointmentDialogProps {
