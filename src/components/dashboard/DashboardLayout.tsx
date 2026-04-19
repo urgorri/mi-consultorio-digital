@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationsDropdown from "./NotificationsDropdown";
+import ClinicFilterDropdown from "./ClinicFilterDropdown";
 
 const primaryNavItems = [
   { icon: LayoutDashboard, label: "Inicio", path: "/dashboard" },
@@ -116,6 +117,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="flex-1">
             <Input placeholder="Buscar pacientes, citas..." className="max-w-sm bg-background" />
           </div>
+          <ClinicFilterDropdown />
           <NotificationsDropdown />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
