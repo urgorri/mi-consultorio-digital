@@ -41,42 +41,44 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            {/* Public */}
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/registro" element={<RegisterPage />} />
-            <Route path="/recuperar-contrasena" element={<PasswordRecoveryPage />} />
-            <Route path="/agendar" element={<BookingPage />} />
+          <ClinicFilterProvider>
+            <Routes>
+              {/* Public */}
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/registro" element={<RegisterPage />} />
+              <Route path="/recuperar-contrasena" element={<PasswordRecoveryPage />} />
+              <Route path="/agendar" element={<BookingPage />} />
 
-            {/* Professional Dashboard */}
-            <Route path="/dashboard" element={<ProtectedRoute allowedRoles={["profesional"]}><DashboardPage /></ProtectedRoute>} />
-            <Route path="/dashboard/agenda" element={<ProtectedRoute allowedRoles={["profesional"]}><AgendaPage /></ProtectedRoute>} />
-            <Route path="/dashboard/pacientes" element={<ProtectedRoute allowedRoles={["profesional"]}><PatientsPage /></ProtectedRoute>} />
-            <Route path="/dashboard/pacientes/:id" element={<ProtectedRoute allowedRoles={["profesional"]}><PatientDetailPage /></ProtectedRoute>} />
-            <Route path="/dashboard/consultas" element={<ProtectedRoute allowedRoles={["profesional"]}><NewConsultationPage /></ProtectedRoute>} />
-            <Route path="/dashboard/consultas/nueva" element={<ProtectedRoute allowedRoles={["profesional"]}><NewConsultationPage /></ProtectedRoute>} />
-            <Route path="/dashboard/consultas/:id" element={<ProtectedRoute allowedRoles={["profesional"]}><ConsultationDetailPage /></ProtectedRoute>} />
-            <Route path="/dashboard/diagnosticos" element={<ProtectedRoute allowedRoles={["profesional"]}><DiagnosesPage /></ProtectedRoute>} />
-            <Route path="/dashboard/reportes" element={<ProtectedRoute allowedRoles={["profesional"]}><ReportsPage /></ProtectedRoute>} />
-            <Route path="/dashboard/notificaciones" element={<ProtectedRoute allowedRoles={["profesional"]}><NotificationsPage /></ProtectedRoute>} />
-            <Route path="/dashboard/configuracion" element={<ProtectedRoute allowedRoles={["profesional"]}><SettingsPage /></ProtectedRoute>} />
+              {/* Professional Dashboard */}
+              <Route path="/dashboard" element={<ProtectedRoute allowedRoles={["profesional"]}><DashboardPage /></ProtectedRoute>} />
+              <Route path="/dashboard/agenda" element={<ProtectedRoute allowedRoles={["profesional"]}><AgendaPage /></ProtectedRoute>} />
+              <Route path="/dashboard/pacientes" element={<ProtectedRoute allowedRoles={["profesional"]}><PatientsPage /></ProtectedRoute>} />
+              <Route path="/dashboard/pacientes/:id" element={<ProtectedRoute allowedRoles={["profesional"]}><PatientDetailPage /></ProtectedRoute>} />
+              <Route path="/dashboard/consultas" element={<ProtectedRoute allowedRoles={["profesional"]}><NewConsultationPage /></ProtectedRoute>} />
+              <Route path="/dashboard/consultas/nueva" element={<ProtectedRoute allowedRoles={["profesional"]}><NewConsultationPage /></ProtectedRoute>} />
+              <Route path="/dashboard/consultas/:id" element={<ProtectedRoute allowedRoles={["profesional"]}><ConsultationDetailPage /></ProtectedRoute>} />
+              <Route path="/dashboard/diagnosticos" element={<ProtectedRoute allowedRoles={["profesional"]}><DiagnosesPage /></ProtectedRoute>} />
+              <Route path="/dashboard/reportes" element={<ProtectedRoute allowedRoles={["profesional"]}><ReportsPage /></ProtectedRoute>} />
+              <Route path="/dashboard/notificaciones" element={<ProtectedRoute allowedRoles={["profesional"]}><NotificationsPage /></ProtectedRoute>} />
+              <Route path="/dashboard/configuracion" element={<ProtectedRoute allowedRoles={["profesional"]}><SettingsPage /></ProtectedRoute>} />
 
-            {/* Patient Portal */}
-            <Route path="/portal" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientDashboardPage /></ProtectedRoute>} />
-            <Route path="/portal/historial" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientHistoryPage /></ProtectedRoute>} />
-            <Route path="/portal/notificaciones" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientNotificationsPage /></ProtectedRoute>} />
-            <Route path="/portal/perfil" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientProfilePage /></ProtectedRoute>} />
-            <Route path="/portal/citas/:id" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientAppointmentDetailPage /></ProtectedRoute>} />
+              {/* Patient Portal */}
+              <Route path="/portal" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientDashboardPage /></ProtectedRoute>} />
+              <Route path="/portal/historial" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientHistoryPage /></ProtectedRoute>} />
+              <Route path="/portal/notificaciones" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientNotificationsPage /></ProtectedRoute>} />
+              <Route path="/portal/perfil" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientProfilePage /></ProtectedRoute>} />
+              <Route path="/portal/citas/:id" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientAppointmentDetailPage /></ProtectedRoute>} />
 
-            {/* Admin */}
-            <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminSystemPage /></ProtectedRoute>} />
-            <Route path="/admin/usuarios" element={<ProtectedRoute allowedRoles={["admin"]}><AdminUsersPage /></ProtectedRoute>} />
-            <Route path="/admin/auditoria" element={<ProtectedRoute allowedRoles={["admin"]}><AdminAuditPage /></ProtectedRoute>} />
-            <Route path="/admin/notificaciones" element={<ProtectedRoute allowedRoles={["admin"]}><AdminNotificationsPage /></ProtectedRoute>} />
+              {/* Admin */}
+              <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminSystemPage /></ProtectedRoute>} />
+              <Route path="/admin/usuarios" element={<ProtectedRoute allowedRoles={["admin"]}><AdminUsersPage /></ProtectedRoute>} />
+              <Route path="/admin/auditoria" element={<ProtectedRoute allowedRoles={["admin"]}><AdminAuditPage /></ProtectedRoute>} />
+              <Route path="/admin/notificaciones" element={<ProtectedRoute allowedRoles={["admin"]}><AdminNotificationsPage /></ProtectedRoute>} />
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ClinicFilterProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
