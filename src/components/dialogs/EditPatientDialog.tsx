@@ -21,11 +21,14 @@ interface EditPatientDialogProps {
 
 const EditPatientDialog = ({ open, onOpenChange, patient, onUpdated }: EditPatientDialogProps) => {
   const { toast } = useToast();
+  const { availableClinics } = useClinicFilter();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     firstName: "", lastName: "", email: "", phone: "", birthDate: "",
     gender: "", address: "", bloodType: "", allergies: "", conditions: "",
   });
+  const [isPrivate, setIsPrivate] = useState(true);
+  const [clinicIds, setClinicIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (patient) {
@@ -35,17 +38,25 @@ const EditPatientDialog = ({ open, onOpenChange, patient, onUpdated }: EditPatie
         address: patient.address, bloodType: patient.bloodType, allergies: patient.allergies,
         conditions: patient.conditions,
       });
+      setIsPrivate(patient.isPrivate);
+      setClinicIds(patient.clinicIds);
     }
   }, [patient]);
 
   const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
+  const toggleClinic = (id: string) =>
+    setClinicIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!patient) return;
+    if (!isPrivate && clinicIds.length === 0) {
+      toast({ title: "Asignación requerida", description: "El paciente debe estar asociado al ámbito privado o al menos una clínica.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
 
-    const updated: Patient = { ...patient, ...form };
+    const updated: Patient = { ...patient, ...form, isPrivate, clinicIds };
 
     setTimeout(() => {
       setSaving(false);
