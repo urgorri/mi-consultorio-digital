@@ -115,6 +115,18 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
             </Select>
           </div>
           <div className="space-y-2">
+            <Label>Ámbito *</Label>
+            <Select value={form.clinicId} onValueChange={v => update("clinicId", v)}>
+              <SelectTrigger><SelectValue placeholder="Seleccionar ámbito" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="private">Privado</SelectItem>
+                {availableClinics.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label>Tipo de cita *</Label>
             <Select value={form.type} onValueChange={v => update("type", v)}>
               <SelectTrigger><SelectValue placeholder="Seleccionar tipo" /></SelectTrigger>
