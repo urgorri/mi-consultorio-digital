@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useClinicFilter } from "@/contexts/ClinicFilterContext";
 import type { Patient } from "@/services/api/types";
 
 interface EditPatientDialogProps {
@@ -19,11 +21,14 @@ interface EditPatientDialogProps {
 
 const EditPatientDialog = ({ open, onOpenChange, patient, onUpdated }: EditPatientDialogProps) => {
   const { toast } = useToast();
+  const { availableClinics } = useClinicFilter();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     firstName: "", lastName: "", email: "", phone: "", birthDate: "",
     gender: "", address: "", bloodType: "", allergies: "", conditions: "",
   });
+  const [isPrivate, setIsPrivate] = useState(true);
+  const [clinicIds, setClinicIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (patient) {
@@ -33,17 +38,25 @@ const EditPatientDialog = ({ open, onOpenChange, patient, onUpdated }: EditPatie
         address: patient.address, bloodType: patient.bloodType, allergies: patient.allergies,
         conditions: patient.conditions,
       });
+      setIsPrivate(patient.isPrivate);
+      setClinicIds(patient.clinicIds);
     }
   }, [patient]);
 
   const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
+  const toggleClinic = (id: string) =>
+    setClinicIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!patient) return;
+    if (!isPrivate && clinicIds.length === 0) {
+      toast({ title: "Asignación requerida", description: "El paciente debe estar asociado al ámbito privado o al menos una clínica.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
 
-    const updated: Patient = { ...patient, ...form };
+    const updated: Patient = { ...patient, ...form, isPrivate, clinicIds };
 
     setTimeout(() => {
       setSaving(false);
@@ -121,6 +134,28 @@ const EditPatientDialog = ({ open, onOpenChange, patient, onUpdated }: EditPatie
             <Label>Condiciones preexistentes</Label>
             <Textarea value={form.conditions} onChange={e => update("conditions", e.target.value)} rows={2} />
           </div>
+
+          <div className="space-y-2 pt-2 border-t border-border">
+            <Label className="text-sm">Asociación</Label>
+            <p className="text-xs text-muted-foreground">Modificá los ámbitos en los que está registrado este paciente.</p>
+            <div className="space-y-2 mt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox checked={isPrivate} onCheckedChange={(v) => setIsPrivate(!!v)} />
+                <span className="text-sm">Paciente privado (solo yo lo veo)</span>
+              </label>
+              {availableClinics.map(c => (
+                <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox checked={clinicIds.includes(c.id)} onCheckedChange={() => toggleClinic(c.id)} />
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: `hsl(${c.color})` }}
+                  />
+                  <span className="text-sm">{c.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</Button>

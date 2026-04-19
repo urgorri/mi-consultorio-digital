@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Clock } from "lucide-react";
@@ -6,6 +6,8 @@ import { appointmentsApi } from "@/services/api";
 import type { Appointment } from "@/services/api";
 import NewAppointmentDialog from "@/components/dialogs/NewAppointmentDialog";
 import AppointmentDetailDialog from "@/components/dialogs/AppointmentDetailDialog";
+import ClinicBadge from "@/components/dashboard/ClinicBadge";
+import { useClinicFilter } from "@/contexts/ClinicFilterContext";
 
 type ViewType = "dia" | "semana" | "mes";
 
@@ -22,14 +24,20 @@ const statusColors: Record<string, string> = {
 const AgendaPage = () => {
   const [view, setView] = useState<ViewType>("dia");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
   const [newOpen, setNewOpen] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const { matchesFilter } = useClinicFilter();
 
   useEffect(() => {
-    appointmentsApi.list().then(res => setAppointments(res.data));
+    appointmentsApi.list().then(res => setAllAppointments(res.data));
   }, []);
+
+  const appointments = useMemo(
+    () => allAppointments.filter(a => matchesFilter({ clinicId: a.clinicId })),
+    [allAppointments, matchesFilter]
+  );
 
   const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
@@ -78,7 +86,7 @@ const AgendaPage = () => {
   };
 
   const handleStatusChange = (id: string, status: Appointment["status"]) => {
-    setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    setAllAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
   };
 
   return (
@@ -137,13 +145,16 @@ const AgendaPage = () => {
                           onClick={() => openApptDetail(apt)}
                           className={`p-3 rounded-lg border ${statusColors[apt.status]} cursor-pointer hover:opacity-90 transition-opacity`}
                         >
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium">{apt.patientName}</p>
-                            <span className="text-xs">{apt.type}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-medium truncate">{apt.patientName}</p>
+                            <span className="text-xs shrink-0">{apt.type}</span>
                           </div>
-                          <p className="text-xs mt-1 flex items-center gap-1 opacity-70">
-                            <Clock className="w-3 h-3" /> {apt.time} - {apt.endTime}
-                          </p>
+                          <div className="mt-1 flex items-center gap-2 flex-wrap">
+                            <span className="text-xs flex items-center gap-1 opacity-70">
+                              <Clock className="w-3 h-3" /> {apt.time} - {apt.endTime}
+                            </span>
+                            <ClinicBadge clinicId={apt.clinicId} isPrivate={apt.clinicId === null} />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -249,7 +260,7 @@ const AgendaPage = () => {
         open={newOpen}
         onOpenChange={setNewOpen}
         defaultDate={formatDate(currentDate)}
-        onCreated={(apt) => setAppointments(prev => [...prev, apt])}
+        onCreated={(apt) => setAllAppointments(prev => [...prev, apt])}
       />
 
       <AppointmentDetailDialog

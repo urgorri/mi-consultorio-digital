@@ -9,13 +9,17 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationsDropdown from "./NotificationsDropdown";
+import ClinicFilterDropdown from "./ClinicFilterDropdown";
 
-const navItems = [
+const primaryNavItems = [
   { icon: LayoutDashboard, label: "Inicio", path: "/dashboard" },
   { icon: CalendarDays, label: "Agenda", path: "/dashboard/agenda" },
   { icon: Users, label: "Pacientes", path: "/dashboard/pacientes" },
   { icon: ClipboardList, label: "Consultas", path: "/dashboard/consultas" },
   { icon: BarChart3, label: "Reportes", path: "/dashboard/reportes" },
+];
+
+const referenceNavItems = [
   { icon: Search, label: "Diagnósticos", path: "/dashboard/diagnosticos" },
 ];
 
@@ -55,7 +59,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
 
         <nav className="p-3 space-y-1 flex-1">
-          {navItems.map((item) => {
+          {primaryNavItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
@@ -73,6 +77,30 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </Link>
             );
           })}
+
+          <div className="pt-3 mt-3 border-t border-sidebar-border space-y-1">
+            <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+              Referencias
+            </p>
+            {referenceNavItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-sidebar-accent text-sidebar-primary"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
       </aside>
@@ -89,6 +117,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="flex-1">
             <Input placeholder="Buscar pacientes, citas..." className="max-w-sm bg-background" />
           </div>
+          <ClinicFilterDropdown />
           <NotificationsDropdown />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

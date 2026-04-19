@@ -1,8 +1,14 @@
 import type {
   Patient, Appointment, Consultation, Diagnosis, Notification,
   DashboardStats, ReportMetrics, AuditLog, SystemHealth,
-  User, Location, AppointmentType, Schedule, Professional,
+  User, Location, AppointmentType, Schedule, Professional, Clinic,
 } from "./types";
+
+export const mockClinics: Clinic[] = [
+  { id: "clinic-1", name: "Clínica San Rafael", shortName: "San Rafael", color: "210 70% 35%", address: "Av. Reforma 100, CDMX" },
+  { id: "clinic-2", name: "Centro Médico Polanco", shortName: "Polanco", color: "175 55% 38%", address: "Polanco V Sec, CDMX" },
+  { id: "clinic-3", name: "Clínica Norte", shortName: "Norte", color: "32 85% 50%", address: "Lindavista, CDMX" },
+];
 
 export const mockProfessional: Professional = {
   id: "prof-1",
@@ -16,6 +22,11 @@ export const mockProfessional: Professional = {
   specialty: "Medicina General",
   licenseNumber: "12345678",
   codingConfig: { cie10: true, cie11: false, snomedCt: false },
+  clinicMemberships: [
+    { clinicId: "clinic-1", role: "admin" },
+    { clinicId: "clinic-2", role: "staff" },
+    { clinicId: "clinic-3", role: "staff" },
+  ],
   locations: [
     { id: "loc-1", name: "Consultorio Centro", address: "Av. Reforma 123, Col. Centro, CDMX", phone: "+52 55 1234 0001", active: true },
     { id: "loc-2", name: "Consultorio Norte", address: "Blvd. Ávila Camacho 456, Polanco, CDMX", phone: "+52 55 1234 0002", active: true },
@@ -23,31 +34,31 @@ export const mockProfessional: Professional = {
 };
 
 export const mockPatients: Patient[] = [
-  { id: "p-1", firstName: "Laura", lastName: "Martínez", email: "laura@email.com", phone: "+52 55 1111 2222", birthDate: "1991-06-15", gender: "Femenino", address: "Col. Roma, Ciudad de México", bloodType: "O+", allergies: "Penicilina", conditions: "Hipertensión arterial controlada", createdAt: "2024-03-10", lastVisit: "2026-04-05", totalVisits: 12, status: "activo" },
-  { id: "p-2", firstName: "Pedro", lastName: "Sánchez", email: "pedro@email.com", phone: "+52 55 3333 4444", birthDate: "1985-02-20", gender: "Masculino", address: "Col. Condesa, Ciudad de México", bloodType: "A+", allergies: "Ninguna", conditions: "Diabetes tipo 2", createdAt: "2024-05-12", lastVisit: "2026-04-03", totalVisits: 8, status: "activo" },
-  { id: "p-3", firstName: "Ana", lastName: "Rodríguez", email: "ana@email.com", phone: "+52 55 5555 6666", birthDate: "1993-11-08", gender: "Femenino", address: "Col. Del Valle, Ciudad de México", bloodType: "B-", allergies: "Sulfonamidas", conditions: "Ninguna", createdAt: "2025-01-20", lastVisit: "2026-04-01", totalVisits: 3, status: "activo" },
-  { id: "p-4", firstName: "Miguel", lastName: "Torres", email: "miguel@email.com", phone: "+52 55 7777 8888", birthDate: "1978-07-30", gender: "Masculino", address: "Col. Narvarte, Ciudad de México", bloodType: "AB+", allergies: "Ibuprofeno", conditions: "Asma leve", createdAt: "2023-09-05", lastVisit: "2026-03-28", totalVisits: 15, status: "activo" },
-  { id: "p-5", firstName: "Sofía", lastName: "Hernández", email: "sofia@email.com", phone: "+52 55 9999 0000", birthDate: "1988-04-12", gender: "Femenino", address: "Col. Coyoacán, Ciudad de México", bloodType: "O-", allergies: "Ninguna", conditions: "Hipotiroidismo", createdAt: "2024-11-15", lastVisit: "2026-03-25", totalVisits: 6, status: "activo" },
-  { id: "p-6", firstName: "Carlos", lastName: "Ruiz", email: "carlos@email.com", phone: "+52 55 1234 5678", birthDate: "1970-12-01", gender: "Masculino", address: "Col. Polanco, Ciudad de México", bloodType: "A-", allergies: "Aspirina, Latex", conditions: "Hipercolesterolemia, Hipertensión", createdAt: "2022-06-20", lastVisit: "2026-03-20", totalVisits: 22, status: "activo" },
-  { id: "p-7", firstName: "Elena", lastName: "Guzmán", email: "elena@email.com", phone: "+52 55 2468 1357", birthDate: "1995-09-25", gender: "Femenino", address: "Col. Juárez, Ciudad de México", bloodType: "B+", allergies: "Ninguna", conditions: "Ninguna", createdAt: "2025-12-01", lastVisit: "2026-03-15", totalVisits: 2, status: "activo" },
-  { id: "p-8", firstName: "Roberto", lastName: "Díaz", email: "roberto@email.com", phone: "+52 55 9753 1246", birthDate: "1982-03-17", gender: "Masculino", address: "Col. San Ángel, Ciudad de México", bloodType: "O+", allergies: "Mariscos", conditions: "Reflujo gastroesofágico", createdAt: "2024-08-10", lastVisit: "2026-02-28", totalVisits: 9, status: "inactivo" },
+  { id: "p-1", firstName: "Laura", lastName: "Martínez", email: "laura@email.com", phone: "+52 55 1111 2222", birthDate: "1991-06-15", gender: "Femenino", address: "Col. Roma, Ciudad de México", bloodType: "O+", allergies: "Penicilina", conditions: "Hipertensión arterial controlada", createdAt: "2024-03-10", lastVisit: "2026-04-05", totalVisits: 12, status: "activo", documentNumber: "30123456", clinicIds: ["clinic-1"], isPrivate: true },
+  { id: "p-2", firstName: "Pedro", lastName: "Sánchez", email: "pedro@email.com", phone: "+52 55 3333 4444", birthDate: "1985-02-20", gender: "Masculino", address: "Col. Condesa, Ciudad de México", bloodType: "A+", allergies: "Ninguna", conditions: "Diabetes tipo 2", createdAt: "2024-05-12", lastVisit: "2026-04-03", totalVisits: 8, status: "activo", documentNumber: "27345678", clinicIds: ["clinic-1", "clinic-2"], isPrivate: false },
+  { id: "p-3", firstName: "Ana", lastName: "Rodríguez", email: "ana@email.com", phone: "+52 55 5555 6666", birthDate: "1993-11-08", gender: "Femenino", address: "Col. Del Valle, Ciudad de México", bloodType: "B-", allergies: "Sulfonamidas", conditions: "Ninguna", createdAt: "2025-01-20", lastVisit: "2026-04-01", totalVisits: 3, status: "activo", documentNumber: "32987654", clinicIds: [], isPrivate: true },
+  { id: "p-4", firstName: "Miguel", lastName: "Torres", email: "miguel@email.com", phone: "+52 55 7777 8888", birthDate: "1978-07-30", gender: "Masculino", address: "Col. Narvarte, Ciudad de México", bloodType: "AB+", allergies: "Ibuprofeno", conditions: "Asma leve", createdAt: "2023-09-05", lastVisit: "2026-03-28", totalVisits: 15, status: "activo", documentNumber: "25111222", clinicIds: ["clinic-2"], isPrivate: false },
+  { id: "p-5", firstName: "Sofía", lastName: "Hernández", email: "sofia@email.com", phone: "+52 55 9999 0000", birthDate: "1988-04-12", gender: "Femenino", address: "Col. Coyoacán, Ciudad de México", bloodType: "O-", allergies: "Ninguna", conditions: "Hipotiroidismo", createdAt: "2024-11-15", lastVisit: "2026-03-25", totalVisits: 6, status: "activo", documentNumber: "29555444", clinicIds: ["clinic-3"], isPrivate: true },
+  { id: "p-6", firstName: "Carlos", lastName: "Ruiz", email: "carlos@email.com", phone: "+52 55 1234 5678", birthDate: "1970-12-01", gender: "Masculino", address: "Col. Polanco, Ciudad de México", bloodType: "A-", allergies: "Aspirina, Latex", conditions: "Hipercolesterolemia, Hipertensión", createdAt: "2022-06-20", lastVisit: "2026-03-20", totalVisits: 22, status: "activo", documentNumber: "20888777", clinicIds: ["clinic-1", "clinic-3"], isPrivate: false },
+  { id: "p-7", firstName: "Elena", lastName: "Guzmán", email: "elena@email.com", phone: "+52 55 2468 1357", birthDate: "1995-09-25", gender: "Femenino", address: "Col. Juárez, Ciudad de México", bloodType: "B+", allergies: "Ninguna", conditions: "Ninguna", createdAt: "2025-12-01", lastVisit: "2026-03-15", totalVisits: 2, status: "activo", documentNumber: "33222111", clinicIds: [], isPrivate: true },
+  { id: "p-8", firstName: "Roberto", lastName: "Díaz", email: "roberto@email.com", phone: "+52 55 9753 1246", birthDate: "1982-03-17", gender: "Masculino", address: "Col. San Ángel, Ciudad de México", bloodType: "O+", allergies: "Mariscos", conditions: "Reflujo gastroesofágico", createdAt: "2024-08-10", lastVisit: "2026-02-28", totalVisits: 9, status: "inactivo", documentNumber: "26999888", clinicIds: ["clinic-2"], isPrivate: false },
 ];
 
 export const mockAppointments: Appointment[] = [
-  { id: "apt-1", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", date: "2026-04-10", time: "09:00", endTime: "09:30", type: "Consulta General", status: "confirmada" },
-  { id: "apt-2", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", date: "2026-04-10", time: "09:30", endTime: "10:00", type: "Seguimiento", status: "confirmada" },
-  { id: "apt-3", patientId: "p-3", patientName: "Ana Rodríguez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", date: "2026-04-10", time: "10:30", endTime: "11:15", type: "Primera vez", status: "pendiente" },
-  { id: "apt-4", patientId: "p-4", patientName: "Miguel Torres", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", date: "2026-04-10", time: "11:00", endTime: "11:30", type: "Consulta General", status: "confirmada" },
-  { id: "apt-5", patientId: "p-5", patientName: "Sofía Hernández", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", date: "2026-04-10", time: "14:00", endTime: "14:30", type: "Seguimiento", status: "confirmada" },
-  { id: "apt-6", patientId: "p-6", patientName: "Carlos Ruiz", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", date: "2026-04-10", time: "15:00", endTime: "15:30", type: "Consulta General", status: "confirmada" },
-  { id: "apt-7", patientId: "p-7", patientName: "Elena Guzmán", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", date: "2026-04-10", time: "16:00", endTime: "16:30", type: "Seguimiento", status: "pendiente" },
-  { id: "apt-8", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", date: "2026-04-05", time: "10:30", endTime: "11:00", type: "Consulta General", status: "completada" },
-  { id: "apt-9", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", date: "2026-04-03", time: "11:00", endTime: "11:30", type: "Seguimiento", status: "completada" },
-  { id: "apt-10", patientId: "p-3", patientName: "Ana Rodríguez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", date: "2026-04-01", time: "14:00", endTime: "14:45", type: "Primera vez", status: "cancelada" },
-  { id: "apt-11", patientId: "p-4", patientName: "Miguel Torres", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", date: "2026-04-11", time: "09:00", endTime: "09:30", type: "Consulta General", status: "confirmada" },
-  { id: "apt-12", patientId: "p-5", patientName: "Sofía Hernández", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", date: "2026-04-11", time: "10:00", endTime: "10:30", type: "Seguimiento", status: "pendiente" },
-  { id: "apt-13", patientId: "p-6", patientName: "Carlos Ruiz", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", date: "2026-04-12", time: "09:30", endTime: "10:00", type: "Consulta General", status: "confirmada" },
-  { id: "apt-14", patientId: "p-8", patientName: "Roberto Díaz", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", date: "2026-04-12", time: "14:00", endTime: "14:30", type: "Seguimiento", status: "confirmada" },
+  { id: "apt-1", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-10", time: "09:00", endTime: "09:30", type: "Consulta General", status: "confirmada" },
+  { id: "apt-2", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-10", time: "09:30", endTime: "10:00", type: "Seguimiento", status: "confirmada" },
+  { id: "apt-3", patientId: "p-3", patientName: "Ana Rodríguez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: null, date: "2026-04-10", time: "10:30", endTime: "11:15", type: "Primera vez", status: "pendiente" },
+  { id: "apt-4", patientId: "p-4", patientName: "Miguel Torres", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-2", date: "2026-04-10", time: "11:00", endTime: "11:30", type: "Consulta General", status: "confirmada" },
+  { id: "apt-5", patientId: "p-5", patientName: "Sofía Hernández", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", clinicId: "clinic-3", date: "2026-04-10", time: "14:00", endTime: "14:30", type: "Seguimiento", status: "confirmada" },
+  { id: "apt-6", patientId: "p-6", patientName: "Carlos Ruiz", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", clinicId: "clinic-1", date: "2026-04-10", time: "15:00", endTime: "15:30", type: "Consulta General", status: "confirmada" },
+  { id: "apt-7", patientId: "p-7", patientName: "Elena Guzmán", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: null, date: "2026-04-10", time: "16:00", endTime: "16:30", type: "Seguimiento", status: "pendiente" },
+  { id: "apt-8", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-05", time: "10:30", endTime: "11:00", type: "Consulta General", status: "completada" },
+  { id: "apt-9", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-2", date: "2026-04-03", time: "11:00", endTime: "11:30", type: "Seguimiento", status: "completada" },
+  { id: "apt-10", patientId: "p-3", patientName: "Ana Rodríguez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: null, date: "2026-04-01", time: "14:00", endTime: "14:45", type: "Primera vez", status: "cancelada" },
+  { id: "apt-11", patientId: "p-4", patientName: "Miguel Torres", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", clinicId: "clinic-2", date: "2026-04-11", time: "09:00", endTime: "09:30", type: "Consulta General", status: "confirmada" },
+  { id: "apt-12", patientId: "p-5", patientName: "Sofía Hernández", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-3", date: "2026-04-11", time: "10:00", endTime: "10:30", type: "Seguimiento", status: "pendiente" },
+  { id: "apt-13", patientId: "p-6", patientName: "Carlos Ruiz", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-12", time: "09:30", endTime: "10:00", type: "Consulta General", status: "confirmada" },
+  { id: "apt-14", patientId: "p-8", patientName: "Roberto Díaz", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", clinicId: "clinic-2", date: "2026-04-12", time: "14:00", endTime: "14:30", type: "Seguimiento", status: "confirmada" },
 ];
 
 export const mockConsultations: Consultation[] = [

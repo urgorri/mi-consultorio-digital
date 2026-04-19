@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useClinicFilter } from "@/contexts/ClinicFilterContext";
 import type { Patient } from "@/services/api/types";
 
 interface NewPatientDialogProps {
@@ -18,24 +20,33 @@ interface NewPatientDialogProps {
 
 const NewPatientDialog = ({ open, onOpenChange, onCreated }: NewPatientDialogProps) => {
   const { toast } = useToast();
+  const { availableClinics } = useClinicFilter();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    birthDate: "",
-    gender: "",
-    address: "",
-    bloodType: "",
-    allergies: "",
-    conditions: "",
+    firstName: "", lastName: "", email: "", phone: "", birthDate: "",
+    gender: "", address: "", bloodType: "", allergies: "", conditions: "",
+    documentNumber: "",
   });
+  const [isPrivate, setIsPrivate] = useState(true);
+  const [clinicIds, setClinicIds] = useState<string[]>([]);
 
   const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
+  const toggleClinic = (id: string) =>
+    setClinicIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const reset = () => {
+    setForm({ firstName: "", lastName: "", email: "", phone: "", birthDate: "", gender: "", address: "", bloodType: "", allergies: "", conditions: "", documentNumber: "" });
+    setIsPrivate(true);
+    setClinicIds([]);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isPrivate && clinicIds.length === 0) {
+      toast({ title: "Asignación requerida", description: "Asociá al paciente a tu ámbito privado o a al menos una clínica.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
 
     const newPatient: Patient = {
@@ -45,6 +56,8 @@ const NewPatientDialog = ({ open, onOpenChange, onCreated }: NewPatientDialogPro
       lastVisit: new Date().toISOString(),
       totalVisits: 0,
       status: "activo",
+      clinicIds,
+      isPrivate,
     };
 
     setTimeout(() => {
@@ -52,7 +65,7 @@ const NewPatientDialog = ({ open, onOpenChange, onCreated }: NewPatientDialogPro
       toast({ title: "Paciente creado", description: `${form.firstName} ${form.lastName} se ha registrado exitosamente.` });
       onCreated?.(newPatient);
       onOpenChange(false);
-      setForm({ firstName: "", lastName: "", email: "", phone: "", birthDate: "", gender: "", address: "", bloodType: "", allergies: "", conditions: "" });
+      reset();
     }, 500);
   };
 
@@ -86,9 +99,15 @@ const NewPatientDialog = ({ open, onOpenChange, onCreated }: NewPatientDialogPro
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
+              <Label>DNI / Documento</Label>
+              <Input value={form.documentNumber} onChange={e => update("documentNumber", e.target.value)} placeholder="30123456" />
+            </div>
+            <div className="space-y-2">
               <Label>Fecha de nacimiento *</Label>
               <Input required type="date" value={form.birthDate} onChange={e => update("birthDate", e.target.value)} />
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Género *</Label>
               <Select value={form.gender} onValueChange={v => update("gender", v)}>
@@ -100,12 +119,6 @@ const NewPatientDialog = ({ open, onOpenChange, onCreated }: NewPatientDialogPro
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Dirección</Label>
-            <Input value={form.address} onChange={e => update("address", e.target.value)} placeholder="Calle, colonia, ciudad" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Tipo de sangre</Label>
               <Select value={form.bloodType} onValueChange={v => update("bloodType", v)}>
@@ -119,6 +132,10 @@ const NewPatientDialog = ({ open, onOpenChange, onCreated }: NewPatientDialogPro
             </div>
           </div>
           <div className="space-y-2">
+            <Label>Dirección</Label>
+            <Input value={form.address} onChange={e => update("address", e.target.value)} placeholder="Calle, colonia, ciudad" />
+          </div>
+          <div className="space-y-2">
             <Label>Alergias</Label>
             <Textarea value={form.allergies} onChange={e => update("allergies", e.target.value)} placeholder="Penicilina, sulfas..." rows={2} />
           </div>
@@ -126,6 +143,28 @@ const NewPatientDialog = ({ open, onOpenChange, onCreated }: NewPatientDialogPro
             <Label>Condiciones preexistentes</Label>
             <Textarea value={form.conditions} onChange={e => update("conditions", e.target.value)} placeholder="Hipertensión, diabetes..." rows={2} />
           </div>
+
+          <div className="space-y-2 pt-2 border-t border-border">
+            <Label className="text-sm">Asociación</Label>
+            <p className="text-xs text-muted-foreground">Elegí en qué ámbitos vas a registrar a este paciente.</p>
+            <div className="space-y-2 mt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox checked={isPrivate} onCheckedChange={(v) => setIsPrivate(!!v)} />
+                <span className="text-sm">Paciente privado (solo yo lo veo)</span>
+              </label>
+              {availableClinics.map(c => (
+                <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox checked={clinicIds.includes(c.id)} onCheckedChange={() => toggleClinic(c.id)} />
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: `hsl(${c.color})` }}
+                  />
+                  <span className="text-sm">{c.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Crear paciente"}</Button>

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { patientsApi } from "@/services/api";
+import { useClinicFilter } from "@/contexts/ClinicFilterContext";
 import type { Patient, Appointment } from "@/services/api/types";
 
 interface NewAppointmentDialogProps {
@@ -32,6 +33,7 @@ const appointmentTypes = [
 
 const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: NewAppointmentDialogProps) => {
   const { toast } = useToast();
+  const { availableClinics } = useClinicFilter();
   const [saving, setSaving] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [form, setForm] = useState({
@@ -40,6 +42,7 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
     time: "",
     type: "",
     reason: "",
+    clinicId: "private",
   });
 
   useEffect(() => {
@@ -65,6 +68,7 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
     setSaving(true);
 
     const patient = patients.find(p => p.id === form.patientId);
+    const clinic = availableClinics.find(c => c.id === form.clinicId);
     const newAppt: Appointment = {
       id: `apt-${Date.now()}`,
       patientId: form.patientId,
@@ -72,7 +76,8 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
       professionalId: "1",
       professionalName: "Dra. María García",
       locationId: "1",
-      locationName: "Consultorio Centro",
+      locationName: clinic?.name ?? "Consultorio privado",
+      clinicId: form.clinicId === "private" ? null : form.clinicId,
       date: form.date,
       time: form.time,
       endTime: getEndTime(),
@@ -86,7 +91,7 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
       toast({ title: "Cita agendada", description: `Cita de ${newAppt.patientName} el ${form.date} a las ${form.time}.` });
       onCreated?.(newAppt);
       onOpenChange(false);
-      setForm({ patientId: "", date: defaultDate || new Date().toISOString().split("T")[0], time: "", type: "", reason: "" });
+      setForm({ patientId: "", date: defaultDate || new Date().toISOString().split("T")[0], time: "", type: "", reason: "", clinicId: "private" });
     }, 500);
   };
 
@@ -105,6 +110,18 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
               <SelectContent>
                 {patients.map(p => (
                   <SelectItem key={p.id} value={p.id}>{p.firstName} {p.lastName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Ámbito *</Label>
+            <Select value={form.clinicId} onValueChange={v => update("clinicId", v)}>
+              <SelectTrigger><SelectValue placeholder="Seleccionar ámbito" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="private">Privado</SelectItem>
+                {availableClinics.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
