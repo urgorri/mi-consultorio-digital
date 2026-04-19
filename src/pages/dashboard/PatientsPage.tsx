@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,15 @@ import { Link } from "react-router-dom";
 import { patientsApi } from "@/services/api";
 import type { Patient } from "@/services/api";
 import NewPatientDialog from "@/components/dialogs/NewPatientDialog";
+import { PatientScopeBadges } from "@/components/dashboard/ClinicBadge";
+import { useClinicFilter } from "@/contexts/ClinicFilterContext";
 
 const PatientsPage = () => {
   const [search, setSearch] = useState("");
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [newOpen, setNewOpen] = useState(false);
+  const { matchesFilter } = useClinicFilter();
 
   useEffect(() => {
     patientsApi.list({ search: search || undefined }).then(res => {
@@ -20,6 +23,11 @@ const PatientsPage = () => {
       setLoading(false);
     });
   }, [search]);
+
+  const visiblePatients = useMemo(
+    () => patients.filter(p => matchesFilter({ clinicIds: p.clinicIds, isPrivate: p.isPrivate })),
+    [patients, matchesFilter]
+  );
 
   return (
     <DashboardLayout>
