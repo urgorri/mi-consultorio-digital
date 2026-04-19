@@ -35,7 +35,7 @@ const PatientsPage = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Pacientes</h1>
-            <p className="text-sm text-muted-foreground">{patients.length} pacientes registrados</p>
+            <p className="text-sm text-muted-foreground">{visiblePatients.length} de {patients.length} pacientes</p>
           </div>
           <Button size="sm" className="gap-1" onClick={() => setNewOpen(true)}>
             <Plus className="w-4 h-4" /> Nuevo paciente
