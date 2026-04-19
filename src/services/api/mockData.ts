@@ -1,8 +1,14 @@
 import type {
   Patient, Appointment, Consultation, Diagnosis, Notification,
   DashboardStats, ReportMetrics, AuditLog, SystemHealth,
-  User, Location, AppointmentType, Schedule, Professional,
+  User, Location, AppointmentType, Schedule, Professional, Clinic,
 } from "./types";
+
+export const mockClinics: Clinic[] = [
+  { id: "clinic-1", name: "Clínica San Rafael", shortName: "San Rafael", color: "210 70% 35%", address: "Av. Reforma 100, CDMX" },
+  { id: "clinic-2", name: "Centro Médico Polanco", shortName: "Polanco", color: "175 55% 38%", address: "Polanco V Sec, CDMX" },
+  { id: "clinic-3", name: "Clínica Norte", shortName: "Norte", color: "32 85% 50%", address: "Lindavista, CDMX" },
+];
 
 export const mockProfessional: Professional = {
   id: "prof-1",
@@ -16,6 +22,11 @@ export const mockProfessional: Professional = {
   specialty: "Medicina General",
   licenseNumber: "12345678",
   codingConfig: { cie10: true, cie11: false, snomedCt: false },
+  clinicMemberships: [
+    { clinicId: "clinic-1", role: "admin" },
+    { clinicId: "clinic-2", role: "staff" },
+    { clinicId: "clinic-3", role: "staff" },
+  ],
   locations: [
     { id: "loc-1", name: "Consultorio Centro", address: "Av. Reforma 123, Col. Centro, CDMX", phone: "+52 55 1234 0001", active: true },
     { id: "loc-2", name: "Consultorio Norte", address: "Blvd. Ávila Camacho 456, Polanco, CDMX", phone: "+52 55 1234 0002", active: true },
