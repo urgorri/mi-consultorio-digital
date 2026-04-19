@@ -62,19 +62,24 @@ const PatientsPage = () => {
             <span></span>
           </div>
           <div className="divide-y divide-border">
-            {patients.map((patient) => (
+            {visiblePatients.map((patient) => (
               <Link
                 key={patient.id}
                 to={`/dashboard/pacientes/${patient.id}`}
                 className="flex flex-col md:grid md:grid-cols-[1fr_1fr_1fr_100px_80px_40px] gap-2 md:gap-4 px-5 py-4 hover:bg-accent/30 transition-colors items-center"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center shrink-0">
                     <User className="w-4 h-4 text-primary" />
                   </div>
-                  <span className="font-medium text-foreground">{patient.firstName} {patient.lastName}</span>
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground truncate">{patient.firstName} {patient.lastName}</p>
+                    <div className="mt-1">
+                      <PatientScopeBadges clinicIds={patient.clinicIds} isPrivate={patient.isPrivate} />
+                    </div>
+                  </div>
                 </div>
-                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                <span className="text-sm text-muted-foreground flex items-center gap-1 truncate">
                   <Mail className="w-3 h-3 md:hidden" /> {patient.email}
                 </span>
                 <span className="text-sm text-muted-foreground flex items-center gap-1">
@@ -90,11 +95,11 @@ const PatientsPage = () => {
           </div>
         </div>
 
-        {patients.length === 0 && !loading && (
+        {visiblePatients.length === 0 && !loading && (
           <div className="text-center py-12">
             <User className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
             <p className="text-muted-foreground">No se encontraron pacientes</p>
-            <p className="text-sm text-muted-foreground">Intenta con otro término de búsqueda</p>
+            <p className="text-sm text-muted-foreground">Probá ajustar el filtro de ámbito o el término de búsqueda</p>
           </div>
         )}
       </div>
