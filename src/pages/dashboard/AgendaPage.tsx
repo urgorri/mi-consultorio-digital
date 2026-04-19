@@ -257,7 +257,7 @@ const AgendaPage = () => {
         open={newOpen}
         onOpenChange={setNewOpen}
         defaultDate={formatDate(currentDate)}
-        onCreated={(apt) => setAppointments(prev => [...prev, apt])}
+        onCreated={(apt) => setAllAppointments(prev => [...prev, apt])}
       />
 
       <AppointmentDetailDialog
