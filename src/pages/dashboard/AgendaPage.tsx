@@ -145,13 +145,16 @@ const AgendaPage = () => {
                           onClick={() => openApptDetail(apt)}
                           className={`p-3 rounded-lg border ${statusColors[apt.status]} cursor-pointer hover:opacity-90 transition-opacity`}
                         >
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium">{apt.patientName}</p>
-                            <span className="text-xs">{apt.type}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-medium truncate">{apt.patientName}</p>
+                            <span className="text-xs shrink-0">{apt.type}</span>
                           </div>
-                          <p className="text-xs mt-1 flex items-center gap-1 opacity-70">
-                            <Clock className="w-3 h-3" /> {apt.time} - {apt.endTime}
-                          </p>
+                          <div className="mt-1 flex items-center gap-2 flex-wrap">
+                            <span className="text-xs flex items-center gap-1 opacity-70">
+                              <Clock className="w-3 h-3" /> {apt.time} - {apt.endTime}
+                            </span>
+                            <ClinicBadge clinicId={apt.clinicId} isPrivate={apt.clinicId === null} />
+                          </div>
                         </div>
                       ))}
                     </div>
