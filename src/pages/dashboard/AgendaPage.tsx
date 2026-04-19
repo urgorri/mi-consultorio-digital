@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Clock } from "lucide-react";
@@ -6,6 +6,8 @@ import { appointmentsApi } from "@/services/api";
 import type { Appointment } from "@/services/api";
 import NewAppointmentDialog from "@/components/dialogs/NewAppointmentDialog";
 import AppointmentDetailDialog from "@/components/dialogs/AppointmentDetailDialog";
+import ClinicBadge from "@/components/dashboard/ClinicBadge";
+import { useClinicFilter } from "@/contexts/ClinicFilterContext";
 
 type ViewType = "dia" | "semana" | "mes";
 
@@ -22,14 +24,20 @@ const statusColors: Record<string, string> = {
 const AgendaPage = () => {
   const [view, setView] = useState<ViewType>("dia");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
   const [newOpen, setNewOpen] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const { matchesFilter } = useClinicFilter();
 
   useEffect(() => {
-    appointmentsApi.list().then(res => setAppointments(res.data));
+    appointmentsApi.list().then(res => setAllAppointments(res.data));
   }, []);
+
+  const appointments = useMemo(
+    () => allAppointments.filter(a => matchesFilter({ clinicId: a.clinicId })),
+    [allAppointments, matchesFilter]
+  );
 
   const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
@@ -78,7 +86,7 @@ const AgendaPage = () => {
   };
 
   const handleStatusChange = (id: string, status: Appointment["status"]) => {
-    setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    setAllAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
   };
 
   return (
