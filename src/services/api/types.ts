@@ -29,6 +29,23 @@ export interface Professional extends User {
   licenseNumber: string;
   locations: Location[];
   codingConfig: ProfessionalCodingConfig;
+  clinicMemberships: ProfessionalClinicMembership[];
+}
+
+export type ClinicRole = "admin" | "staff";
+
+export interface Clinic {
+  id: string;
+  name: string;
+  shortName: string;
+  /** HSL color token for badges, e.g. "210 70% 35%" */
+  color: string;
+  address?: string;
+}
+
+export interface ProfessionalClinicMembership {
+  clinicId: string;
+  role: ClinicRole;
 }
 
 export interface Patient {
@@ -47,6 +64,12 @@ export interface Patient {
   lastVisit: string;
   totalVisits: number;
   status: "activo" | "inactivo";
+  /** Document number (DNI/ID). NOT unique — multiple records may share this. */
+  documentNumber?: string;
+  /** Clinics this patient is associated with. Empty = private only. */
+  clinicIds: string[];
+  /** Whether this patient also belongs to the professional's private scope. */
+  isPrivate: boolean;
 }
 
 export interface Appointment {
@@ -57,6 +80,8 @@ export interface Appointment {
   professionalName: string;
   locationId: string;
   locationName: string;
+  /** Clinic this appointment belongs to. null = private appointment. */
+  clinicId: string | null;
   date: string;
   time: string;
   endTime: string;
