@@ -137,18 +137,24 @@ export const consultationsApi = {
 };
 
 // ===== DIAGNOSES =====
+const DIAGNOSES_RESULT_LIMIT = 20;
+
 export const diagnosesApi = {
-  async search(query: string, codingSystems?: string[]) {
+  async search(query: string, codingSystems?: string[], limit = DIAGNOSES_RESULT_LIMIT) {
     await delay(200);
-    let results = [...mockDiagnoses];
+    const q = (query || "").trim().toLowerCase();
+    if (q.length < 2) {
+      return { ...success<Diagnosis[]>([]), total: 0, limit, truncated: false };
+    }
+    let results = mockDiagnoses.filter(d =>
+      d.code.toLowerCase().includes(q) || d.name.toLowerCase().includes(q)
+    );
     if (codingSystems && codingSystems.length > 0) {
       results = results.filter(d => codingSystems.includes(d.codingSystem));
     }
-    if (!query) return success(results);
-    const q = query.toLowerCase();
-    return success(results.filter(d =>
-      d.code.toLowerCase().includes(q) || d.name.toLowerCase().includes(q)
-    ));
+    const total = results.length;
+    const truncated = total > limit;
+    return { ...success(results.slice(0, limit)), total, limit, truncated };
   },
 };
 
