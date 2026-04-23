@@ -17,6 +17,7 @@ import PatientsPage from "./pages/dashboard/PatientsPage";
 import PatientDetailPage from "./pages/dashboard/PatientDetailPage";
 import NewConsultationPage from "./pages/dashboard/NewConsultationPage";
 import ConsultationDetailPage from "./pages/dashboard/ConsultationDetailPage";
+import ConsultationsListPage from "./pages/dashboard/ConsultationsListPage";
 import DiagnosesPage from "./pages/dashboard/DiagnosesPage";
 import ReportsPage from "./pages/dashboard/ReportsPage";
 import NotificationsPage from "./pages/dashboard/NotificationsPage";
@@ -55,7 +56,7 @@ const App = () => (
               <Route path="/dashboard/agenda" element={<ProtectedRoute allowedRoles={["profesional"]}><AgendaPage /></ProtectedRoute>} />
               <Route path="/dashboard/pacientes" element={<ProtectedRoute allowedRoles={["profesional"]}><PatientsPage /></ProtectedRoute>} />
               <Route path="/dashboard/pacientes/:id" element={<ProtectedRoute allowedRoles={["profesional"]}><PatientDetailPage /></ProtectedRoute>} />
-              <Route path="/dashboard/consultas" element={<ProtectedRoute allowedRoles={["profesional"]}><NewConsultationPage /></ProtectedRoute>} />
+              <Route path="/dashboard/consultas" element={<ProtectedRoute allowedRoles={["profesional"]}><ConsultationsListPage /></ProtectedRoute>} />
               <Route path="/dashboard/consultas/nueva" element={<ProtectedRoute allowedRoles={["profesional"]}><NewConsultationPage /></ProtectedRoute>} />
               <Route path="/dashboard/consultas/:id" element={<ProtectedRoute allowedRoles={["profesional"]}><ConsultationDetailPage /></ProtectedRoute>} />
               <Route path="/dashboard/diagnosticos" element={<ProtectedRoute allowedRoles={["profesional"]}><DiagnosesPage /></ProtectedRoute>} />

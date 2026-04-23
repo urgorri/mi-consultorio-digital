@@ -63,7 +63,7 @@ export const mockAppointments: Appointment[] = [
 
 export const mockConsultations: Consultation[] = [
   {
-    id: "con-1", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1",
+    id: "con-1", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: "clinic-1",
     date: "2026-04-05", reason: "Control de presión arterial",
     anamnesis: "Paciente refiere sentirse bien, sin cefalea ni mareos. Toma losartán 50mg diariamente.",
     physicalExam: "Paciente consciente, orientada, bien hidratada. Ruidos cardíacos rítmicos.",
@@ -74,7 +74,7 @@ export const mockConsultations: Consultation[] = [
     notes: "Paciente estable. Se mantiene medicación actual."
   },
   {
-    id: "con-2", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1",
+    id: "con-2", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: null,
     date: "2026-03-20", reason: "Revisión de laboratorios",
     anamnesis: "Paciente acude con resultados de laboratorio solicitados en consulta previa.",
     physicalExam: "Sin hallazgos relevantes. Paciente en buen estado general.",
@@ -84,7 +84,7 @@ export const mockConsultations: Consultation[] = [
     followUp: "Se agenda seguimiento en 2 semanas para control de presión.",
   },
   {
-    id: "con-3", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1",
+    id: "con-3", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: "clinic-2",
     date: "2026-04-03", reason: "Control de glucosa",
     anamnesis: "Paciente con diabetes tipo 2 diagnosticada hace 3 años. Refiere buena adherencia a metformina.",
     physicalExam: "IMC 28.5. Piel sin lesiones. Sensibilidad conservada en extremidades.",
@@ -94,7 +94,7 @@ export const mockConsultations: Consultation[] = [
     followUp: "Hemoglobina glucosilada en 3 meses. Control en 6 semanas.",
   },
   {
-    id: "con-4", patientId: "p-4", patientName: "Miguel Torres", professionalId: "prof-1",
+    id: "con-4", patientId: "p-4", patientName: "Miguel Torres", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: "clinic-2",
     date: "2026-03-28", reason: "Crisis asmática leve",
     anamnesis: "Paciente refiere episodio de disnea y sibilancias desde hace 2 días, posiblemente por cambio climático.",
     physicalExam: "Sibilancias espiratorias bilaterales leves. Saturación O2 96%. FR 20.",
@@ -102,6 +102,19 @@ export const mockConsultations: Consultation[] = [
     diagnoses: [{ code: "J45.0", name: "Asma predominantemente alérgica", codingSystem: "CIE-10" }],
     treatment: "Salbutamol inhalado PRN. Budesonida inhalada 200mcg c/12h por 2 semanas.",
     followUp: "Reevaluar en 2 semanas. Si empeora, acudir a urgencias.",
+  },
+  {
+    id: "con-5", patientId: "p-6", patientName: "Carlos Ruiz", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: "clinic-3",
+    date: "2026-03-15", reason: "Control de colesterol y presión",
+    anamnesis: "Paciente con hipercolesterolemia e hipertensión. Refiere dieta irregular las últimas semanas.",
+    physicalExam: "Paciente con sobrepeso. Auscultación cardiopulmonar normal.",
+    vitalSigns: { bloodPressure: "140/90 mmHg", heartRate: "78 bpm", temperature: "36.5 °C", weight: "88 kg" },
+    diagnoses: [
+      { code: "I10", name: "Hipertensión esencial (primaria)", codingSystem: "CIE-10" },
+      { code: "E78.0", name: "Hipercolesterolemia pura", codingSystem: "CIE-10" },
+    ],
+    treatment: "Atorvastatina 20mg nocturno. Losartán 50mg c/24h. Dieta hipolipemiante estricta.",
+    followUp: "Perfil lipídico en 8 semanas. Control en 4 semanas.",
   },
 ];
 
