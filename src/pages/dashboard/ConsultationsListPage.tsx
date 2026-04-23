@@ -2,38 +2,48 @@ import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowDown, ArrowUp, ArrowUpDown, Calendar as CalendarIcon, ClipboardList, Edit, Eye, Plus, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Calendar as CalendarIcon, ClipboardList, Edit, Eye, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { consultationsApi, patientsApi } from "@/services/api";
 import type { Consultation, Patient } from "@/services/api";
 import ClinicBadge from "@/components/dashboard/ClinicBadge";
-import { useClinicFilter } from "@/contexts/ClinicFilterContext";
+import { useClinicFilter, PRIVATE_SCOPE } from "@/contexts/ClinicFilterContext";
 import { useToast } from "@/hooks/use-toast";
+import FilterDialog from "@/components/dashboard/FilterDialog";
 
 type SortKey = "date" | "patient";
 type SortDir = "asc" | "desc";
 const PAGE_SIZE = 10;
 
+interface ConsultaFilters {
+  from: Date | undefined;
+  to: Date | undefined;
+  patientId: string;       // "all" or id
+  scope: string;           // "all" | PRIVATE_SCOPE | clinicId
+  professionalId: string;  // "all" or id
+}
+
+const DEFAULT_FILTERS: ConsultaFilters = {
+  from: undefined, to: undefined, patientId: "all", scope: "all", professionalId: "all",
+};
+
 const ConsultationsListPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { matchesFilter } = useClinicFilter();
+  const { matchesFilter, availableClinics } = useClinicFilter();
 
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [from, setFrom] = useState<Date | undefined>();
-  const [to, setTo] = useState<Date | undefined>();
-  const [patientId, setPatientId] = useState<string>("all");
+  const [filters, setFilters] = useState<ConsultaFilters>(DEFAULT_FILTERS);
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(1);
@@ -47,13 +57,28 @@ const ConsultationsListPage = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Derive available professionals from consultations data.
+  const professionals = useMemo(() => {
+    const map = new Map<string, string>();
+    consultations.forEach(c => map.set(c.professionalId, c.professionalName));
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [consultations]);
+
   const filtered = useMemo(() => {
     let list = consultations.filter(c =>
       matchesFilter({ clinicId: c.clinicId, isPrivate: c.clinicId === null })
     );
-    if (from) list = list.filter(c => new Date(c.date) >= from);
-    if (to) list = list.filter(c => new Date(c.date) <= to);
-    if (patientId !== "all") list = list.filter(c => c.patientId === patientId);
+    if (filters.from) list = list.filter(c => new Date(c.date) >= filters.from!);
+    if (filters.to) list = list.filter(c => new Date(c.date) <= filters.to!);
+    if (filters.patientId !== "all") list = list.filter(c => c.patientId === filters.patientId);
+    if (filters.scope !== "all") {
+      list = list.filter(c =>
+        filters.scope === PRIVATE_SCOPE ? c.clinicId === null : c.clinicId === filters.scope
+      );
+    }
+    if (filters.professionalId !== "all") {
+      list = list.filter(c => c.professionalId === filters.professionalId);
+    }
     list.sort((a, b) => {
       let cmp = 0;
       if (sortKey === "date") cmp = new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -61,12 +86,12 @@ const ConsultationsListPage = () => {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return list;
-  }, [consultations, from, to, patientId, sortKey, sortDir, matchesFilter]);
+  }, [consultations, filters, sortKey, sortDir, matchesFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  useEffect(() => { setPage(1); }, [from, to, patientId]);
+  useEffect(() => { setPage(1); }, [filters]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -75,19 +100,26 @@ const ConsultationsListPage = () => {
 
   const sortIcon = (key: SortKey) => {
     if (sortKey !== key) return <ArrowUpDown className="w-3.5 h-3.5 opacity-40" />;
-    return sortDir === "asc" ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />;
+    return sortDir === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-primary" /> : <ArrowDown className="w-3.5 h-3.5 text-primary" />;
   };
 
-  const clearFilters = () => {
-    setFrom(undefined); setTo(undefined); setPatientId("all");
-  };
+  const sortHeaderClass = (key: SortKey) =>
+    cn("inline-flex items-center gap-1 hover:text-foreground transition-colors", sortKey === key && "text-foreground font-semibold");
 
   const handleDelete = (id: string) => {
     setConsultations(prev => prev.filter(c => c.id !== id));
     toast({ title: "Consulta eliminada", description: "La consulta se eliminó correctamente." });
   };
 
-  const hasFilters = from || to || patientId !== "all";
+  const activeCount = useMemo(() => {
+    let n = 0;
+    if (filters.from) n++;
+    if (filters.to) n++;
+    if (filters.patientId !== "all") n++;
+    if (filters.scope !== "all") n++;
+    if (filters.professionalId !== "all") n++;
+    return n;
+  }, [filters]);
 
   return (
     <DashboardLayout>
@@ -99,58 +131,97 @@ const ConsultationsListPage = () => {
           </div>
         </div>
 
-        {/* Filter bar */}
-        <div className="bg-card rounded-xl border border-border p-4 flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Desde</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-[160px] justify-start font-normal", !from && "text-muted-foreground")}>
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {from ? format(from, "dd MMM yyyy", { locale: es }) : "Cualquiera"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={from} onSelect={setFrom} initialFocus className="p-3 pointer-events-auto" />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Hasta</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-[160px] justify-start font-normal", !to && "text-muted-foreground")}>
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {to ? format(to, "dd MMM yyyy", { locale: es }) : "Cualquiera"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={to} onSelect={setTo} initialFocus className="p-3 pointer-events-auto" />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="flex flex-col gap-1.5 min-w-[220px]">
-            <label className="text-xs font-medium text-muted-foreground">Paciente</label>
-            <Select value={patientId} onValueChange={setPatientId}>
-              <SelectTrigger><SelectValue placeholder="Todos los pacientes" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los pacientes</SelectItem>
-                {patients.map(p => (
-                  <SelectItem key={p.id} value={p.id}>{p.firstName} {p.lastName}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
-              <X className="w-4 h-4" /> Limpiar
-            </Button>
-          )}
-          <div className="ml-auto">
-            <Button onClick={() => navigate("/dashboard/consultas/nueva")} className="gap-1">
-              <Plus className="w-4 h-4" /> Nueva consulta
-            </Button>
-          </div>
+        {/* Toolbar */}
+        <div className="flex items-center justify-between gap-3">
+          <FilterDialog<ConsultaFilters>
+            value={filters}
+            defaultValue={DEFAULT_FILTERS}
+            onApply={setFilters}
+            activeCount={activeCount}
+            title="Filtros de consultas"
+            description="Filtrá las consultas por fecha, paciente, ámbito o profesional."
+          >
+            {(draft, setDraft) => (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Desde</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("justify-start font-normal", !draft.from && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {draft.from ? format(draft.from, "dd MMM yyyy", { locale: es }) : "Cualquiera"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={draft.from} onSelect={(d) => setDraft({ ...draft, from: d })} initialFocus className="p-3 pointer-events-auto" />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Hasta</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("justify-start font-normal", !draft.to && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {draft.to ? format(draft.to, "dd MMM yyyy", { locale: es }) : "Cualquiera"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={draft.to} onSelect={(d) => setDraft({ ...draft, to: d })} initialFocus className="p-3 pointer-events-auto" />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Paciente</label>
+                  <Select value={draft.patientId} onValueChange={(v) => setDraft({ ...draft, patientId: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los pacientes</SelectItem>
+                      {patients.map(p => (
+                        <SelectItem key={p.id} value={p.id}>{p.firstName} {p.lastName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Ámbito</label>
+                  <Select value={draft.scope} onValueChange={(v) => setDraft({ ...draft, scope: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los ámbitos</SelectItem>
+                      <SelectItem value={PRIVATE_SCOPE}>Privado</SelectItem>
+                      {availableClinics.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {professionals.length > 1 && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Profesional</label>
+                    <Select value={draft.professionalId} onValueChange={(v) => setDraft({ ...draft, professionalId: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos los profesionales</SelectItem>
+                        {professionals.map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </>
+            )}
+          </FilterDialog>
+
+          <Button onClick={() => navigate("/dashboard/consultas/nueva")} className="gap-1">
+            <Plus className="w-4 h-4" /> Nueva consulta
+          </Button>
         </div>
 
         {/* Table or empty state */}
@@ -174,12 +245,12 @@ const ConsultationsListPage = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>
-                      <button onClick={() => toggleSort("date")} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                      <button onClick={() => toggleSort("date")} className={sortHeaderClass("date")}>
                         Fecha {sortIcon("date")}
                       </button>
                     </TableHead>
                     <TableHead>
-                      <button onClick={() => toggleSort("patient")} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                      <button onClick={() => toggleSort("patient")} className={sortHeaderClass("patient")}>
                         Paciente {sortIcon("patient")}
                       </button>
                     </TableHead>
