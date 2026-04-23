@@ -4,7 +4,8 @@ import { useParams, Link } from "react-router-dom";
 import { consultationsApi } from "@/services/api";
 import type { Consultation } from "@/services/api";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, FileText } from "lucide-react";
+import { ArrowLeft, Edit, FileText, ChevronLeft } from "lucide-react";
+import ClinicBadge from "@/components/dashboard/ClinicBadge";
 
 const ConsultationDetailPage = () => {
   const { id } = useParams();
