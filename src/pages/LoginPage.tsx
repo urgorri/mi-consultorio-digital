@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,9 +18,8 @@ const LoginPage = () => {
 
   // If already logged in, redirect
   if (user) {
-    const redirectMap = { profesional: "/dashboard", paciente: "/portal", admin: "/admin" };
-    navigate(redirectMap[user.role], { replace: true });
-    return null;
+    const redirectMap = { profesional: "/dashboard", paciente: "/portal", admin: "/admin" } as const;
+    return <Navigate to={redirectMap[user.role]} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
