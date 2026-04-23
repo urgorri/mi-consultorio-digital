@@ -96,6 +96,9 @@ export interface Consultation {
   patientId: string;
   patientName: string;
   professionalId: string;
+  professionalName: string;
+  /** Clinic this consultation belongs to. null = private. */
+  clinicId: string | null;
   date: string;
   reason: string;
   anamnesis: string;
