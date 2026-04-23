@@ -2,20 +2,52 @@ import { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, User, Phone, Mail, ChevronRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Plus, User, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { patientsApi } from "@/services/api";
 import type { Patient } from "@/services/api";
 import NewPatientDialog from "@/components/dialogs/NewPatientDialog";
 import { PatientScopeBadges } from "@/components/dashboard/ClinicBadge";
-import { useClinicFilter } from "@/contexts/ClinicFilterContext";
+import { useClinicFilter, PRIVATE_SCOPE } from "@/contexts/ClinicFilterContext";
+import FilterDialog from "@/components/dashboard/FilterDialog";
+import { cn } from "@/lib/utils";
+
+type SortKey = "name" | "createdAt" | "lastVisit" | "scope";
+type SortDir = "asc" | "desc";
+
+interface PatientFilters {
+  scope: string;          // "all" | PRIVATE_SCOPE | clinicId
+  gender: string;         // "all" | "Femenino" | "Masculino" | "Otro"
+  ageFrom: string;        // numeric string
+  ageTo: string;
+  hasConsultations: string; // "all" | "yes" | "no"
+  professionalId: string;   // "all" | id (placeholder until model supports owner)
+}
+
+const DEFAULT_FILTERS: PatientFilters = {
+  scope: "all", gender: "all", ageFrom: "", ageTo: "",
+  hasConsultations: "all", professionalId: "all",
+};
+
+const calcAge = (birthDate: string) => {
+  const b = new Date(birthDate);
+  const now = new Date();
+  let age = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+  return age;
+};
 
 const PatientsPage = () => {
   const [search, setSearch] = useState("");
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [newOpen, setNewOpen] = useState(false);
-  const { matchesFilter } = useClinicFilter();
+  const [filters, setFilters] = useState<PatientFilters>(DEFAULT_FILTERS);
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const { matchesFilter, availableClinics, getClinic } = useClinicFilter();
 
   useEffect(() => {
     patientsApi.list({ search: search || undefined }).then(res => {
@@ -24,10 +56,81 @@ const PatientsPage = () => {
     });
   }, [search]);
 
-  const visiblePatients = useMemo(
-    () => patients.filter(p => matchesFilter({ clinicIds: p.clinicIds, isPrivate: p.isPrivate })),
-    [patients, matchesFilter]
-  );
+  const visiblePatients = useMemo(() => {
+    let list = patients.filter(p => matchesFilter({ clinicIds: p.clinicIds, isPrivate: p.isPrivate }));
+
+    // Apply dialog filters
+    if (filters.scope !== "all") {
+      list = list.filter(p =>
+        filters.scope === PRIVATE_SCOPE ? p.isPrivate : p.clinicIds.includes(filters.scope)
+      );
+    }
+    if (filters.gender !== "all") list = list.filter(p => p.gender === filters.gender);
+    const ageFrom = filters.ageFrom ? parseInt(filters.ageFrom, 10) : null;
+    const ageTo = filters.ageTo ? parseInt(filters.ageTo, 10) : null;
+    if (ageFrom !== null) list = list.filter(p => calcAge(p.birthDate) >= ageFrom);
+    if (ageTo !== null) list = list.filter(p => calcAge(p.birthDate) <= ageTo);
+    if (filters.hasConsultations === "yes") list = list.filter(p => p.totalVisits > 0);
+    if (filters.hasConsultations === "no") list = list.filter(p => p.totalVisits === 0);
+    // professionalId: not modeled yet, leaves a no-op hook for future backend.
+
+    // Sort
+    const sorted = [...list].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case "name":
+          cmp = `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+          break;
+        case "createdAt":
+          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case "lastVisit":
+          cmp = new Date(a.lastVisit).getTime() - new Date(b.lastVisit).getTime();
+          break;
+        case "scope": {
+          const aLabel = a.isPrivate ? "Privado" : (getClinic(a.clinicIds[0])?.name ?? "");
+          const bLabel = b.isPrivate ? "Privado" : (getClinic(b.clinicIds[0])?.name ?? "");
+          cmp = aLabel.localeCompare(bLabel);
+          break;
+        }
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return sorted;
+  }, [patients, filters, matchesFilter, sortKey, sortDir, getClinic]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else {
+      setSortKey(key);
+      // Sensible default: name asc, others desc (newest/most recent first).
+      setSortDir(key === "name" ? "asc" : "desc");
+    }
+  };
+
+  const sortIcon = (key: SortKey) => {
+    if (sortKey !== key) return <ArrowUpDown className="w-3 h-3 opacity-40" />;
+    return sortDir === "asc"
+      ? <ArrowUp className="w-3 h-3 text-primary" />
+      : <ArrowDown className="w-3 h-3 text-primary" />;
+  };
+
+  const sortHeaderClass = (key: SortKey) =>
+    cn(
+      "inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wider hover:text-foreground transition-colors",
+      sortKey === key ? "text-foreground font-semibold" : "text-muted-foreground"
+    );
+
+  const activeCount = useMemo(() => {
+    let n = 0;
+    if (filters.scope !== "all") n++;
+    if (filters.gender !== "all") n++;
+    if (filters.ageFrom) n++;
+    if (filters.ageTo) n++;
+    if (filters.hasConsultations !== "all") n++;
+    if (filters.professionalId !== "all") n++;
+    return n;
+  }, [filters]);
 
   return (
     <DashboardLayout>
@@ -42,54 +145,132 @@ const PatientsPage = () => {
           </Button>
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre, correo o teléfono..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
+        {/* Toolbar: search + filters */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre, correo o teléfono..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <FilterDialog<PatientFilters>
+            value={filters}
+            defaultValue={DEFAULT_FILTERS}
+            onApply={setFilters}
+            activeCount={activeCount}
+            title="Filtros de pacientes"
+            description="Refiná por ámbito, género, edad, consultas o profesional."
+          >
+            {(draft, setDraft) => (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Ámbito</label>
+                  <Select value={draft.scope} onValueChange={(v) => setDraft({ ...draft, scope: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los ámbitos</SelectItem>
+                      <SelectItem value={PRIVATE_SCOPE}>Privado</SelectItem>
+                      {availableClinics.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Género</label>
+                  <Select value={draft.gender} onValueChange={(v) => setDraft({ ...draft, gender: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="Femenino">Femenino</SelectItem>
+                      <SelectItem value="Masculino">Masculino</SelectItem>
+                      <SelectItem value="Otro">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Edad desde</label>
+                    <Input
+                      type="number" min={0} max={120} placeholder="0"
+                      value={draft.ageFrom}
+                      onChange={(e) => setDraft({ ...draft, ageFrom: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Edad hasta</label>
+                    <Input
+                      type="number" min={0} max={120} placeholder="120"
+                      value={draft.ageTo}
+                      onChange={(e) => setDraft({ ...draft, ageTo: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Consultas</label>
+                  <Select value={draft.hasConsultations} onValueChange={(v) => setDraft({ ...draft, hasConsultations: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="yes">Con consultas</SelectItem>
+                      <SelectItem value="no">Sin consultas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+          </FilterDialog>
         </div>
 
         <div className="bg-card rounded-xl border border-border overflow-hidden">
-          <div className="hidden md:grid grid-cols-[1fr_1fr_1fr_100px_80px_40px] gap-4 px-5 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-border">
-            <span>Nombre</span>
-            <span>Correo</span>
-            <span>Teléfono</span>
-            <span>Última visita</span>
-            <span>Visitas</span>
-            <span></span>
+          <div className="hidden md:grid grid-cols-[1.4fr_1.2fr_1fr_110px_110px_90px] gap-4 px-5 py-3 bg-muted/50 border-b border-border">
+            <button onClick={() => toggleSort("name")} className={sortHeaderClass("name")}>
+              Nombre {sortIcon("name")}
+            </button>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Correo</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Teléfono</span>
+            <button onClick={() => toggleSort("createdAt")} className={sortHeaderClass("createdAt")}>
+              Alta {sortIcon("createdAt")}
+            </button>
+            <button onClick={() => toggleSort("lastVisit")} className={sortHeaderClass("lastVisit")}>
+              Últ. visita {sortIcon("lastVisit")}
+            </button>
+            <button onClick={() => toggleSort("scope")} className={sortHeaderClass("scope")}>
+              Ámbito {sortIcon("scope")}
+            </button>
           </div>
           <div className="divide-y divide-border">
             {visiblePatients.map((patient) => (
               <Link
                 key={patient.id}
                 to={`/dashboard/pacientes/${patient.id}`}
-                className="flex flex-col md:grid md:grid-cols-[1fr_1fr_1fr_100px_80px_40px] gap-2 md:gap-4 px-5 py-4 hover:bg-accent/30 transition-colors items-center"
+                className="flex flex-col md:grid md:grid-cols-[1.4fr_1.2fr_1fr_110px_110px_90px] gap-2 md:gap-4 px-5 py-4 hover:bg-accent/30 transition-colors items-center"
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 w-full">
                   <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center shrink-0">
                     <User className="w-4 h-4 text-primary" />
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium text-foreground truncate">{patient.firstName} {patient.lastName}</p>
-                    <div className="mt-1">
-                      <PatientScopeBadges clinicIds={patient.clinicIds} isPrivate={patient.isPrivate} />
-                    </div>
                   </div>
                 </div>
-                <span className="text-sm text-muted-foreground flex items-center gap-1 truncate">
-                  <Mail className="w-3 h-3 md:hidden" /> {patient.email}
-                </span>
-                <span className="text-sm text-muted-foreground flex items-center gap-1">
-                  <Phone className="w-3 h-3 md:hidden" /> {patient.phone}
+                <span className="text-sm text-muted-foreground truncate">{patient.email}</span>
+                <span className="text-sm text-muted-foreground">{patient.phone}</span>
+                <span className="text-sm text-muted-foreground">
+                  {new Date(patient.createdAt).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "2-digit" })}
                 </span>
                 <span className="text-sm text-muted-foreground">
                   {new Date(patient.lastVisit).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
                 </span>
-                <span className="text-sm text-muted-foreground">{patient.totalVisits}</span>
-                <ChevronRight className="w-4 h-4 text-muted-foreground hidden md:block" />
+                <div className="flex flex-wrap gap-1">
+                  <PatientScopeBadges clinicIds={patient.clinicIds} isPrivate={patient.isPrivate} />
+                </div>
               </Link>
             ))}
           </div>
@@ -99,7 +280,7 @@ const PatientsPage = () => {
           <div className="text-center py-12">
             <User className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
             <p className="text-muted-foreground">No se encontraron pacientes</p>
-            <p className="text-sm text-muted-foreground">Probá ajustar el filtro de ámbito o el término de búsqueda</p>
+            <p className="text-sm text-muted-foreground">Probá ajustar los filtros o el término de búsqueda</p>
           </div>
         )}
       </div>
