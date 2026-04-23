@@ -45,16 +45,24 @@ const ConsultationDetailPage = () => {
   return (
     <DashboardLayout>
       <div className="max-w-3xl space-y-6">
-        <div className="flex items-center gap-3">
+        <Link to="/dashboard/consultas" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="w-4 h-4" /> Volver al listado
+        </Link>
+        <div className="flex items-start gap-3">
           <Link to={`/dashboard/pacientes/${consultation.patientId}`}>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="h-8 w-8 mt-1">
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-foreground">Consulta</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-foreground">Consulta</h1>
+              <ClinicBadge clinicId={consultation.clinicId} isPrivate={consultation.clinicId === null} size="md" />
+            </div>
             <p className="text-sm text-muted-foreground">
-              {consultation.patientName} · {new Date(consultation.date).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}
+              <Link to={`/dashboard/pacientes/${consultation.patientId}`} className="text-primary hover:underline">{consultation.patientName}</Link>
+              {" · "}{new Date(consultation.date).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}
+              {" · "}{consultation.professionalName}
             </p>
           </div>
           <Button variant="outline" size="sm" className="gap-1">
