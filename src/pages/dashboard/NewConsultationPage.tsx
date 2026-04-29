@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Save, Search, X, User, Heart, AlertTriangle, Calendar, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
-import { diagnosesApi, patientsApi } from "@/services/api";
+import { diagnosesApi, patientsApi, consultationsApi } from "@/services/api";
 import type { Diagnosis, CodingSystem, Patient } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate, useParams } from "react-router-dom";
 
 const systemColors: Record<CodingSystem, string> = {
   "CIE-10": "bg-primary/10 text-primary",
@@ -19,16 +20,20 @@ const systemColors: Record<CodingSystem, string> = {
 };
 
 const NewConsultationPage = () => {
+  const { patientId } = useParams();
   const [diagnosisSearch, setDiagnosisSearch] = useState("");
   const [diagnosisResults, setDiagnosisResults] = useState<Diagnosis[]>([]);
   const [selectedDiagnoses, setSelectedDiagnoses] = useState<Diagnosis[]>([]);
   const [activeSystem, setActiveSystem] = useState<string>("CIE-10");
   const [patient, setPatient] = useState<Patient | null>(null);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    patientsApi.getById("p-1").then(res => setPatient(res.data));
-  }, []);
+    const id = patientId || "p-1";
+    patientsApi.getById(id).then(res => setPatient(res.data));
+  }, [patientId]);
 
   useEffect(() => {
     if (diagnosisSearch.length > 1) {
@@ -50,8 +55,31 @@ const NewConsultationPage = () => {
     setSelectedDiagnoses(selectedDiagnoses.filter(d => !(d.code === code && d.codingSystem === system)));
   };
 
-  const handleSave = () => {
-    toast({ title: "Consulta guardada", description: "La consulta se ha registrado exitosamente." });
+  const handleSave = async () => {
+    if (!patient) return;
+    setSaving(true);
+    try {
+      await consultationsApi.create({
+        patientId: patient.id,
+        patientName: `${patient.firstName} ${patient.lastName}`,
+        professionalId: "prof-1",
+        professionalName: "Dra. María García",
+        clinicId: patient.clinicIds[0] || null, // Simplified for mock
+        date: new Date().toISOString(),
+        diagnoses: selectedDiagnoses,
+        // ... other fields would be gathered from form
+      });
+      toast({ title: "Consulta guardada", description: "La consulta se ha registrado exitosamente." });
+      navigate(`/dashboard/pacientes/${patient.id}`);
+    } catch (error: any) {
+      toast({
+        title: "Error al guardar",
+        description: error.message || "Ocurrió un error inesperado",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const calculateAge = (birthDate: string) => {
@@ -76,8 +104,8 @@ const NewConsultationPage = () => {
             <h1 className="text-2xl font-bold text-foreground">Nueva consulta</h1>
             <p className="text-sm text-muted-foreground">Paciente: {patient ? `${patient.firstName} ${patient.lastName}` : "Cargando..."}</p>
           </div>
-          <Button className="gap-1" onClick={handleSave}>
-            <Save className="w-4 h-4" /> Guardar
+          <Button className="gap-1" onClick={handleSave} disabled={saving}>
+            <Save className="w-4 h-4" /> {saving ? "Guardando..." : "Guardar"}
           </Button>
         </div>
 

@@ -11,7 +11,7 @@ import {
   mockNotifications, mockDashboardStats, mockReportMetrics,
   mockUsers, mockAuditLogs, mockSystemHealth, mockProfessional,
   mockAppointmentTypes, mockPatientNotifications, mockPatientPortalAppointments,
-  mockProfessionalPatientRequests, mockRegistrationInvites,
+  mockProfessionalPatientRequests, mockRegistrationInvites, mockCareAuthorizations,
 } from "./mockData";
 
 // Simulate network delay
@@ -50,35 +50,98 @@ export const authApi = {
   },
 };
 
+// ===== HELPERS =====
+const enrichPatient = (patient: Patient, professionalId: string): Patient => {
+  const authorizations = mockCareAuthorizations.filter(
+    a => a.patientId === patient.id && a.professionalId === professionalId
+  );
+
+  const clinicIds = authorizations
+    .filter(a => a.clinicId !== null)
+    .map(a => a.clinicId as string);
+
+  const isPrivate = authorizations.some(a => a.clinicId === null);
+
+  // Status is active if at least one authorization is active
+  const isActive = authorizations.some(a => a.status === "active");
+
+  // Aggregate stats
+  let totalVisits = 0;
+  let lastVisit = patient.createdAt;
+
+  authorizations.forEach(a => {
+    totalVisits += a.totalVisits;
+    if (a.lastVisit && new Date(a.lastVisit) > new Date(lastVisit)) {
+      lastVisit = a.lastVisit;
+    }
+  });
+
+  return {
+    ...patient,
+    clinicIds,
+    isPrivate,
+    status: isActive ? "activo" : "inactivo",
+    totalVisits,
+    lastVisit,
+  };
+};
+
 // ===== PATIENTS =====
 export const patientsApi = {
   async list(params?: { search?: string; page?: number; limit?: number }) {
     await delay();
-    let results = [...mockPatients];
+    const professionalId = mockProfessional.id; // Assume current logged in professional
+
+    // Only show patients the professional has authorization for
+    const authorizedPatientIds = new Set(
+      mockCareAuthorizations
+        .filter(a => a.professionalId === professionalId)
+        .map(a => a.patientId)
+    );
+
+    let results = mockPatients
+      .filter(p => authorizedPatientIds.has(p.id))
+      .map(p => enrichPatient(p, professionalId));
+
     if (params?.search) {
       const q = params.search.toLowerCase();
       results = results.filter(p =>
         `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
         p.email.toLowerCase().includes(q) ||
-        p.phone.includes(q)
+        p.phone.includes(q) ||
+        p.documentNumber.includes(q)
       );
     }
     return paginated(results, results.length, params?.page, params?.limit);
   },
   async getById(id: string) {
     await delay();
+    const professionalId = mockProfessional.id;
     const patient = mockPatients.find(p => p.id === id);
     if (!patient) throw new Error("Paciente no encontrado");
-    return success(patient);
+
+    // Check if professional has ANY authorization for this patient
+    const hasAuth = mockCareAuthorizations.some(
+      a => a.patientId === id && a.professionalId === professionalId
+    );
+    if (!hasAuth) throw new Error("No tiene autorización para acceder a este paciente");
+
+    return success(enrichPatient(patient, professionalId));
   },
   async create(data: Partial<Patient>) {
     await delay();
-    return success({ ...data, id: `p-${Date.now()}` } as Patient);
+    const professionalId = mockProfessional.id;
+    const newPatient = { ...data, id: `p-${Date.now()}` } as Patient;
+    // In a real scenario, we might also create a default authorization here
+    return success(enrichPatient(newPatient, professionalId));
   },
   async update(id: string, data: Partial<Patient>) {
     await delay();
+    const professionalId = mockProfessional.id;
     const patient = mockPatients.find(p => p.id === id);
-    return success({ ...patient, ...data } as Patient);
+    if (!patient) throw new Error("Paciente no encontrado");
+    const updatedPatient = { ...patient, ...data } as Patient;
+    return success(enrichPatient(updatedPatient, professionalId));
   },
 };
 
@@ -100,6 +163,23 @@ export const appointmentsApi = {
   },
   async create(data: Partial<Appointment>) {
     await delay();
+    const professionalId = mockProfessional.id;
+
+    // Validate active authorization
+    const auth = mockCareAuthorizations.find(
+      a => a.patientId === data.patientId &&
+           a.professionalId === professionalId &&
+           a.clinicId === (data.clinicId || null)
+    );
+
+    if (!auth) {
+      throw new Error("No existe una autorización para agendar citas con este paciente en el ámbito seleccionado.");
+    }
+
+    if (auth.status === "revoked") {
+      throw new Error("La autorización para este paciente ha sido revocada. No se pueden agendar nuevas citas.");
+    }
+
     return success({ ...data, id: `apt-${Date.now()}`, status: "pendiente" } as Appointment);
   },
   async update(id: string, data: Partial<Appointment>) {
@@ -135,6 +215,27 @@ export const consultationsApi = {
   },
   async create(data: Partial<Consultation>) {
     await delay();
+    const professionalId = mockProfessional.id;
+
+    // Validate active authorization
+    const auth = mockCareAuthorizations.find(
+      a => a.patientId === data.patientId &&
+           a.professionalId === professionalId &&
+           a.clinicId === (data.clinicId || null)
+    );
+
+    if (!auth) {
+      throw new Error("No existe una autorización para realizar consultas a este paciente en el ámbito seleccionado.");
+    }
+
+    if (auth.status === "revoked") {
+      throw new Error("La autorización para este paciente ha sido revocada. No se pueden registrar nuevas consultas.");
+    }
+
+    // Update authorization stats
+    auth.totalVisits += 1;
+    auth.lastVisit = new Date().toISOString();
+
     return success({ ...data, id: `con-${Date.now()}` } as Consultation);
   },
 };
@@ -297,12 +398,18 @@ export const patientPortalApi = {
     request.status = "accepted";
 
     // Create patient-professional-clinic authorization relationship
-    const patient = mockPatients.find(p => p.id === request.patientId);
-    if (patient && request.clinicId && !patient.clinicIds.includes(request.clinicId)) {
-      patient.clinicIds.push(request.clinicId);
-    }
+    const newAuth: CareAuthorization = {
+      id: `auth-${Date.now()}`,
+      patientId: request.patientId,
+      professionalId: request.professionalId,
+      clinicId: request.clinicId || null,
+      status: "active",
+      createdAt: new Date().toISOString(),
+      totalVisits: 0,
+    };
+    mockCareAuthorizations.push(newAuth);
 
-    // Add notification for professional
+    const patient = mockPatients.find(p => p.id === request.patientId);
     mockPatientNotifications.push({
       id: `pn-${Date.now()}`,
       type: "patient",

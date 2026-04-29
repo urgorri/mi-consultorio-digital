@@ -82,17 +82,35 @@ export interface Patient {
   allergies: string;
   conditions: string;
   createdAt: string;
+  /** Document type (DNI, pasaporte, etc.) */
+  documentType: DocumentType;
+  /** Document number (DNI/ID). Unique identity for the patient. */
+  documentNumber: string;
+
+  // The following fields are derived from the active CareAuthorization(s)
+  // for the professional/clinics context when queried through the API.
   lastVisit: string;
   totalVisits: number;
   status: "activo" | "inactivo";
-  /** Document type (DNI, pasaporte, etc.) */
-  documentType?: DocumentType;
-  /** Document number (DNI/ID). NOT unique — multiple records may share this. */
-  documentNumber?: string;
-  /** Clinics this patient is associated with. Empty = private only. */
+  /** Clinics this patient is associated with for the current professional. */
   clinicIds: string[];
-  /** Whether this patient also belongs to the professional's private scope. */
+  /** Whether this patient belongs to the professional's private scope. */
   isPrivate: boolean;
+}
+
+export type AuthorizationStatus = "active" | "revoked" | "pending";
+
+export interface CareAuthorization {
+  id: string;
+  patientId: string;
+  professionalId: string;
+  /** Clinic this authorization belongs to. null = private scope. */
+  clinicId: string | null;
+  status: AuthorizationStatus;
+  createdAt: string;
+  revokedAt?: string;
+  lastVisit?: string;
+  totalVisits: number;
 }
 
 export interface Appointment {
