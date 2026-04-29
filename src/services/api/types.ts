@@ -225,3 +225,14 @@ export interface SystemHealth {
   avgResponseTime: number;
   services: { name: string; status: "up" | "down"; latency: number }[];
 }
+
+export interface DocumentVerificationResult {
+  firstName?: string;
+  lastName?: string;
+  documentType?: DocumentType;
+  documentNumber?: string;
+  birthDate?: string;
+  confidenceScore: number;
+  status: "approved" | "manual_review" | "rejected";
+  error?: string;
+}
