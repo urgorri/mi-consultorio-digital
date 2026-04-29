@@ -70,7 +70,7 @@ const PatientDetailPage = () => {
           <Button size="sm" variant="outline" className="gap-1" onClick={() => setNewApptOpen(true)}>
             <Calendar className="w-4 h-4" /> Agendar cita
           </Button>
-          <Link to="/dashboard/consultas/nueva">
+          <Link to={`/dashboard/consultas/nueva/${patient.id}`}>
             <Button size="sm" className="gap-1">
               <Plus className="w-4 h-4" /> Nueva consulta
             </Button>

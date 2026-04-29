@@ -35,14 +35,14 @@ export const mockProfessional: Professional = {
 };
 
 export const mockPatients: Patient[] = [
-  { id: "p-1", firstName: "Laura", lastName: "Martínez", email: "laura@email.com", phone: "+52 55 1111 2222", birthDate: "1991-06-15", gender: "Femenino", address: "Col. Roma, Ciudad de México", bloodType: "O+", allergies: "Penicilina", conditions: "Hipertensión arterial controlada", createdAt: "2024-03-10", lastVisit: "2026-04-05", totalVisits: 12, status: "activo", documentNumber: "30123456", clinicIds: ["clinic-1"], isPrivate: true },
-  { id: "p-2", firstName: "Pedro", lastName: "Sánchez", email: "pedro@email.com", phone: "+52 55 3333 4444", birthDate: "1985-02-20", gender: "Masculino", address: "Col. Condesa, Ciudad de México", bloodType: "A+", allergies: "Ninguna", conditions: "Diabetes tipo 2", createdAt: "2024-05-12", lastVisit: "2026-04-03", totalVisits: 8, status: "activo", documentNumber: "27345678", clinicIds: ["clinic-1", "clinic-2"], isPrivate: false },
-  { id: "p-3", firstName: "Ana", lastName: "Rodríguez", email: "ana@email.com", phone: "+52 55 5555 6666", birthDate: "1993-11-08", gender: "Femenino", address: "Col. Del Valle, Ciudad de México", bloodType: "B-", allergies: "Sulfonamidas", conditions: "Ninguna", createdAt: "2025-01-20", lastVisit: "2026-04-01", totalVisits: 3, status: "activo", documentNumber: "32987654", clinicIds: [], isPrivate: true },
-  { id: "p-4", firstName: "Miguel", lastName: "Torres", email: "miguel@email.com", phone: "+52 55 7777 8888", birthDate: "1978-07-30", gender: "Masculino", address: "Col. Narvarte, Ciudad de México", bloodType: "AB+", allergies: "Ibuprofeno", conditions: "Asma leve", createdAt: "2023-09-05", lastVisit: "2026-03-28", totalVisits: 15, status: "activo", documentNumber: "25111222", clinicIds: ["clinic-2"], isPrivate: false },
-  { id: "p-5", firstName: "Sofía", lastName: "Hernández", email: "sofia@email.com", phone: "+52 55 9999 0000", birthDate: "1988-04-12", gender: "Femenino", address: "Col. Coyoacán, Ciudad de México", bloodType: "O-", allergies: "Ninguna", conditions: "Hipotiroidismo", createdAt: "2024-11-15", lastVisit: "2026-03-25", totalVisits: 6, status: "activo", documentNumber: "29555444", clinicIds: ["clinic-3"], isPrivate: true },
-  { id: "p-6", firstName: "Carlos", lastName: "Ruiz", email: "carlos@email.com", phone: "+52 55 1234 5678", birthDate: "1970-12-01", gender: "Masculino", address: "Col. Polanco, Ciudad de México", bloodType: "A-", allergies: "Aspirina, Latex", conditions: "Hipercolesterolemia, Hipertensión", createdAt: "2022-06-20", lastVisit: "2026-03-20", totalVisits: 22, status: "activo", documentNumber: "20888777", clinicIds: ["clinic-1", "clinic-3"], isPrivate: false },
-  { id: "p-7", firstName: "Elena", lastName: "Guzmán", email: "elena@email.com", phone: "+52 55 2468 1357", birthDate: "1995-09-25", gender: "Femenino", address: "Col. Juárez, Ciudad de México", bloodType: "B+", allergies: "Ninguna", conditions: "Ninguna", createdAt: "2025-12-01", lastVisit: "2026-03-15", totalVisits: 2, status: "activo", documentNumber: "33222111", clinicIds: [], isPrivate: true },
-  { id: "p-8", firstName: "Roberto", lastName: "Díaz", email: "roberto@email.com", phone: "+52 55 9753 1246", birthDate: "1982-03-17", gender: "Masculino", address: "Col. San Ángel, Ciudad de México", bloodType: "O+", allergies: "Mariscos", conditions: "Reflujo gastroesofágico", createdAt: "2024-08-10", lastVisit: "2026-02-28", totalVisits: 9, status: "inactivo", documentNumber: "26999888", clinicIds: ["clinic-2"], isPrivate: false },
+  { id: "p-1", firstName: "Laura", lastName: "Martínez", email: "laura@email.com", phone: "+52 55 1111 2222", birthDate: "1991-06-15", gender: "Femenino", address: "Col. Roma, Ciudad de México", bloodType: "O+", allergies: "Penicilina", conditions: "Hipertensión arterial controlada", createdAt: "2024-03-10", lastVisit: "2026-04-05", totalVisits: 12, status: "activo", documentType: "dni", documentNumber: "30123456", clinicIds: ["clinic-1"], isPrivate: true },
+  { id: "p-2", firstName: "Pedro", lastName: "Sánchez", email: "pedro@email.com", phone: "+52 55 3333 4444", birthDate: "1985-02-20", gender: "Masculino", address: "Col. Condesa, Ciudad de México", bloodType: "A+", allergies: "Ninguna", conditions: "Diabetes tipo 2", createdAt: "2024-05-12", lastVisit: "2026-04-03", totalVisits: 8, status: "activo", documentType: "dni", documentNumber: "27345678", clinicIds: ["clinic-1", "clinic-2"], isPrivate: false },
+  { id: "p-3", firstName: "Ana", lastName: "Rodríguez", email: "ana@email.com", phone: "+52 55 5555 6666", birthDate: "1993-11-08", gender: "Femenino", address: "Col. Del Valle, Ciudad de México", bloodType: "B-", allergies: "Sulfonamidas", conditions: "Ninguna", createdAt: "2025-01-20", lastVisit: "2026-04-01", totalVisits: 3, status: "activo", documentType: "dni", documentNumber: "32987654", clinicIds: [], isPrivate: true },
+  { id: "p-4", firstName: "Miguel", lastName: "Torres", email: "miguel@email.com", phone: "+52 55 7777 8888", birthDate: "1978-07-30", gender: "Masculino", address: "Col. Narvarte, Ciudad de México", bloodType: "AB+", allergies: "Ibuprofeno", conditions: "Asma leve", createdAt: "2023-09-05", lastVisit: "2026-03-28", totalVisits: 15, status: "activo", documentType: "dni", documentNumber: "25111222", clinicIds: ["clinic-2"], isPrivate: false },
+  { id: "p-5", firstName: "Sofía", lastName: "Hernández", email: "sofia@email.com", phone: "+52 55 9999 0000", birthDate: "1988-04-12", gender: "Femenino", address: "Col. Coyoacán, Ciudad de México", bloodType: "O-", allergies: "Ninguna", conditions: "Hipotiroidismo", createdAt: "2024-11-15", lastVisit: "2026-03-25", totalVisits: 6, status: "activo", documentType: "dni", documentNumber: "29555444", clinicIds: ["clinic-3"], isPrivate: true },
+  { id: "p-6", firstName: "Carlos", lastName: "Ruiz", email: "carlos@email.com", phone: "+52 55 1234 5678", birthDate: "1970-12-01", gender: "Masculino", address: "Col. Polanco, Ciudad de México", bloodType: "A-", allergies: "Aspirina, Latex", conditions: "Hipercolesterolemia, Hipertensión", createdAt: "2022-06-20", lastVisit: "2026-03-20", totalVisits: 22, status: "activo", documentType: "dni", documentNumber: "20888777", clinicIds: ["clinic-1", "clinic-3"], isPrivate: false },
+  { id: "p-7", firstName: "Elena", lastName: "Guzmán", email: "elena@email.com", phone: "+52 55 2468 1357", birthDate: "1995-09-25", gender: "Femenino", address: "Col. Juárez, Ciudad de México", bloodType: "B+", allergies: "Ninguna", conditions: "Ninguna", createdAt: "2025-12-01", lastVisit: "2026-03-15", totalVisits: 2, status: "activo", documentType: "dni", documentNumber: "33222111", clinicIds: [], isPrivate: true },
+  { id: "p-8", firstName: "Roberto", lastName: "Díaz", email: "roberto@email.com", phone: "+52 55 9753 1246", birthDate: "1982-03-17", gender: "Masculino", address: "Col. San Ángel, Ciudad de México", bloodType: "O+", allergies: "Mariscos", conditions: "Reflujo gastroesofágico", createdAt: "2024-08-10", lastVisit: "2026-02-28", totalVisits: 9, status: "inactivo", documentType: "dni", documentNumber: "26999888", clinicIds: ["clinic-2"], isPrivate: false },
 ];
 
 export const mockAppointments: Appointment[] = [
@@ -270,6 +270,31 @@ export const mockPatientNotifications: Notification[] = [
   { id: "pn-1", type: "appointment", title: "Cita confirmada", message: "Tu cita con Dra. García del 10 abr a las 09:00 ha sido confirmada", time: "Hace 1 hora", read: false, createdAt: "2026-04-10T08:00:00" },
   { id: "pn-2", type: "reminder", title: "Recordatorio de cita", message: "Tienes una cita mañana 10 abr a las 09:00 con Dra. García", time: "Ayer", read: true, createdAt: "2026-04-09T18:00:00" },
   { id: "pn-3", type: "system", title: "Bienvenido a MiConsultorio", message: "Tu cuenta ha sido creada exitosamente. Explora la plataforma.", time: "Hace 1 semana", read: true, createdAt: "2026-04-03T10:00:00" },
+];
+
+import type { CareAuthorization } from "./types";
+
+export const mockCareAuthorizations: CareAuthorization[] = [
+  // Laura Martínez (p-1): Private + Clinic 1
+  { id: "auth-1", patientId: "p-1", professionalId: "prof-1", clinicId: null, status: "active", createdAt: "2024-03-10", lastVisit: "2026-03-20", totalVisits: 5 },
+  { id: "auth-2", patientId: "p-1", professionalId: "prof-1", clinicId: "clinic-1", status: "active", createdAt: "2024-03-15", lastVisit: "2026-04-05", totalVisits: 7 },
+  // Pedro Sánchez (p-2): Clinic 1 + Clinic 2
+  { id: "auth-3", patientId: "p-2", professionalId: "prof-1", clinicId: "clinic-1", status: "active", createdAt: "2024-05-12", lastVisit: "2026-04-10", totalVisits: 4 },
+  { id: "auth-4", patientId: "p-2", professionalId: "prof-1", clinicId: "clinic-2", status: "active", createdAt: "2024-06-01", lastVisit: "2026-04-03", totalVisits: 4 },
+  // Ana Rodríguez (p-3): Private only
+  { id: "auth-5", patientId: "p-3", professionalId: "prof-1", clinicId: null, status: "active", createdAt: "2025-01-20", lastVisit: "2026-04-01", totalVisits: 3 },
+  // Miguel Torres (p-4): Clinic 2 only
+  { id: "auth-6", patientId: "p-4", professionalId: "prof-1", clinicId: "clinic-2", status: "active", createdAt: "2023-09-05", lastVisit: "2026-04-11", totalVisits: 15 },
+  // Sofía Hernández (p-5): Clinic 3 + Private
+  { id: "auth-7", patientId: "p-5", professionalId: "prof-1", clinicId: "clinic-3", status: "active", createdAt: "2024-11-15", lastVisit: "2026-04-11", totalVisits: 4 },
+  { id: "auth-8", patientId: "p-5", professionalId: "prof-1", clinicId: null, status: "active", createdAt: "2024-12-01", lastVisit: "2026-03-25", totalVisits: 2 },
+  // Carlos Ruiz (p-6): Clinic 1 + Clinic 3
+  { id: "auth-9", patientId: "p-6", professionalId: "prof-1", clinicId: "clinic-1", status: "active", createdAt: "2022-06-20", lastVisit: "2026-04-12", totalVisits: 12 },
+  { id: "auth-10", patientId: "p-6", professionalId: "prof-1", clinicId: "clinic-3", status: "active", createdAt: "2023-01-10", lastVisit: "2026-03-15", totalVisits: 10 },
+  // Elena Guzmán (p-7): Private only
+  { id: "auth-11", patientId: "p-7", professionalId: "prof-1", clinicId: null, status: "active", createdAt: "2025-12-01", lastVisit: "2026-03-15", totalVisits: 2 },
+  // Roberto Díaz (p-8): Clinic 2 - Revoked
+  { id: "auth-12", patientId: "p-8", professionalId: "prof-1", clinicId: "clinic-2", status: "revoked", createdAt: "2024-08-10", revokedAt: "2026-03-01", lastVisit: "2026-02-28", totalVisits: 9 },
 ];
 
 // Mock professional-patient requests

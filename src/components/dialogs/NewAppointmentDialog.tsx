@@ -63,36 +63,44 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
     return `${Math.floor(total / 60).toString().padStart(2, "0")}:${(total % 60).toString().padStart(2, "0")}`;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
     const patient = patients.find(p => p.id === form.patientId);
     const clinic = availableClinics.find(c => c.id === form.clinicId);
-    const newAppt: Appointment = {
-      id: `apt-${Date.now()}`,
-      patientId: form.patientId,
-      patientName: patient ? `${patient.firstName} ${patient.lastName}` : "Paciente",
-      professionalId: "1",
-      professionalName: "Dra. María García",
-      locationId: "1",
-      locationName: clinic?.name ?? "Consultorio privado",
-      clinicId: form.clinicId === "private" ? null : form.clinicId,
-      date: form.date,
-      time: form.time,
-      endTime: getEndTime(),
-      type: form.type,
-      status: "confirmada",
-      reason: form.reason,
-    };
+    const clinicId = form.clinicId === "private" ? null : form.clinicId;
 
-    setTimeout(() => {
-      setSaving(false);
-      toast({ title: "Cita agendada", description: `Cita de ${newAppt.patientName} el ${form.date} a las ${form.time}.` });
-      onCreated?.(newAppt);
+    try {
+      const res = await appointmentsApi.create({
+        patientId: form.patientId,
+        patientName: patient ? `${patient.firstName} ${patient.lastName}` : "Paciente",
+        professionalId: "prof-1",
+        professionalName: "Dra. María García",
+        locationId: "loc-1",
+        locationName: clinic?.name ?? "Consultorio privado",
+        clinicId,
+        date: form.date,
+        time: form.time,
+        endTime: getEndTime(),
+        type: form.type,
+        status: "confirmada",
+        reason: form.reason,
+      });
+
+      toast({ title: "Cita agendada", description: `Cita de ${res.data.patientName} el ${form.date} a las ${form.time}.` });
+      onCreated?.(res.data);
       onOpenChange(false);
       setForm({ patientId: "", date: defaultDate || new Date().toISOString().split("T")[0], time: "", type: "", reason: "", clinicId: "private" });
-    }, 500);
+    } catch (error: any) {
+      toast({
+        title: "Error al agendar",
+        description: error.message || "Ocurrió un error inesperado",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
