@@ -9,6 +9,11 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import LoginPacientePage from "./pages/auth/LoginPacientePage";
+import LoginProfesionalPage from "./pages/auth/LoginProfesionalPage";
+import LoginAdminPage from "./pages/auth/LoginAdminPage";
+import RegisterPacientePage from "./pages/auth/RegisterPacientePage";
+import RegisterProfesionalPage from "./pages/auth/RegisterProfesionalPage";
 import PasswordRecoveryPage from "./pages/PasswordRecoveryPage";
 import BookingPage from "./pages/BookingPage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
@@ -47,7 +52,12 @@ const App = () => (
               {/* Public */}
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/login/paciente" element={<LoginPacientePage />} />
+              <Route path="/login/profesional" element={<LoginProfesionalPage />} />
+              <Route path="/login/admin" element={<LoginAdminPage />} />
               <Route path="/registro" element={<RegisterPage />} />
+              <Route path="/registro/paciente" element={<RegisterPacientePage />} />
+              <Route path="/registro/profesional" element={<RegisterProfesionalPage />} />
               <Route path="/recuperar-contrasena" element={<PasswordRecoveryPage />} />
               <Route path="/agendar" element={<BookingPage />} />
 

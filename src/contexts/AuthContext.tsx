@@ -6,8 +6,9 @@ import { authApi } from "@/services/api/client";
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   logout: () => void;
+  assertRole: (expectedRole: User["role"], authUser?: User | null) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (res.success && res.data.user) {
         setUser(res.data.user);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(res.data.user));
-        return { success: true };
+        return { success: true, user: res.data.user };
       }
       return { success: false, error: "Credenciales inválidas" };
     } catch {
@@ -44,13 +45,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const assertRole = useCallback((expectedRole: User["role"], authUser?: User | null) => {
+    const current = authUser ?? user;
+    return Boolean(current && current.role === expectedRole);
+  }, [user]);
+
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, assertRole }}>
       {children}
     </AuthContext.Provider>
   );
