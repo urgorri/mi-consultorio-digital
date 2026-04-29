@@ -4,6 +4,7 @@ import type {
   Diagnosis, Notification, DashboardStats, ReportMetrics,
   User, AuditLog, SystemHealth, Professional, AppointmentType,
   DocumentType, ProfessionalPatientRequest, RegistrationInvite,
+  DocumentVerificationResult,
 } from "./types";
 import {
   mockPatients, mockAppointments, mockConsultations, mockDiagnoses,
@@ -333,6 +334,88 @@ export const patientPortalApi = {
     });
 
     return success(request);
+  },
+};
+
+// ===== KYC / DOCUMENT VERIFICATION =====
+export const kycApi = {
+  async verifyIdentityDocument(
+    files: File[],
+    formData: { firstName: string; lastName: string; documentType: DocumentType; documentNumber: string }
+  ): Promise<ApiResponse<DocumentVerificationResult>> {
+    await delay(2000); // Simulate processing time
+
+    // Mock OCR result extraction based on file presence
+    // In a real scenario, this would come from a backend service processing the images
+    const hasFront = files.length > 0;
+
+    if (!hasFront) {
+      return success({
+        confidenceScore: 0,
+        status: "rejected",
+        error: "No se detectaron imágenes del documento.",
+      });
+    }
+
+    // Simulate different results based on document number for testing
+    // If doc number ends in '0', simulate blurred photo
+    if (formData.documentNumber.endsWith("0")) {
+      return success({
+        confidenceScore: 0.4,
+        status: "rejected",
+        error: "La foto está borrosa. Por favor, intenta de nuevo con mejor iluminación.",
+      });
+    }
+
+    // If doc number ends in '9', simulate expired document
+    if (formData.documentNumber.endsWith("9")) {
+      return success({
+        confidenceScore: 0.95,
+        status: "rejected",
+        error: "El documento parece estar vencido.",
+      });
+    }
+
+    // Normalize names for comparison
+    const normalize = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    const ocrResult: Partial<DocumentVerificationResult> = {
+      firstName: formData.firstName, // Mocking correct OCR for most cases
+      lastName: formData.lastName,
+      documentType: formData.documentType,
+      documentNumber: formData.documentNumber,
+      birthDate: "1990-01-01",
+      confidenceScore: 0.92,
+    };
+
+    // Simulate name mismatch if first name is 'Error'
+    if (normalize(formData.firstName) === "error") {
+      ocrResult.firstName = "Correcto";
+      return success({
+        ...ocrResult,
+        confidenceScore: 0.85,
+        status: "manual_review",
+        error: "Los datos del documento no coinciden exactamente con el formulario.",
+      } as DocumentVerificationResult);
+    }
+
+    // Check for document uniqueness (mock)
+    const alreadyExists = mockPatients.some(
+      p => p.documentNumber === formData.documentNumber && (p.documentType || "dni") === formData.documentType
+    );
+
+    if (alreadyExists) {
+      return success({
+        confidenceScore: 1.0,
+        status: "rejected",
+        error: "Este documento ya se encuentra registrado en el sistema.",
+      });
+    }
+
+    return success({
+      ...ocrResult,
+      status: "approved",
+    } as DocumentVerificationResult);
   },
 };
 
