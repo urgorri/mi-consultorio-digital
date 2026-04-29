@@ -2,6 +2,7 @@ import type {
   Patient, Appointment, Consultation, Diagnosis, Notification,
   DashboardStats, ReportMetrics, AuditLog, SystemHealth,
   User, Location, AppointmentType, Schedule, Professional, Clinic,
+  DocumentType, ProfessionalPatientRequest,
 } from "./types";
 
 export const mockClinics: Clinic[] = [
@@ -270,3 +271,6 @@ export const mockPatientNotifications: Notification[] = [
   { id: "pn-2", type: "reminder", title: "Recordatorio de cita", message: "Tienes una cita mañana 10 abr a las 09:00 con Dra. García", time: "Ayer", read: true, createdAt: "2026-04-09T18:00:00" },
   { id: "pn-3", type: "system", title: "Bienvenido a MiConsultorio", message: "Tu cuenta ha sido creada exitosamente. Explora la plataforma.", time: "Hace 1 semana", read: true, createdAt: "2026-04-03T10:00:00" },
 ];
+
+// Mock professional-patient requests
+export const mockProfessionalPatientRequests: ProfessionalPatientRequest[] = [];

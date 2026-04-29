@@ -3,12 +3,14 @@ import type {
   ApiResponse, PaginatedResponse, Patient, Appointment, Consultation,
   Diagnosis, Notification, DashboardStats, ReportMetrics,
   User, AuditLog, SystemHealth, Professional, AppointmentType,
+  DocumentType, ProfessionalPatientRequest,
 } from "./types";
 import {
   mockPatients, mockAppointments, mockConsultations, mockDiagnoses,
   mockNotifications, mockDashboardStats, mockReportMetrics,
   mockUsers, mockAuditLogs, mockSystemHealth, mockProfessional,
   mockAppointmentTypes, mockPatientNotifications, mockPatientPortalAppointments,
+  mockProfessionalPatientRequests,
 } from "./mockData";
 
 // Simulate network delay
@@ -303,5 +305,45 @@ export const bookingApi = {
   async createBooking(data: { professionalId: string; typeId: string; date: string; time: string; patientData: Record<string, string> }) {
     await delay(500);
     return success({ id: `apt-${Date.now()}`, message: "Cita agendada exitosamente." });
+  },
+};
+
+// ===== PATIENT SEARCH & PROFESSIONAL REQUESTS =====
+export const patientSearchApi = {
+  async findPatientByDocument(documentType: DocumentType, documentNumber: string) {
+    await delay();
+    const patient = mockPatients.find(
+      p => p.documentNumber === documentNumber && (p.documentType || "dni") === documentType
+    );
+    if (patient) {
+      return success({ found: true, patient });
+    }
+    return success({ found: false, patient: null });
+  },
+  async createProfessionalPatientRequest(patientId: string, professionalId: string, clinicId?: string) {
+    await delay();
+    const request: ProfessionalPatientRequest = {
+      id: `req-${Date.now()}`,
+      patientId,
+      professionalId,
+      clinicId,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+    };
+    mockProfessionalPatientRequests.push(request);
+    return success(request);
+  },
+  async getProfessionalPatientRequests(professionalId: string) {
+    await delay();
+    const requests = mockProfessionalPatientRequests.filter(r => r.professionalId === professionalId);
+    return success(requests);
+  },
+  async updateProfessionalPatientRequestStatus(requestId: string, status: "accepted" | "rejected") {
+    await delay();
+    const request = mockProfessionalPatientRequests.find(r => r.id === requestId);
+    if (!request) throw new Error("Solicitud no encontrada");
+    request.status = status;
+    return success(request);
   },
 };
