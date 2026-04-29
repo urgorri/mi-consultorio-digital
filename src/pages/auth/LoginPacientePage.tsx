@@ -117,9 +117,9 @@ const LoginPacientePage = () => {
           </p>
 
           <p className="text-center text-sm text-muted-foreground mt-4">
-            ¿Eres profesional o admin?{" "}
-            <Link to="/login" className="text-primary font-medium hover:underline">
-              Cambiar perfil
+            ¿Eres profesional?{" "}
+            <Link to="/login/profesional" className="text-primary font-medium hover:underline">
+              Inicia sesión aquí
             </Link>
           </p>
         </div>
