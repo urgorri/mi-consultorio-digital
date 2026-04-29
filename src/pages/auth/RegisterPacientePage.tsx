@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,111 +54,140 @@ const RegisterPacientePage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-2">Registro de Paciente</h1>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">Nombre</Label>
-              <Input
-                id="firstName"
-                value={firstName}
-                onChange={(e) => {
-                  setFirstName(e.target.value);
-                  setIsVerified(false);
-                }}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Apellido</Label>
-              <Input
-                id="lastName"
-                value={lastName}
-                onChange={(e) => {
-                  setLastName(e.target.value);
-                  setIsVerified(false);
-                }}
-                required
-              />
-            </div>
+    <div className="min-h-screen flex">
+      {/* Left panel - Blue for paciente */}
+      <div className="hidden lg:flex lg:w-1/2 bg-primary relative items-center justify-center">
+        <div className="max-w-md text-center px-8">
+          <div className="w-16 h-16 rounded-2xl bg-primary-foreground/10 flex items-center justify-center mx-auto mb-8">
+            <Stethoscope className="w-8 h-8 text-primary-foreground" />
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-2">
-              <Label>Tipo doc.</Label>
-              <Select
-                value={docType}
-                onValueChange={(v) => {
-                  setDocType(v as DocumentType);
-                  setIsVerified(false);
-                }}
-                disabled={!!invite}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="dni">DNI</SelectItem>
-                  <SelectItem value="pasaporte">Pasaporte</SelectItem>
-                  <SelectItem value="cedula">Cédula</SelectItem>
-                  <SelectItem value="otro">Otro</SelectItem>
-                </SelectContent>
-              </Select>
+          <h2 className="text-3xl font-bold text-primary-foreground mb-4">
+            Crea tu Cuenta de Paciente
+          </h2>
+          <p className="text-primary-foreground/70 leading-relaxed">
+            Accede a tu historial médico, agenda consultas y mantente
+            conectado con tu salud en un solo lugar.
+          </p>
+        </div>
+      </div>
+
+      {/* Right panel - Form */}
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="w-full max-w-sm">
+          <div className="flex items-center gap-2 mb-8 lg:hidden">
+            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
+              <Stethoscope className="w-5 h-5 text-primary-foreground" />
             </div>
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="documentNumber">Documento</Label>
-              <Input
-                id="documentNumber"
-                value={docNumber}
-                onChange={(e) => {
-                  setDocNumber(e.target.value);
-                  setIsVerified(false);
-                }}
-                required
-                disabled={!!invite}
-              />
-            </div>
+            <span className="text-xl font-bold text-foreground">MiConsultorio</span>
           </div>
 
-          <div className="space-y-2">
-            <Label>Verificación de Identidad</Label>
-            <DocumentCaptureField
-              formData={{ firstName, lastName, documentType: docType, documentNumber: docNumber }}
-              onVerified={handleVerified}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Correo</Label>
-            <Input id="email" type="email" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Contraseña</Label>
-            <div className="relative">
-              <Input id="password" type={showPassword ? "text" : "password"} required />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+          <h1 className="text-2xl font-bold mb-2">Registro de Paciente</h1>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">Nombre</Label>
+                <Input
+                  id="firstName"
+                  value={firstName}
+                  onChange={(e) => {
+                    setFirstName(e.target.value);
+                    setIsVerified(false);
+                  }}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Apellido</Label>
+                <Input
+                  id="lastName"
+                  value={lastName}
+                  onChange={(e) => {
+                    setLastName(e.target.value);
+                    setIsVerified(false);
+                  }}
+                  required
+                />
+              </div>
             </div>
-          </div>
-          {invite && (
-            <p className="text-xs text-muted-foreground">
-              Invitación válida hasta: {new Date(invite.expiresAt).toLocaleString()}
-            </p>
-          )}
-          {inviteError && <p className="text-xs text-primary">{inviteError}</p>}
-          <Button className="w-full" type="submit" disabled={!isVerified}>
-            Crear cuenta
-          </Button>
-        </form>
-        <p className="text-center text-sm mt-6">
-          ¿Ya tienes cuenta? <Link to="/login/paciente" className="text-primary font-medium hover:underline">Inicia sesión</Link>
-        </p>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label>Tipo doc.</Label>
+                <Select
+                  value={docType}
+                  onValueChange={(v) => {
+                    setDocType(v as DocumentType);
+                    setIsVerified(false);
+                  }}
+                  disabled={!!invite}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dni">DNI</SelectItem>
+                    <SelectItem value="pasaporte">Pasaporte</SelectItem>
+                    <SelectItem value="cedula">Cédula</SelectItem>
+                    <SelectItem value="otro">Otro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="documentNumber">Documento</Label>
+                <Input
+                  id="documentNumber"
+                  value={docNumber}
+                  onChange={(e) => {
+                    setDocNumber(e.target.value);
+                    setIsVerified(false);
+                  }}
+                  required
+                  disabled={!!invite}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Verificación de Identidad</Label>
+              <DocumentCaptureField
+                formData={{ firstName, lastName, documentType: docType, documentNumber: docNumber }}
+                onVerified={handleVerified}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Correo</Label>
+              <Input id="email" type="email" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <div className="relative">
+                <Input id="password" type={showPassword ? "text" : "password"} required />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            {invite && (
+              <p className="text-xs text-muted-foreground">
+                Invitación válida hasta: {new Date(invite.expiresAt).toLocaleString()}
+              </p>
+            )}
+            {inviteError && <p className="text-xs text-primary">{inviteError}</p>}
+            <Button className="w-full" size="lg" type="submit" disabled={!isVerified}>
+              Crear cuenta
+            </Button>
+          </form>
+          <p className="text-center text-sm mt-6">
+            ¿Ya tienes cuenta?{" "}
+            <Link to="/login/paciente" className="text-primary font-medium hover:underline">
+              Inicia sesión
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
