@@ -283,6 +283,57 @@ export const patientPortalApi = {
     await delay();
     return success(mockPatients[0]);
   },
+  async getRequests() {
+    await delay();
+    // Get requests for the current patient (p-1)
+    const requests = mockProfessionalPatientRequests.filter(r => r.patientId === "p-1");
+    return success(requests);
+  },
+  async acceptRequest(requestId: string) {
+    await delay();
+    const request = mockProfessionalPatientRequests.find(r => r.id === requestId);
+    if (!request) throw new Error("Solicitud no encontrada");
+    request.status = "accepted";
+
+    // Create patient-professional-clinic authorization relationship
+    const patient = mockPatients.find(p => p.id === request.patientId);
+    if (patient && request.clinicId && !patient.clinicIds.includes(request.clinicId)) {
+      patient.clinicIds.push(request.clinicId);
+    }
+
+    // Add notification for professional
+    mockPatientNotifications.push({
+      id: `pn-${Date.now()}`,
+      type: "patient",
+      title: "Solicitud aceptada",
+      message: `El paciente ${patient?.firstName} ${patient?.lastName} ha aceptado tu solicitud de acceso`,
+      time: "Ahora",
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    return success(request);
+  },
+  async rejectRequest(requestId: string) {
+    await delay();
+    const request = mockProfessionalPatientRequests.find(r => r.id === requestId);
+    if (!request) throw new Error("Solicitud no encontrada");
+    request.status = "rejected";
+
+    // Add notification for professional
+    const patient = mockPatients.find(p => p.id === request.patientId);
+    mockPatientNotifications.push({
+      id: `pn-${Date.now()}`,
+      type: "patient",
+      title: "Solicitud rechazada",
+      message: `El paciente ${patient?.firstName} ${patient?.lastName} ha rechazado tu solicitud de acceso`,
+      time: "Ahora",
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    return success(request);
+  },
 };
 
 // ===== BOOKING (PUBLIC) =====

@@ -32,6 +32,7 @@ import PatientHistoryPage from "./pages/portal/PatientHistoryPage";
 import PatientNotificationsPage from "./pages/portal/PatientNotificationsPage";
 import PatientProfilePage from "./pages/portal/PatientProfilePage";
 import PatientAppointmentDetailPage from "./pages/portal/PatientAppointmentDetailPage";
+import PatientRequestsPage from "./pages/portal/PatientRequestsPage";
 import AdminSystemPage from "./pages/admin/AdminSystemPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminAuditPage from "./pages/admin/AdminAuditPage";
@@ -80,6 +81,7 @@ const App = () => (
               <Route path="/portal/notificaciones" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientNotificationsPage /></ProtectedRoute>} />
               <Route path="/portal/perfil" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientProfilePage /></ProtectedRoute>} />
               <Route path="/portal/citas/:id" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientAppointmentDetailPage /></ProtectedRoute>} />
+              <Route path="/portal/solicitudes" element={<ProtectedRoute allowedRoles={["paciente"]}><PatientRequestsPage /></ProtectedRoute>} />
 
               {/* Admin */}
               <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminSystemPage /></ProtectedRoute>} />

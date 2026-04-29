@@ -1,11 +1,12 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Stethoscope, CalendarDays, Bell, User, LogOut, Menu, X, Clock } from "lucide-react";
+import { Stethoscope, CalendarDays, Bell, User, LogOut, Menu, X, Clock, Users } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { icon: CalendarDays, label: "Mis citas", path: "/portal" },
   { icon: Clock, label: "Historial", path: "/portal/historial" },
+  { icon: Users, label: "Solicitudes", path: "/portal/solicitudes" },
   { icon: Bell, label: "Notificaciones", path: "/portal/notificaciones" },
   { icon: User, label: "Mi perfil", path: "/portal/perfil" },
 ];
