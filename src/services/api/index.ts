@@ -12,4 +12,5 @@ export {
   adminApi,
   patientPortalApi,
   bookingApi,
+  patientSearchApi,
 } from "./client";

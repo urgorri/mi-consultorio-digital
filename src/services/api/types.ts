@@ -34,6 +34,18 @@ export interface Professional extends User {
 
 export type ClinicRole = "admin" | "staff";
 
+export type DocumentType = "dni" | "pasaporte" | "cedula" | "otro";
+
+export interface ProfessionalPatientRequest {
+  id: string;
+  patientId: string;
+  professionalId: string;
+  clinicId?: string;
+  status: "pending" | "accepted" | "rejected" | "expired";
+  createdAt: string;
+  expiresAt?: string;
+}
+
 export interface Clinic {
   id: string;
   name: string;
@@ -64,6 +76,8 @@ export interface Patient {
   lastVisit: string;
   totalVisits: number;
   status: "activo" | "inactivo";
+  /** Document type (DNI, pasaporte, etc.) */
+  documentType?: DocumentType;
   /** Document number (DNI/ID). NOT unique — multiple records may share this. */
   documentNumber?: string;
   /** Clinics this patient is associated with. Empty = private only. */
