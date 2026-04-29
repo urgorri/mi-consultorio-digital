@@ -3,14 +3,14 @@ import type {
   ApiResponse, PaginatedResponse, Patient, Appointment, Consultation,
   Diagnosis, Notification, DashboardStats, ReportMetrics,
   User, AuditLog, SystemHealth, Professional, AppointmentType,
-  DocumentType, ProfessionalPatientRequest,
+  DocumentType, ProfessionalPatientRequest, RegistrationInvite,
 } from "./types";
 import {
   mockPatients, mockAppointments, mockConsultations, mockDiagnoses,
   mockNotifications, mockDashboardStats, mockReportMetrics,
   mockUsers, mockAuditLogs, mockSystemHealth, mockProfessional,
   mockAppointmentTypes, mockPatientNotifications, mockPatientPortalAppointments,
-  mockProfessionalPatientRequests,
+  mockProfessionalPatientRequests, mockRegistrationInvites,
 } from "./mockData";
 
 // Simulate network delay
@@ -384,6 +384,46 @@ export const patientSearchApi = {
     };
     mockProfessionalPatientRequests.push(request);
     return success(request);
+  },
+  async createPatientRegistrationInvite(
+    sentByProfessionalId: string,
+    documentType: DocumentType,
+    documentNumber: string,
+  ) {
+    await delay();
+    const invite: RegistrationInvite = {
+      token: `invite-${Date.now()}`,
+      sentByProfessionalId,
+      documentType,
+      documentNumber,
+      status: "pending",
+      expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+    };
+    mockRegistrationInvites.push(invite);
+    return success({
+      invite,
+      registrationUrl: `/registro/paciente?inviteToken=${invite.token}`,
+      channels: {
+        email: true,
+        whatsapp: true,
+      },
+    });
+  },
+  async getRegistrationInviteByToken(token: string) {
+    await delay(120);
+    const invite = mockRegistrationInvites.find(i => i.token === token);
+    if (!invite) return success(null);
+    if (new Date(invite.expiresAt).getTime() < Date.now() && invite.status === "pending") {
+      invite.status = "expired";
+    }
+    return success(invite);
+  },
+  async markRegistrationInviteAsUsed(token: string) {
+    await delay(120);
+    const invite = mockRegistrationInvites.find(i => i.token === token);
+    if (!invite) throw new Error("Invitación no encontrada");
+    invite.status = "used";
+    return success(invite);
   },
   async getProfessionalPatientRequests(professionalId: string) {
     await delay();

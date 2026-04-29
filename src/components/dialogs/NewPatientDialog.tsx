@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useClinicFilter } from "@/contexts/ClinicFilterContext";
@@ -34,6 +33,8 @@ const NewPatientDialog = ({ open, onOpenChange, onCreated, onRequestSent }: NewP
   const [foundPatient, setFoundPatient] = useState<Patient | null>(null);
   const [clinicIds, setClinicIds] = useState<string[]>([]);
   const [isPrivate, setIsPrivate] = useState(true);
+  const [inviteSending, setInviteSending] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState("");
 
   const toggleClinic = (id: string) =>
     setClinicIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -43,9 +44,12 @@ const NewPatientDialog = ({ open, onOpenChange, onCreated, onRequestSent }: NewP
     setDocumentType("dni");
     setDocumentNumber("");
     setFoundPatient(null);
+    setInviteUrl("");
     setClinicIds([]);
     setIsPrivate(true);
   };
+
+  const documentTrimmed = useMemo(() => documentNumber.trim(), [documentNumber]);
 
   const handleSearch = async () => {
     if (!documentNumber.trim()) {
@@ -54,7 +58,7 @@ const NewPatientDialog = ({ open, onOpenChange, onCreated, onRequestSent }: NewP
     }
     setSearching(true);
     try {
-      const result = await patientSearchApi.findPatientByDocument(documentType, documentNumber.trim());
+      const result = await patientSearchApi.findPatientByDocument(documentType, documentTrimmed);
       if (result.data.found && result.data.patient) {
         setFoundPatient(result.data.patient);
         setStep(2);
@@ -69,6 +73,44 @@ const NewPatientDialog = ({ open, onOpenChange, onCreated, onRequestSent }: NewP
       toast({ title: "Error", description: "No se pudo buscar el paciente.", variant: "destructive" });
     } finally {
       setSearching(false);
+    }
+  };
+
+  const handleSendInvite = async (channel: "email" | "whatsapp") => {
+    setInviteSending(true);
+    try {
+      const currentUser = await authApi.getCurrentUser();
+      const result = await patientSearchApi.createPatientRegistrationInvite(
+        currentUser.data.id,
+        documentType,
+        documentTrimmed
+      );
+      setInviteUrl(result.data.registrationUrl);
+      toast({ title: "Invitación enviada", description: `Link enviado por ${channel}.` });
+    } catch {
+      toast({ title: "Error", description: "No se pudo generar la invitación.", variant: "destructive" });
+    } finally {
+      setInviteSending(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      if (!inviteUrl) {
+        const currentUser = await authApi.getCurrentUser();
+        const result = await patientSearchApi.createPatientRegistrationInvite(
+          currentUser.data.id,
+          documentType,
+          documentTrimmed
+        );
+        setInviteUrl(result.data.registrationUrl);
+        await navigator.clipboard.writeText(result.data.registrationUrl);
+      } else {
+        await navigator.clipboard.writeText(inviteUrl);
+      }
+      toast({ title: "Link copiado", description: "Podés compartir el enlace manualmente." });
+    } catch {
+      toast({ title: "Error", description: "No se pudo copiar el link.", variant: "destructive" });
     }
   };
 
@@ -124,7 +166,7 @@ const NewPatientDialog = ({ open, onOpenChange, onCreated, onRequestSent }: NewP
           <DialogDescription>
             {step === 1 && "Buscá un paciente por su documento para evitar duplicados."}
             {step === 2 && "Verificá los datos del paciente antes de continuar."}
-            {step === 3 && "Confirmá los datos y enviá la solicitud de acceso."}
+            {step === 3 && (foundPatient ? "Confirmá los datos y enviá la solicitud de acceso." : "No encontramos un paciente con ese documento. Enviá un link de registro.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -244,6 +286,26 @@ const NewPatientDialog = ({ open, onOpenChange, onCreated, onRequestSent }: NewP
                 {saving ? "Enviando..." : "Confirmar y enviar solicitud"}
               </Button>
             </DialogFooter>
+          </div>
+        )}
+
+        {step === 3 && !foundPatient && (
+          <div className="space-y-4 py-4">
+            <div className="p-4 bg-muted rounded-lg space-y-2">
+              <p className="text-sm">No hay coincidencias para <strong>{documentType.toUpperCase()} {documentTrimmed}</strong>.</p>
+              <p className="text-xs text-muted-foreground">Podés invitar al paciente a registrarse y completar sus datos.</p>
+            </div>
+            <DialogFooter className="pt-4 flex-col sm:flex-row gap-2">
+              <Button type="button" variant="outline" onClick={() => setStep(1)}>Volver</Button>
+              <Button type="button" variant="secondary" disabled={inviteSending} onClick={() => handleSendInvite("email")}>
+                {inviteSending ? "Enviando..." : "Enviar link de registro (email)"}
+              </Button>
+              <Button type="button" variant="secondary" disabled={inviteSending} onClick={() => handleSendInvite("whatsapp")}>
+                {inviteSending ? "Enviando..." : "Enviar link de registro (WhatsApp)"}
+              </Button>
+              <Button type="button" onClick={handleCopyLink} disabled={inviteSending}>Copiar enlace</Button>
+            </DialogFooter>
+            {inviteUrl && <p className="text-xs break-all text-muted-foreground">Link: {inviteUrl}</p>}
           </div>
         )}
       </DialogContent>

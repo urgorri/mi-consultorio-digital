@@ -2,7 +2,7 @@ import type {
   Patient, Appointment, Consultation, Diagnosis, Notification,
   DashboardStats, ReportMetrics, AuditLog, SystemHealth,
   User, Location, AppointmentType, Schedule, Professional, Clinic,
-  DocumentType, ProfessionalPatientRequest,
+  DocumentType, ProfessionalPatientRequest, RegistrationInvite,
 } from "./types";
 
 export const mockClinics: Clinic[] = [
@@ -274,3 +274,4 @@ export const mockPatientNotifications: Notification[] = [
 
 // Mock professional-patient requests
 export const mockProfessionalPatientRequests: ProfessionalPatientRequest[] = [];
+export const mockRegistrationInvites: RegistrationInvite[] = [];

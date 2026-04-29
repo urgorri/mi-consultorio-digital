@@ -46,6 +46,15 @@ export interface ProfessionalPatientRequest {
   expiresAt?: string;
 }
 
+export interface RegistrationInvite {
+  token: string;
+  expiresAt: string;
+  sentByProfessionalId: string;
+  documentType: DocumentType;
+  documentNumber: string;
+  status: "pending" | "used" | "expired";
+}
+
 export interface Clinic {
   id: string;
   name: string;
