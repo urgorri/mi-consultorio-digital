@@ -131,6 +131,7 @@ export interface Appointment {
   reason?: string;
   notes?: string;
   confirmationSource: "paciente" | "profesional" | null;
+  patientPhone?: string;
   confirmedAt?: string;
   confirmedByUserId?: string;
   createdByRole: "paciente" | "profesional";

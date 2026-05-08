@@ -13,21 +13,77 @@ const statusColors: Record<string, string> = {
   completada: "bg-muted text-muted-foreground",
 };
 
-const PatientAppointmentDetailPage = () => {
-  const { id } = useParams();
+interface PatientAppointmentDetailPageProps {
+  isPublic?: boolean;
+}
+
+const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDetailPageProps) => {
+  const { id, token } = useParams();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (id) {
-      appointmentsApi.getById(id).then(res => {
-        setAppointment(res.data);
+    const fetchAppointment = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        if (isPublic && token) {
+          const res = await appointmentsApi.getByToken(token);
+          setAppointment(res.data);
+        } else if (id) {
+          const res = await appointmentsApi.getById(id);
+          setAppointment(res.data);
+        }
+      } catch (err: any) {
+        setError(err.message || "Error al cargar la cita");
+      } finally {
         setLoading(false);
-      }).catch(() => setLoading(false));
+      }
+    };
+
+    fetchAppointment();
+  }, [id, token, isPublic]);
+
+  const handleConfirm = async () => {
+    if (!appointment) return;
+    try {
+      const res = await appointmentsApi.update(appointment.id, {
+        status: "confirmada",
+        confirmationSource: "paciente"
+      });
+      setAppointment(res.data);
+    } catch (err: any) {
+      console.error(err);
     }
-  }, [id]);
+  };
+
+  const handleCancel = async () => {
+    if (!appointment) return;
+    try {
+      await appointmentsApi.cancel(appointment.id);
+      setAppointment({ ...appointment, status: "cancelada" });
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
 
   if (loading) {
+    const Skeleton = () => (
+      <div className="space-y-4">
+        <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+        <div className="h-48 bg-muted rounded-xl animate-pulse" />
+      </div>
+    );
+
+    if (isPublic) {
+      return (
+        <div className="min-h-screen bg-background p-4 md:p-8 max-w-2xl mx-auto">
+          <Skeleton />
+        </div>
+      );
+    }
+
     return (
       <PatientPortalLayout>
         <div className="space-y-4">
@@ -38,31 +94,54 @@ const PatientAppointmentDetailPage = () => {
     );
   }
 
-  if (!appointment) {
-    return (
-      <PatientPortalLayout>
-        <div className="text-center py-16">
-          <AlertCircle className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground">Cita no encontrada</p>
+  if (!appointment || error) {
+    const ErrorView = () => (
+      <div className="text-center py-16">
+        <AlertCircle className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+        <p className="text-muted-foreground">{error || "Cita no encontrada"}</p>
+        {!isPublic && (
           <Link to="/portal">
             <Button variant="outline" className="mt-4">Volver</Button>
           </Link>
+        )}
+      </div>
+    );
+
+    if (isPublic) {
+      return (
+        <div className="min-h-screen bg-background p-4 md:p-8 max-w-2xl mx-auto">
+          <div className="flex justify-center mb-8">
+            <h1 className="text-2xl font-bold text-primary">MiConsultorio</h1>
+          </div>
+          <ErrorView />
         </div>
+      );
+    }
+
+    return (
+      <PatientPortalLayout>
+        <ErrorView />
       </PatientPortalLayout>
     );
   }
 
   const isPast = appointment.status === "completada" || appointment.status === "cancelada";
 
-  return (
-    <PatientPortalLayout>
-      <div className="space-y-6">
+  const content = (
+      <div className={`space-y-6 ${isPublic ? "max-w-2xl mx-auto" : ""}`}>
+        {isPublic && (
+          <div className="flex justify-center mb-4">
+            <h1 className="text-2xl font-bold text-primary">MiConsultorio</h1>
+          </div>
+        )}
         <div className="flex items-center gap-3">
-          <Link to="/portal">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
+          {!isPublic && (
+            <Link to="/portal">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+          )}
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-foreground">Detalle de cita</h1>
           </div>
@@ -117,12 +196,28 @@ const PatientAppointmentDetailPage = () => {
         </div>
 
         {!isPast && (
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            {appointment.status === "pendiente" && (
+              <Button className="flex-1" onClick={handleConfirm}>Confirmar cita</Button>
+            )}
             <Button variant="outline" className="flex-1">Reprogramar</Button>
-            <Button variant="destructive" className="flex-1">Cancelar cita</Button>
+            <Button variant="destructive" className="flex-1" onClick={handleCancel}>Cancelar cita</Button>
           </div>
         )}
       </div>
+  );
+
+  if (isPublic) {
+    return (
+      <div className="min-h-screen bg-background p-4 md:p-8">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <PatientPortalLayout>
+      {content}
     </PatientPortalLayout>
   );
 };

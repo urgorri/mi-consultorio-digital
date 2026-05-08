@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { dashboardApi } from "@/services/api";
 import type { Appointment, DashboardStats } from "@/services/api";
+import AppointmentDetailDialog from "@/components/dialogs/AppointmentDetailDialog";
 
 const statusColors: Record<string, string> = {
   confirmada: "bg-success/10 text-success",
@@ -19,6 +20,8 @@ const DashboardPage = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [alerts, setAlerts] = useState<{ message: string; type: "warning" | "info" }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -98,7 +101,14 @@ const DashboardPage = () => {
           </div>
           <div className="divide-y divide-border">
             {appointments.map((apt) => (
-              <div key={apt.id} className="flex items-center gap-4 px-5 py-4 hover:bg-accent/30 transition-colors">
+              <div
+                key={apt.id}
+                className="flex items-center gap-4 px-5 py-4 hover:bg-accent/30 transition-colors cursor-pointer"
+                onClick={() => {
+                  setSelectedAppt(apt);
+                  setDetailOpen(true);
+                }}
+              >
                 <div className="text-center min-w-[50px]">
                   <p className="text-sm font-semibold text-foreground">{apt.time}</p>
                 </div>
@@ -114,6 +124,15 @@ const DashboardPage = () => {
           </div>
         </div>
       </div>
+
+      <AppointmentDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        appointment={selectedAppt}
+        onStatusChange={(id, status) => {
+          setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+        }}
+      />
     </DashboardLayout>
   );
 };

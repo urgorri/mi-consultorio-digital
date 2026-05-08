@@ -3,9 +3,11 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, User, MapPin, FileText } from "lucide-react";
+import { Calendar, Clock, User, MapPin, FileText, MessageSquare } from "lucide-react";
 import type { Appointment } from "@/services/api/types";
 import { useToast } from "@/hooks/use-toast";
+import { appointmentsApi } from "@/services/api";
+import { mockClinics, mockProfessional } from "@/services/api/mockData";
 
 interface AppointmentDetailDialogProps {
   open: boolean;
@@ -38,6 +40,37 @@ const AppointmentDetailDialog = ({ open, onOpenChange, appointment, onStatusChan
     onStatusChange?.(appointment.id, status);
     toast({ title: "Estado actualizado", description: `La cita se marcó como ${statusLabels[status].toLowerCase()}.` });
     onOpenChange(false);
+  };
+
+  const handleSendWhatsApp = async () => {
+    try {
+      const res = await appointmentsApi.generateSignedUrl(appointment.id);
+      if (res.success) {
+        const publicUrl = res.data.url;
+        const dateStr = new Date(appointment.date).toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+
+        let locationAddress = "";
+        if (appointment.clinicId) {
+          const clinic = mockClinics.find(c => c.id === appointment.clinicId);
+          locationAddress = clinic?.address || "";
+        } else {
+          const location = mockProfessional.locations.find(l => l.id === appointment.locationId);
+          locationAddress = location?.address || "";
+        }
+
+        const message = `Hola ${appointment.patientName}, te recordamos tu cita con ${appointment.professionalName}.\n\n📅 *Fecha:* ${dateStr}\n🕒 *Hora:* ${appointment.time}\n📍 *Lugar:* ${appointment.locationName}${locationAddress ? ` (${locationAddress})` : ""}\n\nPor favor, confirma o gestiona tu cita en el siguiente link:\n${publicUrl}`;
+
+        const encodedMessage = encodeURIComponent(message);
+        const phone = appointment.patientPhone?.replace(/\D/g, "") || "";
+        window.open(`https://wa.me/${phone}?text=${encodedMessage}`, "_blank");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo generar el link de WhatsApp.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -85,6 +118,12 @@ const AppointmentDetailDialog = ({ open, onOpenChange, appointment, onStatusChan
           </div>
         </div>
         <DialogFooter className="flex-col sm:flex-row gap-2">
+          {(appointment.status === "pendiente" || appointment.status === "confirmada") && (
+            <Button size="sm" variant="outline" className="gap-2" onClick={handleSendWhatsApp}>
+              <MessageSquare className="w-4 h-4" />
+              WhatsApp
+            </Button>
+          )}
           {appointment.status === "pendiente" && (
             <Button size="sm" onClick={() => changeStatus("confirmada")}>Confirmar</Button>
           )}
