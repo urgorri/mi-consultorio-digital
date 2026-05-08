@@ -110,7 +110,8 @@ export const patientsApi = {
         `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
         p.email.toLowerCase().includes(q) ||
         p.phone.includes(q) ||
-        p.documentNumber.includes(q)
+        p.documentNumber.includes(q) ||
+        `${p.documentType} ${p.documentNumber}`.toLowerCase().includes(q)
       );
     }
     return paginated(results, results.length, params?.page, params?.limit);

@@ -13,7 +13,7 @@ import { useClinicFilter, PRIVATE_SCOPE } from "@/contexts/ClinicFilterContext";
 import FilterDialog from "@/components/dashboard/FilterDialog";
 import { cn } from "@/lib/utils";
 
-type SortKey = "name" | "createdAt" | "lastVisit" | "scope";
+type SortKey = "name" | "dni" | "lastVisit" | "scope";
 type SortDir = "asc" | "desc";
 
 interface PatientFilters {
@@ -82,8 +82,8 @@ const PatientsPage = () => {
         case "name":
           cmp = `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
           break;
-        case "createdAt":
-          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "dni":
+          cmp = (a.documentNumber || "").localeCompare(b.documentNumber || "");
           break;
         case "lastVisit":
           cmp = new Date(a.lastVisit).getTime() - new Date(b.lastVisit).getTime();
@@ -151,7 +151,7 @@ const PatientsPage = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nombre, correo o teléfono..."
+              placeholder="Buscar por nombre, DNI, correo o teléfono..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10"
@@ -237,8 +237,8 @@ const PatientsPage = () => {
             </button>
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Correo</span>
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Teléfono</span>
-            <button onClick={() => toggleSort("createdAt")} className={sortHeaderClass("createdAt")}>
-              Alta {sortIcon("createdAt")}
+            <button onClick={() => toggleSort("dni")} className={sortHeaderClass("dni")}>
+              DNI {sortIcon("dni")}
             </button>
             <button onClick={() => toggleSort("lastVisit")} className={sortHeaderClass("lastVisit")}>
               Últ. visita {sortIcon("lastVisit")}
@@ -265,7 +265,7 @@ const PatientsPage = () => {
                 <span className="text-sm text-muted-foreground truncate">{patient.email}</span>
                 <span className="text-sm text-muted-foreground">{patient.phone}</span>
                 <span className="text-sm text-muted-foreground">
-                  {new Date(patient.createdAt).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "2-digit" })}
+                  {patient.documentType ? `${patient.documentType.toUpperCase()} ` : ""}{patient.documentNumber}
                 </span>
                 <span className="text-sm text-muted-foreground">
                   {new Date(patient.lastVisit).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}

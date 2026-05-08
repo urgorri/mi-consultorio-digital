@@ -61,7 +61,7 @@ const PatientDetailPage = () => {
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-foreground">{patient.firstName} {patient.lastName}</h1>
             <p className="text-sm text-muted-foreground">
-              {new Date().getFullYear() - new Date(patient.birthDate).getFullYear()} años · {patient.gender} · Paciente #{id}
+              {new Date().getFullYear() - new Date(patient.birthDate).getFullYear()} años · {patient.gender} · {patient.documentType ? `${patient.documentType.toUpperCase()} ` : ""}{patient.documentNumber} · Paciente #{id}
             </p>
           </div>
           <Button size="sm" variant="outline" className="gap-1" onClick={() => setEditOpen(true)}>
