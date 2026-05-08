@@ -3,8 +3,8 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Plus, Clock, Filter } from "lucide-react";
-import { appointmentsApi } from "@/services/api";
-import type { Appointment } from "@/services/api";
+import { appointmentsApi, settingsApi } from "@/services/api";
+import type { Appointment, Schedule } from "@/services/api";
 import NewAppointmentDialog from "@/components/dialogs/NewAppointmentDialog";
 import AppointmentDetailDialog from "@/components/dialogs/AppointmentDetailDialog";
 import ClinicBadge from "@/components/dashboard/ClinicBadge";
@@ -12,7 +12,6 @@ import { useClinicFilter } from "@/contexts/ClinicFilterContext";
 
 type ViewType = "dia" | "semana" | "mes";
 
-const hours = Array.from({ length: 10 }, (_, i) => `${(i + 8).toString().padStart(2, "0")}:00`);
 const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 const statusColors: Record<string, string> = {
@@ -26,6 +25,7 @@ const AgendaPage = () => {
   const [view, setView] = useState<ViewType>("dia");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [newOpen, setNewOpen] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -34,7 +34,38 @@ const AgendaPage = () => {
 
   useEffect(() => {
     appointmentsApi.list().then(res => setAllAppointments(res.data));
+    settingsApi.getSchedules().then(res => setSchedules(res.data));
   }, []);
+
+  const hours = useMemo(() => {
+    if (schedules.length === 0) {
+      return Array.from({ length: 10 }, (_, i) => `${(i + 8).toString().padStart(2, "0")}:00`);
+    }
+
+    const enabledSchedules = schedules.filter(s => s.enabled);
+    if (enabledSchedules.length === 0) {
+      return Array.from({ length: 10 }, (_, i) => `${(i + 8).toString().padStart(2, "0")}:00`);
+    }
+
+    let minHour = 24;
+    let maxHour = 0;
+
+    enabledSchedules.forEach(s => {
+      const startH = parseInt(s.startTime.split(":")[0]);
+      const endH = parseInt(s.endTime.split(":")[0]);
+      if (startH < minHour) minHour = startH;
+      if (endH > maxHour) maxHour = endH;
+    });
+
+    // Ensure at least some range if end time is on the hour
+    if (maxHour <= minHour) maxHour = minHour + 1;
+
+    const result = [];
+    for (let h = minHour; h <= maxHour; h++) {
+      result.push(`${h.toString().padStart(2, "0")}:00`);
+    }
+    return result;
+  }, [schedules]);
 
   const appointments = useMemo(
     () => allAppointments.filter(a => {
@@ -202,7 +233,7 @@ const AgendaPage = () => {
                   </div>
                 );
               })}
-              {hours.slice(0, 8).map(hour => (
+              {hours.map(hour => (
                 <div key={hour} className="contents">
                   <div className="border-r border-b border-border px-2 py-3 text-xs text-muted-foreground">
                     {hour}
@@ -267,7 +298,15 @@ const AgendaPage = () => {
                           </div>
                         ))}
                         {dayAppts.length > 2 && (
-                          <p className="text-xs text-muted-foreground">+{dayAppts.length - 2} más</p>
+                          <p
+                            className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => {
+                              setCurrentDate(date);
+                              setView("dia");
+                            }}
+                          >
+                            +{dayAppts.length - 2} más
+                          </p>
                         )}
                       </>
                     )}
