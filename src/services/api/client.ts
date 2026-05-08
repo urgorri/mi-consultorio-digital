@@ -216,9 +216,30 @@ export const appointmentsApi = {
   },
   async getAvailableSlots(professionalId: string, date: string) {
     await delay();
-    const booked = mockAppointments.filter(a => a.date === date && a.professionalId === professionalId).map(a => a.time);
-    const allSlots = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"];
-    return success(allSlots.filter(s => !booked.includes(s)));
+    const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
+    const schedule = mockSchedules.find(s => s.dayOfWeek === dayOfWeek && s.enabled);
+
+    if (!schedule) return success([]);
+
+    const [startH, startM] = schedule.startTime.split(":").map(Number);
+    const [endH, endM] = schedule.endTime.split(":").map(Number);
+
+    const slots: string[] = [];
+    let currentTotal = startH * 60 + startM;
+    const endTotal = endH * 60 + endM;
+
+    while (currentTotal < endTotal) {
+      const h = Math.floor(currentTotal / 60);
+      const m = currentTotal % 60;
+      slots.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+      currentTotal += 30;
+    }
+
+    const booked = mockAppointments
+      .filter(a => a.date === date && a.professionalId === professionalId)
+      .map(a => a.time);
+
+    return success(slots.filter(s => !booked.includes(s)));
   },
   async getByToken(token: string) {
     await delay();
@@ -393,6 +414,10 @@ export const settingsApi = {
   async updateAppointmentType(id: string, data: Partial<AppointmentType>) {
     await delay();
     return success(data);
+  },
+  async getSchedules() {
+    await delay();
+    return success(mockSchedules);
   },
   async requestPremiumUpgrade(feature: string) {
     await delay();

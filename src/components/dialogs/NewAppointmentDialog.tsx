@@ -8,9 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { patientsApi } from "@/services/api";
+import { patientsApi, appointmentsApi, settingsApi } from "@/services/api";
 import { useClinicFilter } from "@/contexts/ClinicFilterContext";
-import type { Patient, Appointment } from "@/services/api/types";
+import type { Patient, Appointment, AppointmentType } from "@/services/api/types";
 
 interface NewAppointmentDialogProps {
   open: boolean;
@@ -19,22 +19,13 @@ interface NewAppointmentDialogProps {
   defaultDate?: string;
 }
 
-const timeSlots = [
-  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "12:00", "12:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00",
-];
-
-const appointmentTypes = [
-  { id: "Seguimiento", duration: 20 },
-  { id: "Primera vez", duration: 45 },
-  { id: "Urgencia", duration: 15 },
-];
-
 const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: NewAppointmentDialogProps) => {
   const { toast } = useToast();
   const { availableClinics } = useClinicFilter();
   const [saving, setSaving] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [form, setForm] = useState({
     patientId: "",
     date: defaultDate || new Date().toISOString().split("T")[0],
@@ -47,15 +38,33 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
   useEffect(() => {
     if (open) {
       patientsApi.list({}).then(res => setPatients(res.data));
+      settingsApi.getAppointmentTypes().then(res => {
+        // Map to ensure name is used for both id and display if needed,
+        // but the form expects 'type' to match 't.id' (actually t.name in mock)
+        // Let's adjust to match how it's used: SelectItem value={t.name}
+        setAppointmentTypes(res.data);
+      });
       if (defaultDate) setForm(prev => ({ ...prev, date: defaultDate }));
     }
   }, [open, defaultDate]);
+
+  useEffect(() => {
+    if (open && form.date) {
+      appointmentsApi.getAvailableSlots("prof-1", form.date).then(res => {
+        setAvailableSlots(res.data);
+        // Reset time if it's no longer available
+        if (form.time && !res.data.includes(form.time)) {
+          update("time", "");
+        }
+      });
+    }
+  }, [open, form.date]);
 
   const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
   const getEndTime = () => {
     if (!form.time || !form.type) return "";
-    const type = appointmentTypes.find(t => t.id === form.type);
+    const type = appointmentTypes.find(t => t.name === form.type);
     if (!type) return "";
     const [h, m] = form.time.split(":").map(Number);
     const total = h * 60 + m + type.duration;
@@ -139,7 +148,7 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
               <SelectTrigger><SelectValue placeholder="Seleccionar tipo" /></SelectTrigger>
               <SelectContent>
                 {appointmentTypes.map(t => (
-                  <SelectItem key={t.id} value={t.id}>{t.id} ({t.duration} min)</SelectItem>
+                  <SelectItem key={t.id} value={t.name}>{t.name} ({t.duration} min)</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -154,16 +163,20 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
               <Select value={form.time} onValueChange={v => update("time", v)}>
                 <SelectTrigger><SelectValue placeholder="Hora" /></SelectTrigger>
                 <SelectContent>
-                  {timeSlots.map(t => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
+                  {availableSlots.length > 0 ? (
+                    availableSlots.map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>No hay turnos</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
           </div>
           {form.time && form.type && (
             <p className="text-xs text-muted-foreground">
-              Duración: {appointmentTypes.find(t => t.id === form.type)?.duration} min · Termina a las {getEndTime()}
+              Duración: {appointmentTypes.find(t => t.name === form.type)?.duration} min · Termina a las {getEndTime()}
             </p>
           )}
           <div className="space-y-2">
