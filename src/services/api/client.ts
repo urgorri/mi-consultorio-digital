@@ -180,12 +180,34 @@ export const appointmentsApi = {
       throw new Error("La autorización para este paciente ha sido revocada. No se pueden agendar nuevas citas.");
     }
 
-    return success({ ...data, id: `apt-${Date.now()}`, status: "pendiente" } as Appointment);
+    const newAppointment: Appointment = {
+      ...data,
+      id: `apt-${Date.now()}`,
+      status: data.status || "pendiente",
+      createdByRole: data.createdByRole || "profesional",
+      confirmationSource: data.confirmationSource || (data.status === "confirmada" ? "profesional" : null),
+      cancellationDeadlineHours: data.cancellationDeadlineHours || 24,
+    } as Appointment;
+
+    return success(newAppointment);
   },
   async update(id: string, data: Partial<Appointment>) {
     await delay();
     const apt = mockAppointments.find(a => a.id === id);
-    return success({ ...apt, ...data } as Appointment);
+    if (!apt) throw new Error("Cita no encontrada");
+
+    const updatedApt = {
+      ...apt,
+      ...data
+    } as Appointment;
+
+    // If status changes to confirmed and no confirmation info is provided, set defaults
+    if (data.status === "confirmada" && apt.status !== "confirmada") {
+      updatedApt.confirmedAt = updatedApt.confirmedAt || new Date().toISOString();
+      updatedApt.confirmationSource = updatedApt.confirmationSource || "profesional";
+    }
+
+    return success(updatedApt);
   },
   async cancel(id: string) {
     await delay();

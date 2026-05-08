@@ -130,6 +130,18 @@ export interface Appointment {
   status: "confirmada" | "pendiente" | "cancelada" | "completada" | "no_asistio";
   reason?: string;
   notes?: string;
+  confirmationSource: "paciente" | "profesional" | null;
+  confirmedAt?: string;
+  confirmedByUserId?: string;
+  createdByRole: "paciente" | "profesional";
+  cancellationDeadlineHours?: number;
+}
+
+export interface AppointmentAccessToken {
+  token: string;
+  appointmentId: string;
+  expiresAt: string;
+  permissions: string[];
 }
 
 export interface Consultation {

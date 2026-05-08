@@ -46,20 +46,24 @@ export const mockPatients: Patient[] = [
 ];
 
 export const mockAppointments: Appointment[] = [
-  { id: "apt-1", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-10", time: "09:00", endTime: "09:30", type: "Consulta General", status: "confirmada" },
-  { id: "apt-2", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-10", time: "09:30", endTime: "10:00", type: "Seguimiento", status: "confirmada" },
-  { id: "apt-3", patientId: "p-3", patientName: "Ana Rodríguez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: null, date: "2026-04-10", time: "10:30", endTime: "11:15", type: "Primera vez", status: "pendiente" },
-  { id: "apt-4", patientId: "p-4", patientName: "Miguel Torres", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-2", date: "2026-04-10", time: "11:00", endTime: "11:30", type: "Consulta General", status: "confirmada" },
-  { id: "apt-5", patientId: "p-5", patientName: "Sofía Hernández", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", clinicId: "clinic-3", date: "2026-04-10", time: "14:00", endTime: "14:30", type: "Seguimiento", status: "confirmada" },
-  { id: "apt-6", patientId: "p-6", patientName: "Carlos Ruiz", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", clinicId: "clinic-1", date: "2026-04-10", time: "15:00", endTime: "15:30", type: "Consulta General", status: "confirmada" },
-  { id: "apt-7", patientId: "p-7", patientName: "Elena Guzmán", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: null, date: "2026-04-10", time: "16:00", endTime: "16:30", type: "Seguimiento", status: "pendiente" },
-  { id: "apt-8", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-05", time: "10:30", endTime: "11:00", type: "Consulta General", status: "completada" },
-  { id: "apt-9", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-2", date: "2026-04-03", time: "11:00", endTime: "11:30", type: "Seguimiento", status: "completada" },
-  { id: "apt-10", patientId: "p-3", patientName: "Ana Rodríguez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: null, date: "2026-04-01", time: "14:00", endTime: "14:45", type: "Primera vez", status: "cancelada" },
-  { id: "apt-11", patientId: "p-4", patientName: "Miguel Torres", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", clinicId: "clinic-2", date: "2026-04-11", time: "09:00", endTime: "09:30", type: "Consulta General", status: "confirmada" },
-  { id: "apt-12", patientId: "p-5", patientName: "Sofía Hernández", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-3", date: "2026-04-11", time: "10:00", endTime: "10:30", type: "Seguimiento", status: "pendiente" },
-  { id: "apt-13", patientId: "p-6", patientName: "Carlos Ruiz", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-12", time: "09:30", endTime: "10:00", type: "Consulta General", status: "confirmada" },
-  { id: "apt-14", patientId: "p-8", patientName: "Roberto Díaz", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", clinicId: "clinic-2", date: "2026-04-12", time: "14:00", endTime: "14:30", type: "Seguimiento", status: "confirmada" },
+  { id: "apt-1", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-10", time: "09:00", endTime: "09:30", type: "Consulta General", status: "confirmada", createdByRole: "profesional", confirmationSource: "profesional" },
+  { id: "apt-2", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-10", time: "09:30", endTime: "10:00", type: "Seguimiento", status: "confirmada", createdByRole: "profesional", confirmationSource: "profesional" },
+  { id: "apt-3", patientId: "p-3", patientName: "Ana Rodríguez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: null, date: "2026-04-10", time: "10:30", endTime: "11:15", type: "Primera vez", status: "pendiente", createdByRole: "profesional", confirmationSource: null },
+  { id: "apt-4", patientId: "p-4", patientName: "Miguel Torres", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-2", date: "2026-04-10", time: "11:00", endTime: "11:30", type: "Consulta General", status: "confirmada", createdByRole: "paciente", confirmationSource: "profesional", confirmedAt: "2026-04-09T16:00:00", confirmedByUserId: "prof-1" },
+  { id: "apt-5", patientId: "p-5", patientName: "Sofía Hernández", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", clinicId: "clinic-3", date: "2026-04-10", time: "14:00", endTime: "14:30", type: "Seguimiento", status: "confirmada", createdByRole: "profesional", confirmationSource: "paciente", confirmedAt: "2026-04-09T10:00:00" },
+  { id: "apt-6", patientId: "p-6", patientName: "Carlos Ruiz", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", clinicId: "clinic-1", date: "2026-04-10", time: "15:00", endTime: "15:30", type: "Consulta General", status: "confirmada", createdByRole: "profesional", confirmationSource: "profesional" },
+  { id: "apt-7", patientId: "p-7", patientName: "Elena Guzmán", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: null, date: "2026-04-10", time: "16:00", endTime: "16:30", type: "Seguimiento", status: "pendiente", createdByRole: "paciente", confirmationSource: null },
+  { id: "apt-8", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-05", time: "10:30", endTime: "11:00", type: "Consulta General", status: "completada", createdByRole: "profesional", confirmationSource: "profesional" },
+  { id: "apt-9", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-2", date: "2026-04-03", time: "11:00", endTime: "11:30", type: "Seguimiento", status: "completada", createdByRole: "profesional", confirmationSource: "profesional" },
+  { id: "apt-10", patientId: "p-3", patientName: "Ana Rodríguez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: null, date: "2026-04-01", time: "14:00", endTime: "14:45", type: "Primera vez", status: "cancelada", createdByRole: "paciente", confirmationSource: null },
+  { id: "apt-11", patientId: "p-4", patientName: "Miguel Torres", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", clinicId: "clinic-2", date: "2026-04-11", time: "09:00", endTime: "09:30", type: "Consulta General", status: "confirmada", createdByRole: "profesional", confirmationSource: "profesional" },
+  { id: "apt-12", patientId: "p-5", patientName: "Sofía Hernández", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-3", date: "2026-04-11", time: "10:00", endTime: "10:30", type: "Seguimiento", status: "pendiente", createdByRole: "profesional", confirmationSource: null },
+  { id: "apt-13", patientId: "p-6", patientName: "Carlos Ruiz", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-12", time: "09:30", endTime: "10:00", type: "Consulta General", status: "confirmada", createdByRole: "profesional", confirmationSource: "profesional" },
+  { id: "apt-14", patientId: "p-8", patientName: "Roberto Díaz", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-2", locationName: "Consultorio Norte", clinicId: "clinic-2", date: "2026-04-12", time: "14:00", endTime: "14:30", type: "Seguimiento", status: "confirmada", createdByRole: "profesional", confirmationSource: "profesional" },
+  // Turno creado por paciente y pendiente con token activo
+  { id: "apt-15", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-15", time: "10:00", endTime: "10:30", type: "Consulta General", status: "pendiente", createdByRole: "paciente", confirmationSource: null, cancellationDeadlineHours: 24 },
+  // Turno creado por profesional y pendiente con token expirado
+  { id: "apt-16", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-16", time: "11:00", endTime: "11:30", type: "Seguimiento", status: "pendiente", createdByRole: "profesional", confirmationSource: null, cancellationDeadlineHours: 48 },
 ];
 
 export const mockConsultations: Consultation[] = [
@@ -272,7 +276,22 @@ export const mockPatientNotifications: Notification[] = [
   { id: "pn-3", type: "system", title: "Bienvenido a MiConsultorio", message: "Tu cuenta ha sido creada exitosamente. Explora la plataforma.", time: "Hace 1 semana", read: true, createdAt: "2026-04-03T10:00:00" },
 ];
 
-import type { CareAuthorization } from "./types";
+import type { CareAuthorization, AppointmentAccessToken } from "./types";
+
+export const mockAppointmentTokens: AppointmentAccessToken[] = [
+  {
+    token: "token-active-123",
+    appointmentId: "apt-15",
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    permissions: ["confirm", "cancel"]
+  },
+  {
+    token: "token-expired-456",
+    appointmentId: "apt-16",
+    expiresAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    permissions: ["confirm", "cancel"]
+  }
+];
 
 export const mockCareAuthorizations: CareAuthorization[] = [
   // Laura Martínez (p-1): Private + Clinic 1
