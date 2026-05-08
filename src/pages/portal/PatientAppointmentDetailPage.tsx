@@ -4,6 +4,7 @@ import { useParams, Link } from "react-router-dom";
 import { appointmentsApi } from "@/services/api";
 import type { Appointment } from "@/services/api";
 import { Button } from "@/components/ui/button";
+import { canCancelAppointment, canRescheduleAppointment } from "@/lib/utils";
 import { ArrowLeft, CalendarDays, Clock, MapPin, User, AlertCircle } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -196,12 +197,33 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
         </div>
 
         {!isPast && (
-          <div className="flex flex-wrap gap-3">
-            {appointment.status === "pendiente" && (
-              <Button className="flex-1" onClick={handleConfirm}>Confirmar cita</Button>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-3">
+              {appointment.status === "pendiente" && (
+                <Button className="flex-1" onClick={handleConfirm}>Confirmar cita</Button>
+              )}
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled={!canRescheduleAppointment(appointment)}
+              >
+                Reprogramar
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleCancel}
+                disabled={!canCancelAppointment(appointment)}
+              >
+                Cancelar cita
+              </Button>
+            </div>
+            {(!canCancelAppointment(appointment) || !canRescheduleAppointment(appointment)) && (
+              <div className="flex items-center gap-2 text-destructive bg-destructive/5 border border-destructive/20 p-3 rounded-lg text-sm">
+                <AlertCircle className="w-4 h-4" />
+                <p>Las modificaciones solo están permitidas hasta {appointment.cancellationDeadlineHours ?? 24} h antes de la cita.</p>
+              </div>
             )}
-            <Button variant="outline" className="flex-1">Reprogramar</Button>
-            <Button variant="destructive" className="flex-1" onClick={handleCancel}>Cancelar cita</Button>
           </div>
         )}
       </div>

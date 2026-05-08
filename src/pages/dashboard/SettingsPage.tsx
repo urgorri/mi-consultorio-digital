@@ -118,23 +118,36 @@ const SettingsPage = () => {
                 </Button>
               </div>
               {[
-                { name: "Consulta General", duration: "30 min", visible: true },
-                { name: "Seguimiento", duration: "20 min", visible: true },
-                { name: "Primera vez", duration: "45 min", visible: true },
-                { name: "Urgencia", duration: "15 min", visible: false },
+                { name: "Consulta General", duration: "30 min", visible: true, deadline: 24 },
+                { name: "Seguimiento", duration: "20 min", visible: true, deadline: 24 },
+                { name: "Primera vez", duration: "45 min", visible: true, deadline: 48 },
+                { name: "Urgencia", duration: "15 min", visible: false, deadline: 0 },
               ].map((type) => (
-                <div key={type.name} className="flex items-center gap-4 border border-border rounded-lg p-4">
+                <div key={type.name} className="flex flex-col gap-4 border border-border rounded-lg p-4">
+                  <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
                     <Clock className="w-5 h-5 text-primary" />
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">{type.name}</p>
-                    <p className="text-sm text-muted-foreground">{type.duration}</p>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">{type.name}</p>
+                      <p className="text-sm text-muted-foreground">{type.duration}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">{type.visible ? "Público" : "Privado"}</span>
+                      <Switch defaultChecked={type.visible} />
+                      <Button variant="ghost" size="sm">Editar</Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">{type.visible ? "Público" : "Privado"}</span>
-                    <Switch defaultChecked={type.visible} />
-                    <Button variant="ghost" size="sm">Editar</Button>
+                  <div className="flex items-center gap-4 pl-14">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={`deadline-${type.name}`} className="text-xs text-muted-foreground">Ventana de cancelación (horas):</Label>
+                      <Input
+                        id={`deadline-${type.name}`}
+                        type="number"
+                        className="w-16 h-7 text-xs"
+                        defaultValue={type.deadline}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}

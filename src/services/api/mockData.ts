@@ -64,6 +64,10 @@ export const mockAppointments: Appointment[] = [
   { id: "apt-15", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-15", time: "10:00", endTime: "10:30", type: "Consulta General", status: "pendiente", createdByRole: "paciente", confirmationSource: null, cancellationDeadlineHours: 24 },
   // Turno creado por profesional y pendiente con token expirado
   { id: "apt-16", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-04-16", time: "11:00", endTime: "11:30", type: "Seguimiento", status: "pendiente", createdByRole: "profesional", confirmationSource: null, cancellationDeadlineHours: 48 },
+  // Turno para pruebas de cancelación (dentro de ventana)
+  { id: "apt-test-1", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-05-15", time: "10:00", endTime: "10:30", type: "Consulta General", status: "confirmada", createdByRole: "paciente", confirmationSource: "paciente", cancellationDeadlineHours: 24 },
+  // Turno para pruebas de cancelación (fuera de ventana - muy pronto)
+  { id: "apt-test-2", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", locationId: "loc-1", locationName: "Consultorio Centro", clinicId: "clinic-1", date: "2026-05-08", time: "12:00", endTime: "12:30", type: "Consulta General", status: "confirmada", createdByRole: "paciente", confirmationSource: "paciente", cancellationDeadlineHours: 24 },
 ];
 
 export const mockConsultations: Consultation[] = [
@@ -289,6 +293,18 @@ export const mockAppointmentTokens: AppointmentAccessToken[] = [
     token: "token-expired-456",
     appointmentId: "apt-16",
     expiresAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    permissions: ["confirm", "cancel"]
+  },
+  {
+    token: "token-test-1",
+    appointmentId: "apt-test-1",
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    permissions: ["confirm", "cancel"]
+  },
+  {
+    token: "token-test-2",
+    appointmentId: "apt-test-2",
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     permissions: ["confirm", "cancel"]
   }
 ];
