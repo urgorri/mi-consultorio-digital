@@ -118,7 +118,6 @@ const SettingsPage = () => {
                 </Button>
               </div>
               {[
-                { name: "Consulta General", duration: "30 min", visible: true, deadline: 24 },
                 { name: "Seguimiento", duration: "20 min", visible: true, deadline: 24 },
                 { name: "Primera vez", duration: "45 min", visible: true, deadline: 48 },
                 { name: "Urgencia", duration: "15 min", visible: false, deadline: 0 },

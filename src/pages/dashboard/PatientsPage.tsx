@@ -21,13 +21,13 @@ interface PatientFilters {
   gender: string;         // "all" | "Femenino" | "Masculino" | "Otro"
   ageFrom: string;        // numeric string
   ageTo: string;
-  hasConsultations: string; // "all" | "yes" | "no"
+  clinicalType: string;   // "all" | "first" | "followup" | "none"
   professionalId: string;   // "all" | id (placeholder until model supports owner)
 }
 
 const DEFAULT_FILTERS: PatientFilters = {
   scope: "all", gender: "all", ageFrom: "", ageTo: "",
-  hasConsultations: "all", professionalId: "all",
+  clinicalType: "all", professionalId: "all",
 };
 
 const calcAge = (birthDate: string) => {
@@ -70,8 +70,9 @@ const PatientsPage = () => {
     const ageTo = filters.ageTo ? parseInt(filters.ageTo, 10) : null;
     if (ageFrom !== null) list = list.filter(p => calcAge(p.birthDate) >= ageFrom);
     if (ageTo !== null) list = list.filter(p => calcAge(p.birthDate) <= ageTo);
-    if (filters.hasConsultations === "yes") list = list.filter(p => p.totalVisits > 0);
-    if (filters.hasConsultations === "no") list = list.filter(p => p.totalVisits === 0);
+    if (filters.clinicalType === "first") list = list.filter(p => p.totalVisits === 1);
+    if (filters.clinicalType === "followup") list = list.filter(p => p.totalVisits > 1);
+    if (filters.clinicalType === "none") list = list.filter(p => p.totalVisits === 0);
     // professionalId: not modeled yet, leaves a no-op hook for future backend.
 
     // Sort
@@ -127,7 +128,7 @@ const PatientsPage = () => {
     if (filters.gender !== "all") n++;
     if (filters.ageFrom) n++;
     if (filters.ageTo) n++;
-    if (filters.hasConsultations !== "all") n++;
+    if (filters.clinicalType !== "all") n++;
     if (filters.professionalId !== "all") n++;
     return n;
   }, [filters]);
@@ -213,13 +214,14 @@ const PatientsPage = () => {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Consultas</label>
-                  <Select value={draft.hasConsultations} onValueChange={(v) => setDraft({ ...draft, hasConsultations: v })}>
+                  <label className="text-xs font-medium text-muted-foreground">Tipo clínico</label>
+                  <Select value={draft.clinicalType} onValueChange={(v) => setDraft({ ...draft, clinicalType: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="yes">Con consultas</SelectItem>
-                      <SelectItem value="no">Sin consultas</SelectItem>
+                      <SelectItem value="first">Primera vez</SelectItem>
+                      <SelectItem value="followup">Seguimiento</SelectItem>
+                      <SelectItem value="none">Sin consultas</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

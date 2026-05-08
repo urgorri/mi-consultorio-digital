@@ -25,7 +25,6 @@ const timeSlots = [
 ];
 
 const appointmentTypes = [
-  { id: "Consulta General", duration: 30 },
   { id: "Seguimiento", duration: 20 },
   { id: "Primera vez", duration: 45 },
   { id: "Urgencia", duration: 15 },

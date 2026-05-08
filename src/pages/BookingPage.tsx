@@ -44,7 +44,6 @@ const doctors = [
 ];
 
 const visitTypes = [
-  { id: "general", name: "Consulta General", duration: "30 min" },
   { id: "seguimiento", name: "Seguimiento", duration: "20 min" },
   { id: "primera", name: "Primera vez", duration: "45 min" },
 ];

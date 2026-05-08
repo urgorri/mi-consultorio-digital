@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus, Clock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChevronLeft, ChevronRight, Plus, Clock, Filter } from "lucide-react";
 import { appointmentsApi } from "@/services/api";
 import type { Appointment } from "@/services/api";
 import NewAppointmentDialog from "@/components/dialogs/NewAppointmentDialog";
@@ -28,6 +29,7 @@ const AgendaPage = () => {
   const [newOpen, setNewOpen] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const { matchesFilter } = useClinicFilter();
 
   useEffect(() => {
@@ -35,8 +37,12 @@ const AgendaPage = () => {
   }, []);
 
   const appointments = useMemo(
-    () => allAppointments.filter(a => matchesFilter({ clinicId: a.clinicId })),
-    [allAppointments, matchesFilter]
+    () => allAppointments.filter(a => {
+      const matchesClinic = matchesFilter({ clinicId: a.clinicId });
+      const matchesType = typeFilter === "all" || a.type === typeFilter;
+      return matchesClinic && matchesType;
+    }),
+    [allAppointments, matchesFilter, typeFilter]
   );
 
   const formatDate = (d: Date) => d.toISOString().split("T")[0];
@@ -117,14 +123,31 @@ const AgendaPage = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Hoy</Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(1)}>
-            <ChevronRight className="w-4 h-4" />
-          </Button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Hoy</Button>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(1)}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="h-8 w-[150px]">
+                <SelectValue placeholder="Tipo de cita" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los tipos</SelectItem>
+                <SelectItem value="Primera vez">Primera vez</SelectItem>
+                <SelectItem value="Seguimiento">Seguimiento</SelectItem>
+                <SelectItem value="Urgencia">Urgencia</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Day view */}
