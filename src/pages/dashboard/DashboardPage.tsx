@@ -8,6 +8,8 @@ import { Link } from "react-router-dom";
 import { dashboardApi } from "@/services/api";
 import type { Appointment, DashboardStats } from "@/services/api";
 import AppointmentDetailDialog from "@/components/dialogs/AppointmentDetailDialog";
+import PremiumUpgradeDialog from "@/components/dialogs/PremiumUpgradeDialog";
+import { Zap } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   confirmada: "bg-success/10 text-success",
@@ -22,6 +24,7 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [premiumOpen, setPremiumOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -46,9 +49,23 @@ const DashboardPage = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Buenos días, Dra. García</h1>
-          <p className="text-muted-foreground">Aquí está el resumen de tu día</p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Buenos días, Dra. García</h1>
+            <p className="text-muted-foreground">Aquí está el resumen de tu día</p>
+          </div>
+          <div
+            className="bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-primary/15 transition-colors group"
+            onClick={() => setPremiumOpen(true)}
+          >
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Zap className="w-5 h-5 text-primary fill-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-primary">Prueba WhatsApp Premium</p>
+              <p className="text-xs text-primary/80">Reduce ausentismo hoy mismo</p>
+            </div>
+          </div>
         </div>
 
         {alerts.length > 0 && (
@@ -133,6 +150,7 @@ const DashboardPage = () => {
           setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
         }}
       />
+      <PremiumUpgradeDialog open={premiumOpen} onOpenChange={setPremiumOpen} />
     </DashboardLayout>
   );
 };

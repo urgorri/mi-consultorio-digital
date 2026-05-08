@@ -394,6 +394,11 @@ export const settingsApi = {
     await delay();
     return success(data);
   },
+  async requestPremiumUpgrade(feature: string) {
+    await delay();
+    console.log(`[TRACKING] User requested premium upgrade for feature: ${feature}`);
+    return success({ message: "Solicitud de versión Premium enviada con éxito. Nos pondremos en contacto contigo pronto." });
+  },
 };
 
 // ===== ADMIN =====
