@@ -153,6 +153,7 @@ export interface Consultation {
   professionalName: string;
   /** Clinic this consultation belongs to. null = private. */
   clinicId: string | null;
+  type: string;
   date: string;
   reason: string;
   anamnesis: string;

@@ -175,7 +175,6 @@ const AgendaPage = () => {
                 <SelectItem value="all">Todos los tipos</SelectItem>
                 <SelectItem value="Primera vez">Primera vez</SelectItem>
                 <SelectItem value="Seguimiento">Seguimiento</SelectItem>
-                <SelectItem value="Urgencia">Urgencia</SelectItem>
               </SelectContent>
             </Select>
           </div>

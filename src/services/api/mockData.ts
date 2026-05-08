@@ -73,7 +73,7 @@ export const mockAppointments: Appointment[] = [
 export const mockConsultations: Consultation[] = [
   {
     id: "con-1", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: "clinic-1",
-    date: "2026-04-05", reason: "Control de presión arterial",
+    type: "Seguimiento", date: "2026-04-05", reason: "Control de presión arterial",
     anamnesis: "Paciente refiere sentirse bien, sin cefalea ni mareos. Toma losartán 50mg diariamente.",
     physicalExam: "Paciente consciente, orientada, bien hidratada. Ruidos cardíacos rítmicos.",
     vitalSigns: { bloodPressure: "130/85 mmHg", heartRate: "72 bpm", temperature: "36.5 °C", weight: "65 kg" },
@@ -84,7 +84,7 @@ export const mockConsultations: Consultation[] = [
   },
   {
     id: "con-2", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: null,
-    date: "2026-03-20", reason: "Revisión de laboratorios",
+    type: "Seguimiento", date: "2026-03-20", reason: "Revisión de laboratorios",
     anamnesis: "Paciente acude con resultados de laboratorio solicitados en consulta previa.",
     physicalExam: "Sin hallazgos relevantes. Paciente en buen estado general.",
     vitalSigns: { bloodPressure: "125/80 mmHg", heartRate: "68 bpm", temperature: "36.3 °C", weight: "65.5 kg" },
@@ -94,7 +94,7 @@ export const mockConsultations: Consultation[] = [
   },
   {
     id: "con-3", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: "clinic-2",
-    date: "2026-04-03", reason: "Control de glucosa",
+    type: "Seguimiento", date: "2026-04-03", reason: "Control de glucosa",
     anamnesis: "Paciente con diabetes tipo 2 diagnosticada hace 3 años. Refiere buena adherencia a metformina.",
     physicalExam: "IMC 28.5. Piel sin lesiones. Sensibilidad conservada en extremidades.",
     vitalSigns: { bloodPressure: "120/80 mmHg", heartRate: "76 bpm", temperature: "36.4 °C", weight: "82 kg" },
@@ -104,7 +104,7 @@ export const mockConsultations: Consultation[] = [
   },
   {
     id: "con-4", patientId: "p-4", patientName: "Miguel Torres", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: "clinic-2",
-    date: "2026-03-28", reason: "Crisis asmática leve",
+    type: "Primera vez", date: "2026-03-28", reason: "Crisis asmática leve",
     anamnesis: "Paciente refiere episodio de disnea y sibilancias desde hace 2 días, posiblemente por cambio climático.",
     physicalExam: "Sibilancias espiratorias bilaterales leves. Saturación O2 96%. FR 20.",
     vitalSigns: { bloodPressure: "118/75 mmHg", heartRate: "88 bpm", temperature: "36.6 °C", weight: "78 kg" },
@@ -114,7 +114,7 @@ export const mockConsultations: Consultation[] = [
   },
   {
     id: "con-5", patientId: "p-6", patientName: "Carlos Ruiz", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: "clinic-3",
-    date: "2026-03-15", reason: "Control de colesterol y presión",
+    type: "Seguimiento", date: "2026-03-15", reason: "Control de colesterol y presión",
     anamnesis: "Paciente con hipercolesterolemia e hipertensión. Refiere dieta irregular las últimas semanas.",
     physicalExam: "Paciente con sobrepeso. Auscultación cardiopulmonar normal.",
     vitalSigns: { bloodPressure: "140/90 mmHg", heartRate: "78 bpm", temperature: "36.5 °C", weight: "88 kg" },

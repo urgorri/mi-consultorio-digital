@@ -89,7 +89,7 @@ const enrichPatient = (patient: Patient, professionalId: string): Patient => {
 
 // ===== PATIENTS =====
 export const patientsApi = {
-  async list(params?: { search?: string; page?: number; limit?: number }) {
+  async list(params?: { search?: string; page?: number; limit?: number; clinicalType?: string }) {
     await delay();
     const professionalId = mockProfessional.id; // Assume current logged in professional
 
@@ -114,6 +114,13 @@ export const patientsApi = {
         `${p.documentType} ${p.documentNumber}`.toLowerCase().includes(q)
       );
     }
+
+    if (params?.clinicalType === "first") {
+      results = results.filter(p => p.totalVisits === 1);
+    } else if (params?.clinicalType === "followup") {
+      results = results.filter(p => p.totalVisits > 1);
+    }
+
     return paginated(results, results.length, params?.page, params?.limit);
   },
   async getById(id: string) {
@@ -291,10 +298,13 @@ export const appointmentsApi = {
 
 // ===== CONSULTATIONS =====
 export const consultationsApi = {
-  async list(params?: { patientId?: string }) {
+  async list(params?: { patientId?: string; type?: string }) {
     await delay();
     let results = [...mockConsultations];
     if (params?.patientId) results = results.filter(c => c.patientId === params.patientId);
+    if (params?.type && params.type !== "all") {
+      results = results.filter(c => c.type === params.type);
+    }
     return success(results);
   },
   async getById(id: string) {
