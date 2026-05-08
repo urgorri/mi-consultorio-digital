@@ -7,6 +7,8 @@ import { Calendar, Clock, User, MapPin, FileText, MessageSquare } from "lucide-r
 import type { Appointment } from "@/services/api/types";
 import { useToast } from "@/hooks/use-toast";
 import { appointmentsApi } from "@/services/api";
+import { canCancelAppointment } from "@/lib/utils";
+import { AlertCircle } from "lucide-react";
 import { mockClinics, mockProfessional } from "@/services/api/mockData";
 
 interface AppointmentDetailDialogProps {
@@ -130,7 +132,22 @@ const AppointmentDetailDialog = ({ open, onOpenChange, appointment, onStatusChan
           {(appointment.status === "confirmada" || appointment.status === "pendiente") && (
             <>
               <Button size="sm" variant="outline" onClick={() => changeStatus("completada")}>Completar</Button>
-              <Button size="sm" variant="outline" className="text-destructive" onClick={() => changeStatus("cancelada")}>Cancelar cita</Button>
+              <div className="flex flex-col gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive"
+                  onClick={() => changeStatus("cancelada")}
+                  disabled={!canCancelAppointment(appointment)}
+                >
+                  Cancelar cita
+                </Button>
+                {!canCancelAppointment(appointment) && (
+                  <p className="text-[10px] text-destructive flex items-center gap-1 justify-center">
+                    <AlertCircle className="w-3 h-3" /> Solo hasta {appointment.cancellationDeadlineHours ?? 24} h antes
+                  </p>
+                )}
+              </div>
             </>
           )}
           <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)}>Cerrar</Button>
