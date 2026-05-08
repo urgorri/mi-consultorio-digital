@@ -28,10 +28,11 @@ interface ConsultaFilters {
   patientId: string;       // "all" or id
   scope: string;           // "all" | PRIVATE_SCOPE | clinicId
   professionalId: string;  // "all" or id
+  type: string;            // "all" | "Primera vez" | "Seguimiento"
 }
 
 const DEFAULT_FILTERS: ConsultaFilters = {
-  from: undefined, to: undefined, patientId: "all", scope: "all", professionalId: "all",
+  from: undefined, to: undefined, patientId: "all", scope: "all", professionalId: "all", type: "all",
 };
 
 const ConsultationsListPage = () => {
@@ -49,13 +50,17 @@ const ConsultationsListPage = () => {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    Promise.all([consultationsApi.list(), patientsApi.list({ limit: 200 })])
+    setLoading(true);
+    Promise.all([
+      consultationsApi.list({ type: filters.type !== "all" ? filters.type : undefined }),
+      patientsApi.list({ limit: 200 })
+    ])
       .then(([c, p]) => {
         setConsultations(c.data);
         setPatients(p.data);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [filters.type]);
 
   // Derive available professionals from consultations data.
   const professionals = useMemo(() => {
@@ -118,6 +123,7 @@ const ConsultationsListPage = () => {
     if (filters.patientId !== "all") n++;
     if (filters.scope !== "all") n++;
     if (filters.professionalId !== "all") n++;
+    if (filters.type !== "all") n++;
     return n;
   }, [filters]);
 
@@ -215,6 +221,18 @@ const ConsultationsListPage = () => {
                     </Select>
                   </div>
                 )}
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Tipo de consulta</label>
+                  <Select value={draft.type} onValueChange={(v) => setDraft({ ...draft, type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los tipos</SelectItem>
+                      <SelectItem value="Primera vez">Primera vez</SelectItem>
+                      <SelectItem value="Seguimiento">Seguimiento</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </>
             )}
           </FilterDialog>

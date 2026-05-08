@@ -50,11 +50,14 @@ const PatientsPage = () => {
   const { matchesFilter, availableClinics, getClinic } = useClinicFilter();
 
   useEffect(() => {
-    patientsApi.list({ search: search || undefined }).then(res => {
+    patientsApi.list({
+      search: search || undefined,
+      clinicalType: filters.clinicalType !== "all" ? filters.clinicalType : undefined,
+    }).then(res => {
       setPatients(res.data);
       setLoading(false);
     });
-  }, [search]);
+  }, [search, filters.clinicalType]);
 
   const visiblePatients = useMemo(() => {
     let list = patients.filter(p => matchesFilter({ clinicIds: p.clinicIds, isPrivate: p.isPrivate }));
@@ -70,9 +73,6 @@ const PatientsPage = () => {
     const ageTo = filters.ageTo ? parseInt(filters.ageTo, 10) : null;
     if (ageFrom !== null) list = list.filter(p => calcAge(p.birthDate) >= ageFrom);
     if (ageTo !== null) list = list.filter(p => calcAge(p.birthDate) <= ageTo);
-    if (filters.clinicalType === "first") list = list.filter(p => p.totalVisits === 1);
-    if (filters.clinicalType === "followup") list = list.filter(p => p.totalVisits > 1);
-    if (filters.clinicalType === "none") list = list.filter(p => p.totalVisits === 0);
     // professionalId: not modeled yet, leaves a no-op hook for future backend.
 
     // Sort
@@ -214,14 +214,13 @@ const PatientsPage = () => {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Tipo clínico</label>
+                  <label className="text-xs font-medium text-muted-foreground">Tipo de consulta</label>
                   <Select value={draft.clinicalType} onValueChange={(v) => setDraft({ ...draft, clinicalType: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
                       <SelectItem value="first">Primera vez</SelectItem>
                       <SelectItem value="followup">Seguimiento</SelectItem>
-                      <SelectItem value="none">Sin consultas</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
