@@ -11,13 +11,36 @@ import {
   CheckCircle,
   Stethoscope,
   MapPin,
+  MessageSquare,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const doctors = [
-  { id: "1", name: "Dra. María García", specialty: "Medicina General", location: "Consultorio Centro" },
-  { id: "2", name: "Dr. Carlos Mendoza", specialty: "Pediatría", location: "Consultorio Norte" },
-  { id: "3", name: "Dra. Ana López", specialty: "Dermatología", location: "Consultorio Centro" },
+  {
+    id: "1",
+    name: "Dra. María García",
+    specialty: "Medicina General",
+    location: "Consultorio Centro",
+    address: "Av. Reforma 123, Col. Juárez, CDMX",
+    whatsapp: "525512345678"
+  },
+  {
+    id: "2",
+    name: "Dr. Carlos Mendoza",
+    specialty: "Pediatría",
+    location: "Consultorio Norte",
+    address: "Calle Insurgentes 456, Col. Roma, CDMX",
+    whatsapp: "525587654321"
+  },
+  {
+    id: "3",
+    name: "Dra. Ana López",
+    specialty: "Dermatología",
+    location: "Consultorio Centro",
+    address: "Av. Reforma 123, Col. Juárez, CDMX",
+    whatsapp: "525512345678"
+  },
 ];
 
 const visitTypes = [
@@ -34,11 +57,15 @@ const timeSlots = [
 const daysOfWeek = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 const BookingPage = () => {
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+
+  const doctor = doctors.find(d => d.id === selectedDoctor);
+  const visitType = visitTypes.find(t => t.id === selectedType);
 
   const today = new Date();
   const currentMonth = today.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
@@ -79,11 +106,32 @@ const BookingPage = () => {
                     <User className="w-6 h-6 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-foreground">{doc.name}</p>
-                    <p className="text-sm text-muted-foreground">{doc.specialty}</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                      <MapPin className="w-3 h-3" /> {doc.location}
-                    </p>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-foreground">{doc.name}</p>
+                        <p className="text-sm text-muted-foreground">{doc.specialty}</p>
+                      </div>
+                      {doc.whatsapp && (
+                        <a
+                          href={`https://wa.me/${doc.whatsapp}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs text-primary flex items-center gap-1 hover:underline p-1"
+                          title="Contactar por WhatsApp"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                    <div className="mt-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-primary/70" /> {doc.location}
+                      </p>
+                      <p className="text-xs text-muted-foreground/80 ml-4 line-clamp-1">
+                        {doc.address}
+                      </p>
+                    </div>
                   </div>
                   <ArrowRight className="w-4 h-4 text-muted-foreground" />
                 </button>
@@ -184,32 +232,71 @@ const BookingPage = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Nombre</Label>
-                  <Input placeholder="Juan" required />
+                  <Input
+                    placeholder="Juan"
+                    required
+                    defaultValue={user?.firstName || ""}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Apellido</Label>
-                  <Input placeholder="Pérez" required />
+                  <Input
+                    placeholder="Pérez"
+                    required
+                    defaultValue={user?.lastName || ""}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Correo electrónico</Label>
-                <Input type="email" placeholder="tu@correo.com" required />
+                <Input
+                  type="email"
+                  placeholder="tu@correo.com"
+                  required
+                  defaultValue={user?.email || ""}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Teléfono</Label>
-                <Input type="tel" placeholder="+52 55 1234 5678" required />
+                <Input
+                  type="tel"
+                  placeholder="+52 55 1234 5678"
+                  required
+                  defaultValue={user?.phone || ""}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Motivo de consulta (opcional)</Label>
                 <Input placeholder="Describe brevemente tu motivo" />
               </div>
 
-              <div className="bg-accent/50 rounded-xl p-4 space-y-2 text-sm">
-                <p className="font-medium text-foreground">Resumen de tu cita</p>
-                <div className="space-y-1 text-muted-foreground">
-                  <p>{doctors.find(d => d.id === selectedDoctor)?.name}</p>
-                  <p>{visitTypes.find(t => t.id === selectedType)?.name}</p>
-                  <p>Día {selectedDate} de {currentMonth} a las {selectedTime}</p>
+              <div className="bg-accent/50 rounded-xl p-4 space-y-3 text-sm">
+                <div className="flex justify-between items-start">
+                  <p className="font-medium text-foreground">Resumen de tu cita</p>
+                  {doctor?.whatsapp && (
+                    <a
+                      href={`https://wa.me/${doctor.whatsapp}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary flex items-center gap-1 hover:underline"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
+                    </a>
+                  )}
+                </div>
+                <div className="space-y-1.5 text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <User className="w-4 h-4 mt-0.5 shrink-0 text-primary/70" />
+                    <div>
+                      <p className="font-medium text-foreground">{doctor?.name}</p>
+                      <p className="text-xs">{doctor?.location}</p>
+                      <p className="text-xs">{doctor?.address}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 shrink-0 text-primary/70" />
+                    <p>{visitType?.name} - {selectedTime} ({selectedDate} de {currentMonth})</p>
+                  </div>
                 </div>
               </div>
 
@@ -226,15 +313,36 @@ const BookingPage = () => {
               <CheckCircle className="w-10 h-10 text-success" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">¡Cita confirmada!</h2>
-            <p className="text-muted-foreground mb-6">
-              Tu cita ha sido agendada exitosamente. Recibirás una confirmación por correo electrónico.
-            </p>
-            <div className="bg-card rounded-xl border border-border p-5 text-left space-y-2 text-sm mb-8 max-w-xs mx-auto">
-              <p className="font-medium text-foreground">{doctors.find(d => d.id === selectedDoctor)?.name}</p>
-              <p className="text-muted-foreground">{visitTypes.find(t => t.id === selectedType)?.name}</p>
-              <p className="text-muted-foreground">Día {selectedDate} de {currentMonth} a las {selectedTime}</p>
+            <div className="text-muted-foreground mb-6 space-y-2">
+              <p>Tu cita ha sido agendada exitosamente.</p>
+              <p className="text-sm">
+                Recibirás un correo con un enlace para gestionar tu cita <span className="font-medium text-foreground">sin necesidad de iniciar sesión</span>.
+              </p>
             </div>
-            <Link to="/">
+            <div className="bg-card rounded-xl border border-border p-5 text-left space-y-3 text-sm mb-8 max-w-sm mx-auto">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-medium text-foreground">{doctor?.name}</p>
+                  <p className="text-muted-foreground">{doctor?.location}</p>
+                  <p className="text-muted-foreground text-xs">{doctor?.address}</p>
+                </div>
+                {doctor?.whatsapp && (
+                  <a
+                    href={`https://wa.me/${doctor.whatsapp}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary flex items-center gap-1 hover:underline"
+                  >
+                    <MessageSquare className="w-4 h-4" /> WhatsApp
+                  </a>
+                )}
+              </div>
+              <div className="pt-2 border-t border-border">
+                <p className="text-muted-foreground"><span className="font-medium text-foreground">{visitType?.name}</span></p>
+                <p className="text-muted-foreground">Día {selectedDate} de {currentMonth} a las {selectedTime}</p>
+              </div>
+            </div>
+            <Link to={user ? (user.role === "paciente" ? "/portal" : "/dashboard") : "/"}>
               <Button variant="outline">Volver al inicio</Button>
             </Link>
           </div>
