@@ -61,6 +61,7 @@ const App = () => (
               <Route path="/registro/profesional" element={<RegisterProfesionalPage />} />
               <Route path="/recuperar-contrasena" element={<PasswordRecoveryPage />} />
               <Route path="/agendar" element={<BookingPage />} />
+              <Route path="/citas/v/:token" element={<PatientAppointmentDetailPage isPublic />} />
 
               {/* Professional Dashboard */}
               <Route path="/dashboard" element={<ProtectedRoute allowedRoles={["profesional"]}><DashboardPage /></ProtectedRoute>} />

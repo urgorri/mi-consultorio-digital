@@ -12,6 +12,7 @@ import {
   mockUsers, mockAuditLogs, mockSystemHealth, mockProfessional,
   mockAppointmentTypes, mockPatientNotifications, mockPatientPortalAppointments,
   mockProfessionalPatientRequests, mockRegistrationInvites, mockCareAuthorizations,
+  mockAppointmentTokens, mockClinics,
 } from "./mockData";
 
 // Simulate network delay
@@ -218,6 +219,51 @@ export const appointmentsApi = {
     const booked = mockAppointments.filter(a => a.date === date && a.professionalId === professionalId).map(a => a.time);
     const allSlots = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"];
     return success(allSlots.filter(s => !booked.includes(s)));
+  },
+  async getByToken(token: string) {
+    await delay();
+    const tokenData = mockAppointmentTokens.find(t => t.token === token);
+    if (!tokenData) throw new Error("Token de acceso no válido");
+    if (new Date(tokenData.expiresAt) < new Date()) throw new Error("Token de acceso expirado");
+
+    const apt = mockAppointments.find(a => a.id === tokenData.appointmentId);
+    if (!apt) throw new Error("Cita no encontrada");
+
+    // Enrich with patient phone if missing
+    if (!apt.patientPhone) {
+      const patient = mockPatients.find(p => p.id === apt.patientId);
+      if (patient) {
+        apt.patientPhone = patient.phone;
+      }
+    }
+
+    return success(apt);
+  },
+  async generateSignedUrl(appointmentId: string) {
+    await delay();
+    let tokenData = mockAppointmentTokens.find(t => t.appointmentId === appointmentId);
+
+    // Si no existe un token para esta cita, creamos uno (mock)
+    if (!tokenData) {
+      tokenData = {
+        token: `token-${appointmentId}-${Date.now()}`,
+        appointmentId,
+        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        permissions: ["confirm", "cancel"]
+      };
+      mockAppointmentTokens.push(tokenData);
+    }
+
+    const apt = mockAppointments.find(a => a.id === appointmentId);
+    if (apt && !apt.patientPhone) {
+      const patient = mockPatients.find(p => p.id === apt.patientId);
+      if (patient) {
+        apt.patientPhone = patient.phone;
+      }
+    }
+
+    const url = `${window.location.origin}/citas/v/${tokenData.token}`;
+    return success({ url });
   },
 };
 
