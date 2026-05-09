@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Plus, MapPin, Clock, Stethoscope, Bell, MessageSquare } from "lucide-react";
+import { Save, Plus, MapPin, Clock, Stethoscope, Bell, MessageSquare, ListTodo } from "lucide-react";
 import NewLocationDialog from "@/components/dialogs/NewLocationDialog";
 import { Badge } from "@/components/ui/badge";
 import PremiumUpgradeDialog from "@/components/dialogs/PremiumUpgradeDialog";
@@ -19,6 +19,14 @@ const SettingsPage = () => {
   const [cie10, setCie10] = useState(true);
   const [cie11, setCie11] = useState(false);
   const [snomedCt, setSnomedCt] = useState(false);
+  const [config, setConfig] = useState({
+    bloodPressure: true,
+    heartRate: true,
+    temperature: true,
+    weight: true,
+    heightCm: true,
+    bmi: true,
+  });
   const { toast } = useToast();
 
   return (
@@ -37,6 +45,7 @@ const SettingsPage = () => {
             <TabsTrigger value="citas">Tipos de cita</TabsTrigger>
             <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
             <TabsTrigger value="diagnosticos">Diagnósticos</TabsTrigger>
+            <TabsTrigger value="consulta">Consulta</TabsTrigger>
           </TabsList>
 
           <TabsContent value="perfil" className="mt-4 space-y-4">
@@ -208,6 +217,76 @@ const SettingsPage = () => {
 
               <Button className="gap-1" onClick={() => toast({ title: "Configuración guardada", description: "Tus preferencias de notificación han sido actualizadas." })}>
                 <Save className="w-4 h-4" /> Guardar preferencias
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="consulta" className="mt-4 space-y-4">
+            <div className="bg-card rounded-xl border border-border p-5 space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <ListTodo className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Campos de la consulta</h3>
+                  <p className="text-sm text-muted-foreground">Configura qué signos vitales quieres capturar por defecto</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border border-border rounded-lg p-4">
+                  <div>
+                    <p className="font-medium text-foreground">Presión arterial</p>
+                    <p className="text-sm text-muted-foreground">Habilita el campo para registrar la presión arterial</p>
+                  </div>
+                  <Switch checked={config.bloodPressure} onCheckedChange={(val) => setConfig({ ...config, bloodPressure: val })} />
+                </div>
+                <div className="flex items-center justify-between border border-border rounded-lg p-4">
+                  <div>
+                    <p className="font-medium text-foreground">Frecuencia cardíaca</p>
+                    <p className="text-sm text-muted-foreground">Habilita el campo para registrar el pulso</p>
+                  </div>
+                  <Switch checked={config.heartRate} onCheckedChange={(val) => setConfig({ ...config, heartRate: val })} />
+                </div>
+                <div className="flex items-center justify-between border border-border rounded-lg p-4">
+                  <div>
+                    <p className="font-medium text-foreground">Temperatura</p>
+                    <p className="text-sm text-muted-foreground">Habilita el campo para registrar la temperatura corporal</p>
+                  </div>
+                  <Switch checked={config.temperature} onCheckedChange={(val) => setConfig({ ...config, temperature: val })} />
+                </div>
+                <div className="flex items-center justify-between border border-border rounded-lg p-4">
+                  <div>
+                    <p className="font-medium text-foreground">Peso</p>
+                    <p className="text-sm text-muted-foreground">Habilita el campo para registrar el peso del paciente</p>
+                  </div>
+                  <Switch checked={config.weight} onCheckedChange={(val) => setConfig({ ...config, weight: val })} />
+                </div>
+                <div className="flex items-center justify-between border border-border rounded-lg p-4">
+                  <div>
+                    <p className="font-medium text-foreground">Talla</p>
+                    <p className="text-sm text-muted-foreground">Habilita el campo para registrar la estatura (cm)</p>
+                  </div>
+                  <Switch checked={config.heightCm} onCheckedChange={(val) => setConfig({ ...config, heightCm: val })} />
+                </div>
+                <div className="flex items-center justify-between border border-border rounded-lg p-4">
+                  <div>
+                    <p className="font-medium text-foreground">IMC (Índice de Masa Corporal)</p>
+                    <p className="text-sm text-muted-foreground">Cálculo automático basado en peso y talla</p>
+                  </div>
+                  <Switch checked={config.bmi} onCheckedChange={(val) => setConfig({ ...config, bmi: val })} />
+                </div>
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">
+                  <strong>Configuración jerárquica:</strong> Estos ajustes tienen prioridad sobre los valores por defecto
+                  de tu especialidad (Medicina General).
+                </p>
+              </div>
+
+              <Button className="gap-1" onClick={() => toast({ title: "Configuración guardada", description: "Tus preferencias de consulta han sido actualizadas." })}>
+                <Save className="w-4 h-4" /> Guardar configuración
               </Button>
             </div>
           </TabsContent>

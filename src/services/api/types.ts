@@ -30,6 +30,16 @@ export interface Professional extends User {
   locations: Location[];
   codingConfig: ProfessionalCodingConfig;
   clinicMemberships: ProfessionalClinicMembership[];
+  consultationFieldsConfig?: Partial<ConsultationFieldsConfig>;
+}
+
+export interface ConsultationFieldsConfig {
+  bloodPressure: boolean;
+  heartRate: boolean;
+  temperature: boolean;
+  weight: boolean;
+  heightCm: boolean;
+  bmi: boolean;
 }
 
 export type ClinicRole = "admin" | "staff";
@@ -163,6 +173,8 @@ export interface Consultation {
     heartRate?: string;
     temperature?: string;
     weight?: string;
+    heightCm?: number;
+    bmi?: number;
   };
   diagnoses: Diagnosis[];
   treatment: string;

@@ -108,6 +108,18 @@ const ConsultationDetailPage = () => {
                   <p className="text-sm font-medium text-foreground">{consultation.vitalSigns.weight}</p>
                 </div>
               )}
+              {consultation.vitalSigns.heightCm && (
+                <div className="p-3 bg-accent/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Talla</p>
+                  <p className="text-sm font-medium text-foreground">{consultation.vitalSigns.heightCm} cm</p>
+                </div>
+              )}
+              {consultation.vitalSigns.bmi && (
+                <div className="p-3 bg-accent/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">IMC</p>
+                  <p className="text-sm font-medium text-foreground">{consultation.vitalSigns.bmi.toFixed(1)}</p>
+                </div>
+              )}
             </div>
           )}
           <p className="text-sm text-muted-foreground">{consultation.physicalExam}</p>

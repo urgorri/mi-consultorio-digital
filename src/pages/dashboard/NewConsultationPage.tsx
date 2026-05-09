@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Search, X, User, Heart, AlertTriangle, Calendar, FileText } from "lucide-react";
+import { ArrowLeft, Save, Search, X, User, Heart, AlertTriangle, Calendar, FileText, Scale } from "lucide-react";
 import { Link } from "react-router-dom";
-import { diagnosesApi, patientsApi, consultationsApi } from "@/services/api";
-import type { Diagnosis, CodingSystem, Patient } from "@/services/api";
+import { diagnosesApi, patientsApi, consultationsApi, authApi } from "@/services/api";
+import type { Diagnosis, CodingSystem, Patient, ConsultationFieldsConfig, Professional } from "@/services/api";
+import { SPECIALTY_DEFAULT_CONFIGS } from "@/services/api/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -26,14 +27,54 @@ const NewConsultationPage = () => {
   const [selectedDiagnoses, setSelectedDiagnoses] = useState<Diagnosis[]>([]);
   const [activeSystem, setActiveSystem] = useState<string>("CIE-10");
   const [patient, setPatient] = useState<Patient | null>(null);
+  const [professional, setProfessional] = useState<Professional | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Vital signs state
+  const [vitalSigns, setVitalSigns] = useState({
+    bloodPressure: "",
+    heartRate: "",
+    temperature: "",
+    weight: "",
+    heightCm: "",
+    bmi: "",
+  });
+
+  const [fieldConfig, setFieldConfig] = useState<ConsultationFieldsConfig>(SPECIALTY_DEFAULT_CONFIGS.default);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     const id = patientId || "p-1";
     patientsApi.getById(id).then(res => setPatient(res.data));
+
+    authApi.getCurrentUser().then(res => {
+      const prof = res.data as Professional;
+      setProfessional(prof);
+
+      // Resolve hierarchical config
+      const specialtyConfig = SPECIALTY_DEFAULT_CONFIGS[prof.specialty] || SPECIALTY_DEFAULT_CONFIGS.default;
+      const mergedConfig = {
+        ...specialtyConfig,
+        ...(prof.consultationFieldsConfig || {}),
+      };
+      setFieldConfig(mergedConfig);
+    });
   }, [patientId]);
+
+  // Calculate BMI automatically
+  useEffect(() => {
+    const weight = parseFloat(vitalSigns.weight);
+    const height = parseFloat(vitalSigns.heightCm);
+
+    if (weight > 0 && height > 0) {
+      const heightInMeters = height / 100;
+      const bmiValue = weight / (heightInMeters * heightInMeters);
+      setVitalSigns(prev => ({ ...prev, bmi: bmiValue.toFixed(1) }));
+    } else {
+      setVitalSigns(prev => ({ ...prev, bmi: "" }));
+    }
+  }, [vitalSigns.weight, vitalSigns.heightCm]);
 
   useEffect(() => {
     if (diagnosisSearch.length > 1) {
@@ -56,18 +97,30 @@ const NewConsultationPage = () => {
   };
 
   const handleSave = async () => {
-    if (!patient) return;
+    if (!patient || !professional) return;
     setSaving(true);
     try {
       await consultationsApi.create({
         patientId: patient.id,
         patientName: `${patient.firstName} ${patient.lastName}`,
-        professionalId: "prof-1",
-        professionalName: "Dra. María García",
+        professionalId: professional.id,
+        professionalName: `${professional.firstName} ${professional.lastName}`,
         clinicId: patient.clinicIds[0] || null, // Simplified for mock
         date: new Date().toISOString(),
+        reason: (document.getElementById("reason") as HTMLTextAreaElement)?.value || "",
+        anamnesis: (document.getElementById("anamnesis") as HTMLTextAreaElement)?.value || "",
+        physicalExam: (document.getElementById("physicalExam") as HTMLTextAreaElement)?.value || "",
+        treatment: (document.getElementById("treatment") as HTMLTextAreaElement)?.value || "",
+        followUp: (document.getElementById("followUp") as HTMLTextAreaElement)?.value || "",
+        vitalSigns: {
+          bloodPressure: vitalSigns.bloodPressure || undefined,
+          heartRate: vitalSigns.heartRate || undefined,
+          temperature: vitalSigns.temperature || undefined,
+          weight: vitalSigns.weight || undefined,
+          heightCm: vitalSigns.heightCm ? parseFloat(vitalSigns.heightCm) : undefined,
+          bmi: vitalSigns.bmi ? parseFloat(vitalSigns.bmi) : undefined,
+        },
         diagnoses: selectedDiagnoses,
-        // ... other fields would be gathered from form
       });
       toast({ title: "Consulta guardada", description: "La consulta se ha registrado exitosamente." });
       navigate(`/dashboard/pacientes/${patient.id}`);
@@ -160,35 +213,98 @@ const NewConsultationPage = () => {
           <div className="space-y-6">
             <div className="bg-card rounded-xl border border-border p-5 space-y-4">
               <h3 className="font-semibold text-foreground">Motivo de consulta</h3>
-              <Textarea placeholder="Describe el motivo principal de la consulta..." rows={3} />
+              <Textarea id="reason" placeholder="Describe el motivo principal de la consulta..." rows={3} />
             </div>
 
             <div className="bg-card rounded-xl border border-border p-5 space-y-4">
               <h3 className="font-semibold text-foreground">Anamnesis</h3>
-              <Textarea placeholder="Historia clínica relevante, síntomas, evolución..." rows={4} />
+              <Textarea id="anamnesis" placeholder="Historia clínica relevante, síntomas, evolución..." rows={4} />
             </div>
 
             <div className="bg-card rounded-xl border border-border p-5 space-y-4">
               <h3 className="font-semibold text-foreground">Exploración física</h3>
               <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Presión arterial</Label>
-                  <Input placeholder="120/80 mmHg" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Frecuencia cardíaca</Label>
-                  <Input placeholder="72 bpm" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Temperatura</Label>
-                  <Input placeholder="36.5 °C" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Peso</Label>
-                  <Input placeholder="68 kg" />
-                </div>
+                {fieldConfig.bloodPressure && (
+                  <div className="space-y-2">
+                    <Label htmlFor="bloodPressure">Presión arterial</Label>
+                    <Input
+                      id="bloodPressure"
+                      placeholder="120/80 mmHg"
+                      value={vitalSigns.bloodPressure}
+                      onChange={(e) => setVitalSigns({ ...vitalSigns, bloodPressure: e.target.value })}
+                    />
+                  </div>
+                )}
+                {fieldConfig.heartRate && (
+                  <div className="space-y-2">
+                    <Label htmlFor="heartRate">Frecuencia cardíaca</Label>
+                    <Input
+                      id="heartRate"
+                      placeholder="72 bpm"
+                      value={vitalSigns.heartRate}
+                      onChange={(e) => setVitalSigns({ ...vitalSigns, heartRate: e.target.value })}
+                    />
+                  </div>
+                )}
+                {fieldConfig.temperature && (
+                  <div className="space-y-2">
+                    <Label htmlFor="temperature">Temperatura</Label>
+                    <Input
+                      id="temperature"
+                      placeholder="36.5 °C"
+                      value={vitalSigns.temperature}
+                      onChange={(e) => setVitalSigns({ ...vitalSigns, temperature: e.target.value })}
+                    />
+                  </div>
+                )}
+                {fieldConfig.weight && (
+                  <div className="space-y-2">
+                    <Label htmlFor="weight">Peso</Label>
+                    <Input
+                      id="weight"
+                      type="number"
+                      placeholder="68 kg"
+                      value={vitalSigns.weight}
+                      onChange={(e) => setVitalSigns({ ...vitalSigns, weight: e.target.value })}
+                    />
+                  </div>
+                )}
+                {fieldConfig.heightCm && (
+                  <div className="space-y-2">
+                    <Label htmlFor="heightCm">Talla (cm)</Label>
+                    <Input
+                      id="heightCm"
+                      type="number"
+                      placeholder="170 cm"
+                      value={vitalSigns.heightCm}
+                      onChange={(e) => setVitalSigns({ ...vitalSigns, heightCm: e.target.value })}
+                    />
+                  </div>
+                )}
+                {fieldConfig.bmi && (
+                  <div className="space-y-2">
+                    <Label htmlFor="bmi" className="flex items-center gap-1.5">
+                      IMC
+                      {vitalSigns.bmi && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                          Autocalculado
+                        </span>
+                      )}
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="bmi"
+                        readOnly
+                        placeholder="24.2"
+                        className="bg-muted pr-10"
+                        value={vitalSigns.bmi}
+                      />
+                      <Scale className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
+                    </div>
+                  </div>
+                )}
               </div>
-              <Textarea placeholder="Hallazgos de la exploración física..." rows={3} />
+              <Textarea id="physicalExam" placeholder="Hallazgos de la exploración física..." rows={3} />
             </div>
           </div>
 
@@ -244,12 +360,12 @@ const NewConsultationPage = () => {
 
             <div className="bg-card rounded-xl border border-border p-5 space-y-4">
               <h3 className="font-semibold text-foreground">Plan de tratamiento</h3>
-              <Textarea placeholder="Medicamentos, instrucciones, recomendaciones..." rows={4} />
+              <Textarea id="treatment" placeholder="Medicamentos, instrucciones, recomendaciones..." rows={4} />
             </div>
 
             <div className="bg-card rounded-xl border border-border p-5 space-y-4">
               <h3 className="font-semibold text-foreground">Seguimiento</h3>
-              <Textarea placeholder="Próximos pasos, fecha de control, indicaciones especiales..." rows={3} />
+              <Textarea id="followUp" placeholder="Próximos pasos, fecha de control, indicaciones especiales..." rows={3} />
             </div>
           </div>
         </div>
