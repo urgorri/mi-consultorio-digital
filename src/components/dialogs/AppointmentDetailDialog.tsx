@@ -7,7 +7,7 @@ import { Calendar, Clock, User, MapPin, FileText, MessageSquare } from "lucide-r
 import type { Appointment } from "@/services/api/types";
 import { useToast } from "@/hooks/use-toast";
 import { appointmentsApi } from "@/services/api";
-import { canCancelAppointment } from "@/lib/utils";
+import { canCancelAppointment } from "@/features/appointments/domain/rules";
 import { AlertCircle } from "lucide-react";
 import { mockClinics, mockProfessional } from "@/services/api/mockData";
 
