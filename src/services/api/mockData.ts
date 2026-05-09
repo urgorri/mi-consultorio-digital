@@ -3,6 +3,7 @@ import type {
   DashboardStats, ReportMetrics, AuditLog, SystemHealth,
   User, Location, AppointmentType, Schedule, Professional, Clinic,
   DocumentType, ProfessionalPatientRequest, RegistrationInvite,
+  ConsultationFieldsConfig,
 } from "./types";
 
 export const mockClinics: Clinic[] = [
@@ -10,6 +11,49 @@ export const mockClinics: Clinic[] = [
   { id: "clinic-2", name: "Centro Médico Polanco", shortName: "Polanco", color: "175 55% 38%", address: "Polanco V Sec, CDMX" },
   { id: "clinic-3", name: "Clínica Norte", shortName: "Norte", color: "32 85% 50%", address: "Lindavista, CDMX" },
 ];
+
+export const SPECIALTY_DEFAULT_CONFIGS: Record<string, ConsultationFieldsConfig> = {
+  "Medicina General": {
+    bloodPressure: true,
+    heartRate: true,
+    temperature: true,
+    weight: true,
+    heightCm: true,
+    bmi: true,
+  },
+  "Pediatría": {
+    bloodPressure: true,
+    heartRate: true,
+    temperature: true,
+    weight: true,
+    heightCm: true,
+    bmi: true,
+  },
+  "Nutrición": {
+    bloodPressure: false,
+    heartRate: false,
+    temperature: false,
+    weight: true,
+    heightCm: true,
+    bmi: true,
+  },
+  "Psicología": {
+    bloodPressure: false,
+    heartRate: false,
+    temperature: false,
+    weight: false,
+    heightCm: false,
+    bmi: false,
+  },
+  "default": {
+    bloodPressure: true,
+    heartRate: true,
+    temperature: true,
+    weight: true,
+    heightCm: true,
+    bmi: true,
+  }
+};
 
 export const mockProfessional: Professional = {
   id: "prof-1",
@@ -23,6 +67,9 @@ export const mockProfessional: Professional = {
   specialty: "Medicina General",
   licenseNumber: "12345678",
   codingConfig: { cie10: true, cie11: false, snomedCt: false },
+  consultationFieldsConfig: {
+    bmi: true,
+  },
   clinicMemberships: [
     { clinicId: "clinic-1", role: "admin" },
     { clinicId: "clinic-2", role: "staff" },
@@ -76,7 +123,7 @@ export const mockConsultations: Consultation[] = [
     type: "Seguimiento", date: "2026-04-05", reason: "Control de presión arterial",
     anamnesis: "Paciente refiere sentirse bien, sin cefalea ni mareos. Toma losartán 50mg diariamente.",
     physicalExam: "Paciente consciente, orientada, bien hidratada. Ruidos cardíacos rítmicos.",
-    vitalSigns: { bloodPressure: "130/85 mmHg", heartRate: "72 bpm", temperature: "36.5 °C", weight: "65 kg" },
+    vitalSigns: { bloodPressure: "130/85 mmHg", heartRate: "72 bpm", temperature: "36.5 °C", weight: "65 kg", heightCm: 165, bmi: 23.9 },
     diagnoses: [{ code: "I10", name: "Hipertensión esencial (primaria)", codingSystem: "CIE-10" }],
     treatment: "Se mantiene losartán 50mg c/24h. Dieta baja en sodio. Ejercicio 30 min diarios.",
     followUp: "Control en 4 semanas con perfil lipídico actualizado.",
@@ -87,7 +134,7 @@ export const mockConsultations: Consultation[] = [
     type: "Seguimiento", date: "2026-03-20", reason: "Revisión de laboratorios",
     anamnesis: "Paciente acude con resultados de laboratorio solicitados en consulta previa.",
     physicalExam: "Sin hallazgos relevantes. Paciente en buen estado general.",
-    vitalSigns: { bloodPressure: "125/80 mmHg", heartRate: "68 bpm", temperature: "36.3 °C", weight: "65.5 kg" },
+    vitalSigns: { bloodPressure: "125/80 mmHg", heartRate: "68 bpm", temperature: "36.3 °C", weight: "65.5 kg", heightCm: 165, bmi: 24.1 },
     diagnoses: [{ code: "Z01.7", name: "Examen de laboratorio", codingSystem: "CIE-10" }],
     treatment: "Resultados dentro de parámetros normales. Sin cambios en medicación.",
     followUp: "Se agenda seguimiento en 2 semanas para control de presión.",
@@ -97,7 +144,7 @@ export const mockConsultations: Consultation[] = [
     type: "Seguimiento", date: "2026-04-03", reason: "Control de glucosa",
     anamnesis: "Paciente con diabetes tipo 2 diagnosticada hace 3 años. Refiere buena adherencia a metformina.",
     physicalExam: "IMC 28.5. Piel sin lesiones. Sensibilidad conservada en extremidades.",
-    vitalSigns: { bloodPressure: "120/80 mmHg", heartRate: "76 bpm", temperature: "36.4 °C", weight: "82 kg" },
+    vitalSigns: { bloodPressure: "120/80 mmHg", heartRate: "76 bpm", temperature: "36.4 °C", weight: "82 kg", heightCm: 170, bmi: 28.4 },
     diagnoses: [{ code: "E11", name: "Diabetes mellitus tipo 2", codingSystem: "CIE-10" }],
     treatment: "Metformina 850mg c/12h. Dieta diabética. Ejercicio aeróbico regular.",
     followUp: "Hemoglobina glucosilada en 3 meses. Control en 6 semanas.",
@@ -107,7 +154,7 @@ export const mockConsultations: Consultation[] = [
     type: "Primera vez", date: "2026-03-28", reason: "Crisis asmática leve",
     anamnesis: "Paciente refiere episodio de disnea y sibilancias desde hace 2 días, posiblemente por cambio climático.",
     physicalExam: "Sibilancias espiratorias bilaterales leves. Saturación O2 96%. FR 20.",
-    vitalSigns: { bloodPressure: "118/75 mmHg", heartRate: "88 bpm", temperature: "36.6 °C", weight: "78 kg" },
+    vitalSigns: { bloodPressure: "118/75 mmHg", heartRate: "88 bpm", temperature: "36.6 °C", weight: "78 kg", heightCm: 175, bmi: 25.5 },
     diagnoses: [{ code: "J45.0", name: "Asma predominantemente alérgica", codingSystem: "CIE-10" }],
     treatment: "Salbutamol inhalado PRN. Budesonida inhalada 200mcg c/12h por 2 semanas.",
     followUp: "Reevaluar en 2 semanas. Si empeora, acudir a urgencias.",
@@ -117,7 +164,7 @@ export const mockConsultations: Consultation[] = [
     type: "Seguimiento", date: "2026-03-15", reason: "Control de colesterol y presión",
     anamnesis: "Paciente con hipercolesterolemia e hipertensión. Refiere dieta irregular las últimas semanas.",
     physicalExam: "Paciente con sobrepeso. Auscultación cardiopulmonar normal.",
-    vitalSigns: { bloodPressure: "140/90 mmHg", heartRate: "78 bpm", temperature: "36.5 °C", weight: "88 kg" },
+    vitalSigns: { bloodPressure: "140/90 mmHg", heartRate: "78 bpm", temperature: "36.5 °C", weight: "88 kg", heightCm: 172, bmi: 29.7 },
     diagnoses: [
       { code: "I10", name: "Hipertensión esencial (primaria)", codingSystem: "CIE-10" },
       { code: "E78.0", name: "Hipercolesterolemia pura", codingSystem: "CIE-10" },
