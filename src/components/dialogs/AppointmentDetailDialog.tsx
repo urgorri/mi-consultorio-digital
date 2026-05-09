@@ -82,14 +82,17 @@ const AppointmentDetailDialog = ({ open, onOpenChange, appointment, onStatusChan
           <DialogTitle>Detalle de cita</DialogTitle>
           <DialogDescription>Información de la cita agendada.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="space-y-6">
+          <section className="flex items-center justify-between border-b pb-4">
             <span className={`text-xs font-medium px-3 py-1.5 rounded-full border ${statusColors[appointment.status]}`}>
               {statusLabels[appointment.status]}
             </span>
-            <Badge variant="outline">{appointment.type}</Badge>
-          </div>
-          <div className="space-y-3">
+            <Badge variant="outline" className="max-w-[140px] truncate block" title={appointment.type}>
+              {appointment.type}
+            </Badge>
+          </section>
+
+          <section className="space-y-3">
             <div className="flex items-center gap-3">
               <User className="w-4 h-4 text-muted-foreground shrink-0" />
               <div>
@@ -117,40 +120,53 @@ const AppointmentDetailDialog = ({ open, onOpenChange, appointment, onStatusChan
                 <p className="text-sm text-muted-foreground">{appointment.reason}</p>
               </div>
             )}
-          </div>
+          </section>
         </div>
-        <DialogFooter className="flex-col sm:flex-row gap-2">
-          {(appointment.status === "pendiente" || appointment.status === "confirmada") && (
-            <Button size="sm" variant="outline" className="gap-2" onClick={handleSendWhatsApp}>
-              <MessageSquare className="w-4 h-4" />
-              WhatsApp
-            </Button>
-          )}
-          {appointment.status === "pendiente" && (
-            <Button size="sm" onClick={() => changeStatus("confirmada")}>Confirmar</Button>
-          )}
-          {(appointment.status === "confirmada" || appointment.status === "pendiente") && (
-            <>
-              <Button size="sm" variant="outline" onClick={() => changeStatus("completada")}>Completar</Button>
-              <div className="flex flex-col gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-destructive"
-                  onClick={() => changeStatus("cancelada")}
-                  disabled={!canCancelAppointment(appointment)}
-                >
-                  Cancelar cita
+        <DialogFooter className="flex flex-col gap-4 w-full border-t pt-4 mt-2 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 w-full min-w-0 sm:flex-wrap">
+            <div className="flex flex-col sm:flex-row gap-2 min-w-0 sm:flex-wrap">
+              <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)} className="w-full sm:w-auto shrink-0">
+                Cerrar
+              </Button>
+              {(appointment.status === "confirmada" || appointment.status === "pendiente") && (
+                <div className="flex flex-col gap-1 w-full sm:w-auto min-w-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive w-full focus-visible:ring-destructive"
+                    onClick={() => changeStatus("cancelada")}
+                    disabled={!canCancelAppointment(appointment)}
+                  >
+                    Cancelar cita
+                  </Button>
+                  {!canCancelAppointment(appointment) && (
+                    <p className="text-[10px] text-destructive flex items-center gap-1 justify-center sm:justify-start">
+                      <AlertCircle className="w-3 h-3" /> Solo hasta {appointment.cancellationDeadlineHours ?? 24} h antes
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 sm:flex-wrap">
+              {(appointment.status === "pendiente" || appointment.status === "confirmada") && (
+                <Button size="sm" variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleSendWhatsApp}>
+                  <MessageSquare className="w-4 h-4" />
+                  WhatsApp
                 </Button>
-                {!canCancelAppointment(appointment) && (
-                  <p className="text-[10px] text-destructive flex items-center gap-1 justify-center">
-                    <AlertCircle className="w-3 h-3" /> Solo hasta {appointment.cancellationDeadlineHours ?? 24} h antes
-                  </p>
-                )}
-              </div>
-            </>
-          )}
-          <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)}>Cerrar</Button>
+              )}
+              {(appointment.status === "confirmada" || appointment.status === "pendiente") && (
+                <Button size="sm" variant="outline" onClick={() => changeStatus("completada")} className="w-full sm:w-auto">
+                  Completar
+                </Button>
+              )}
+              {appointment.status === "pendiente" && (
+                <Button size="sm" onClick={() => changeStatus("confirmada")} className="w-full sm:w-auto">
+                  Confirmar
+                </Button>
+              )}
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
