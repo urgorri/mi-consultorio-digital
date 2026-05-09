@@ -4,7 +4,7 @@ import { useParams, Link } from "react-router-dom";
 import { appointmentsApi } from "@/services/api";
 import type { Appointment } from "@/services/api";
 import { Button } from "@/components/ui/button";
-import { canCancelAppointment, canRescheduleAppointment } from "@/lib/utils";
+import { canCancelAppointment, canRescheduleAppointment } from "@/features/appointments/domain/rules";
 import { ArrowLeft, CalendarDays, Clock, MapPin, User, AlertCircle } from "lucide-react";
 
 const statusColors: Record<string, string> = {
