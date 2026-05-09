@@ -38,7 +38,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/login/profesional");
   };
 
   return (

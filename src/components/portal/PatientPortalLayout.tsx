@@ -26,7 +26,7 @@ const PatientPortalLayout = ({ children }: PatientPortalLayoutProps) => {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/login/paciente");
   };
 
   return (

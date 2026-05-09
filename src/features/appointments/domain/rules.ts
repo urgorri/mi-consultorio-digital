@@ -45,3 +45,10 @@ export function isFirstTimeVisit(type: string): boolean {
 export function isFollowUpVisit(type: string): boolean {
   return type === AppointmentVisitType.FOLLOW_UP;
 }
+
+/**
+ * Automatically detects the visit type based on the number of previous visits.
+ */
+export function detectVisitType(totalVisits: number): string {
+  return totalVisits === 0 ? AppointmentVisitType.FIRST_TIME : AppointmentVisitType.FOLLOW_UP;
+}
