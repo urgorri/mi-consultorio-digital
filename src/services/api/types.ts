@@ -144,6 +144,7 @@ export interface Appointment {
   patientPhone?: string;
   confirmedAt?: string;
   confirmedByUserId?: string;
+  rescheduledAt?: string;
   createdByRole: "paciente" | "profesional";
   cancellationDeadlineHours?: number;
 }

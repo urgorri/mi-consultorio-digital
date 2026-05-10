@@ -6,6 +6,7 @@ import type { Appointment } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { canCancelAppointment, canRescheduleAppointment } from "@/features/appointments/domain/rules";
 import { ArrowLeft, CalendarDays, Clock, MapPin, User, AlertCircle } from "lucide-react";
+import { RescheduleAppointmentDialog } from "@/components/dialogs/RescheduleAppointmentDialog";
 
 const statusColors: Record<string, string> = {
   confirmada: "bg-success/10 text-success",
@@ -23,6 +24,7 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchAppointment = async () => {
@@ -206,6 +208,7 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
                 variant="outline"
                 className="flex-1"
                 disabled={!canRescheduleAppointment(appointment)}
+                onClick={() => setIsRescheduleDialogOpen(true)}
               >
                 Reprogramar
               </Button>
@@ -225,6 +228,15 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
               </div>
             )}
           </div>
+        )}
+
+        {appointment && (
+          <RescheduleAppointmentDialog
+            appointment={appointment}
+            open={isRescheduleDialogOpen}
+            onOpenChange={setIsRescheduleDialogOpen}
+            onSuccess={(updated) => setAppointment(updated)}
+          />
         )}
       </div>
   );

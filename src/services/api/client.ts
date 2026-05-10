@@ -229,6 +229,21 @@ export const appointmentsApi = {
     await delay();
     return success({ message: "Cita cancelada exitosamente." });
   },
+  async reschedule(id: string, data: { date: string; time: string; endTime: string }) {
+    await delay();
+    const index = mockAppointments.findIndex(a => a.id === id);
+    if (index === -1) throw new Error("Cita no encontrada");
+
+    const updatedApt = {
+      ...mockAppointments[index],
+      ...data,
+      rescheduledAt: new Date().toISOString()
+    } as Appointment;
+
+    mockAppointments[index] = updatedApt;
+
+    return success(updatedApt);
+  },
   async getAvailableSlots(professionalId: string, date: string) {
     await delay();
     const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
