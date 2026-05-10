@@ -8,6 +8,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { getLogoutRedirectPath } from "@/lib/auth-routing";
 import NotificationsDropdown from "./NotificationsDropdown";
 import ClinicFilterDropdown from "./ClinicFilterDropdown";
 
@@ -37,8 +38,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const displayName = user ? `${user.firstName} ${user.lastName}` : "Usuario";
 
   const handleLogout = () => {
+    const redirectPath = getLogoutRedirectPath(user?.role);
     logout();
-    navigate("/login/profesional");
+    navigate(redirectPath);
   };
 
   return (

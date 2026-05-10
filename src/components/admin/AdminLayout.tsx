@@ -5,6 +5,7 @@ import {
   Menu, X, LogOut,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { getLogoutRedirectPath } from "@/lib/auth-routing";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Sistema", path: "/admin" },
@@ -27,8 +28,9 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const initials = user ? `${user.firstName[0]}${user.lastName[0]}` : "AD";
 
   const handleLogout = () => {
+    const redirectPath = getLogoutRedirectPath(user?.role);
     logout();
-    navigate("/login");
+    navigate(redirectPath);
   };
 
   return (
