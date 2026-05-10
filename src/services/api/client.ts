@@ -12,7 +12,7 @@ import {
   mockUsers, mockAuditLogs, mockSystemHealth, mockProfessional,
   mockAppointmentTypes, mockPatientNotifications, mockPatientPortalAppointments,
   mockProfessionalPatientRequests, mockRegistrationInvites, mockCareAuthorizations,
-  mockAppointmentTokens, mockClinics,
+  mockAppointmentTokens, mockClinics, mockSchedules,
 } from "./mockData";
 
 // Simulate network delay
@@ -189,8 +189,15 @@ export const appointmentsApi = {
       throw new Error("La autorización para este paciente ha sido revocada. No se pueden agendar nuevas citas.");
     }
 
+    // Determine visit type automatically if not provided
+    let visitType = data.type;
+    if (!visitType) {
+      visitType = auth.totalVisits > 0 ? "Seguimiento" : "Primera vez";
+    }
+
     const newAppointment: Appointment = {
       ...data,
+      type: visitType,
       id: `apt-${Date.now()}`,
       status: data.status || "pendiente",
       createdByRole: data.createdByRole || "profesional",
@@ -652,9 +659,34 @@ export const bookingApi = {
   async getAvailableSlots(professionalId: string, date: string) {
     return appointmentsApi.getAvailableSlots(professionalId, date);
   },
-  async createBooking(data: { professionalId: string; typeId: string; date: string; time: string; patientData: Record<string, string> }) {
+  async createBooking(data: { professionalId: string; typeId?: string; date: string; time: string; patientData: Record<string, string> }) {
     await delay(500);
-    return success({ id: `apt-${Date.now()}`, message: "Cita agendada exitosamente." });
+
+    // Determine visit type automatically if not provided
+    let visitType = data.typeId ? mockAppointmentTypes.find(t => t.id === data.typeId)?.name : null;
+
+    if (!visitType) {
+      const docNumber = data.patientData.documentNumber;
+      const patient = mockPatients.find(p => p.documentNumber === docNumber);
+
+      if (patient) {
+        const hasPreviousVisits = mockCareAuthorizations.some(
+          a => a.patientId === patient.id &&
+               a.professionalId === data.professionalId &&
+               a.totalVisits > 0
+        );
+        visitType = hasPreviousVisits ? "Seguimiento" : "Primera vez";
+      } else {
+        // New patient
+        visitType = "Primera vez";
+      }
+    }
+
+    return success({
+      id: `apt-${Date.now()}`,
+      message: "Cita agendada exitosamente.",
+      type: visitType
+    });
   },
 };
 

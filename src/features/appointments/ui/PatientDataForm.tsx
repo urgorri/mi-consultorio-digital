@@ -116,7 +116,7 @@ export const PatientDataForm = ({
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 shrink-0 text-primary/70" />
-              <p>{visitType?.name} - {selectedTime} ({selectedDate} de {currentMonth})</p>
+              <p>{visitType?.name || "Determinado automáticamente"} - {selectedTime} ({selectedDate} de {currentMonth})</p>
             </div>
           </div>
         </div>

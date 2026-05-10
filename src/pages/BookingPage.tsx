@@ -39,6 +39,7 @@ const BookingPage = () => {
   const [selectedTypeId, setSelectedTypeId] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+  const [confirmedType, setConfirmedType] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -92,14 +93,19 @@ const BookingPage = () => {
       const month = (today.getMonth() + 1).toString().padStart(2, "0");
       const formattedDate = `${year}-${month}-${selectedDate.padStart(2, "0")}`;
 
-      await appointmentsAdapter.createBooking({
+      const result = await appointmentsAdapter.createBooking({
         professionalId: selectedDoctorId,
         typeId: selectedTypeId,
         date: formattedDate,
         time: selectedTime,
         patientData
       });
-      setStep(5);
+
+      if (result && (result as any).type) {
+        setConfirmedType((result as any).type);
+      }
+
+      setStep(4);
     } catch (error) {
       console.error("Error creating booking:", error);
     }
@@ -121,23 +127,15 @@ const BookingPage = () => {
         );
       case 2:
         return (
-          <VisitTypeSelector
-            visitTypes={visitTypes}
-            selectedTypeId={selectedTypeId}
-            onSelect={(id) => { setSelectedTypeId(id); setStep(3); }}
-          />
-        );
-      case 3:
-        return (
           <SlotSelector
             selectedDate={selectedDate}
             selectedTime={selectedTime}
             onDateSelect={setSelectedDate}
-            onTimeSelect={(time) => { setSelectedTime(time); setStep(4); }}
+            onTimeSelect={(time) => { setSelectedTime(time); setStep(3); }}
             availableSlots={availableSlots}
           />
         );
-      case 4:
+      case 3:
         return (
           <PatientDataForm
             user={user}
@@ -149,7 +147,7 @@ const BookingPage = () => {
             onSubmit={handleBookingSubmit}
           />
         );
-      case 5:
+      case 4:
         return (
           <div className="text-center py-8">
             <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
@@ -181,7 +179,7 @@ const BookingPage = () => {
                 )}
               </div>
               <div className="pt-2 border-t border-border">
-                <p className="text-muted-foreground"><span className="font-medium text-foreground">{visitType?.name}</span></p>
+                <p className="text-muted-foreground"><span className="font-medium text-foreground">{confirmedType || visitType?.name}</span></p>
                 <p className="text-muted-foreground">Día {selectedDate} de {currentMonth} a las {selectedTime}</p>
               </div>
             </div>
@@ -211,7 +209,7 @@ const BookingPage = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-lg">
-        {step > 1 && step < 5 && (
+        {step > 1 && step < 4 && (
           <button
             onClick={() => setStep(step - 1)}
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
@@ -220,9 +218,9 @@ const BookingPage = () => {
           </button>
         )}
 
-        {step < 5 && (
+        {step < 4 && (
           <div className="flex gap-2 mb-8">
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3].map((s) => (
               <div
                 key={s}
                 className={`h-1.5 flex-1 rounded-full transition-all ${
