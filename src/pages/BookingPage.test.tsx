@@ -73,7 +73,9 @@ describe("BookingPage Integration", () => {
     (appointmentsAdapter.createBooking as any).mockResolvedValue({ id: "apt-new" });
   });
 
-  it("should complete the booking flow", async () => {
+  it("should complete the booking flow without visit type selection", async () => {
+    (appointmentsAdapter.createBooking as any).mockResolvedValue({ id: "apt-new", type: "Primera vez" });
+
     render(
       <BrowserRouter>
         <BookingPage />
@@ -83,8 +85,31 @@ describe("BookingPage Integration", () => {
     await waitFor(() => expect(screen.getByText(doctorFixtures[0].name)).toBeInTheDocument());
     fireEvent.click(screen.getByText(doctorFixtures[0].name));
 
-    await waitFor(() => expect(screen.getByText(visitTypeFixtures[0].name)).toBeInTheDocument());
-    fireEvent.click(screen.getByText(visitTypeFixtures[0].name));
+    // Should NOT show visit types, but go directly to slots
+    await waitFor(() => expect(screen.getByText("Select Date 15")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Select Date 15"));
+    await waitFor(() => expect(screen.getByText(slotFixtures[0])).toBeInTheDocument());
+    fireEvent.click(screen.getByText(slotFixtures[0]));
+
+    await waitFor(() => expect(screen.getByText("Submit Booking")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Submit Booking"));
+
+    await waitFor(() => expect(screen.getByText(/¡Cita confirmada!/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Primera vez")).toBeInTheDocument());
+    expect(appointmentsAdapter.createBooking).toHaveBeenCalled();
+  });
+
+  it("should display 'Seguimiento' if returned by API for existing patient", async () => {
+    (appointmentsAdapter.createBooking as any).mockResolvedValue({ id: "apt-new", type: "Seguimiento" });
+
+    render(
+      <BrowserRouter>
+        <BookingPage />
+      </BrowserRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText(doctorFixtures[0].name)).toBeInTheDocument());
+    fireEvent.click(screen.getByText(doctorFixtures[0].name));
 
     await waitFor(() => expect(screen.getByText("Select Date 15")).toBeInTheDocument());
     fireEvent.click(screen.getByText("Select Date 15"));
@@ -95,6 +120,6 @@ describe("BookingPage Integration", () => {
     fireEvent.click(screen.getByText("Submit Booking"));
 
     await waitFor(() => expect(screen.getByText(/¡Cita confirmada!/i)).toBeInTheDocument());
-    expect(appointmentsAdapter.createBooking).toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByText("Seguimiento")).toBeInTheDocument());
   });
 });

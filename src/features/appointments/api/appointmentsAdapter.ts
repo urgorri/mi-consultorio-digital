@@ -22,7 +22,7 @@ export const appointmentsAdapter = {
 
   createBooking: async (data: {
     professionalId: string;
-    typeId: string;
+    typeId?: string;
     date: string;
     time: string;
     patientData: Record<string, unknown>;
