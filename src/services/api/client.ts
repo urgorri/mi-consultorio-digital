@@ -512,6 +512,21 @@ export const patientPortalApi = {
     await delay();
     return success(mockPatientNotifications);
   },
+  async markNotificationRead(id: string) {
+    await delay(100);
+    const notification = mockPatientNotifications.find(n => n.id === id);
+    if (notification) {
+      notification.read = true;
+    }
+    return success({ message: "Notificación marcada como leída." });
+  },
+  async markAllNotificationsRead() {
+    await delay(100);
+    mockPatientNotifications.forEach(n => {
+      n.read = true;
+    });
+    return success({ message: "Todas las notificaciones marcadas como leídas." });
+  },
   async getProfile() {
     await delay();
     return success(mockPatients[0]);
