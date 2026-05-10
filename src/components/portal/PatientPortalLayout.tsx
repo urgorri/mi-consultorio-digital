@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Stethoscope, CalendarDays, Bell, User, LogOut, Menu, X, Clock, Users } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { getLogoutRedirectPath } from "@/lib/auth-routing";
 
 const navItems = [
   { icon: CalendarDays, label: "Mis citas", path: "/portal" },
@@ -25,8 +26,9 @@ const PatientPortalLayout = ({ children }: PatientPortalLayoutProps) => {
   const displayName = user ? `${user.firstName} ${user.lastName}` : "Paciente";
 
   const handleLogout = () => {
+    const redirectPath = getLogoutRedirectPath(user?.role);
     logout();
-    navigate("/login/paciente");
+    navigate(redirectPath);
   };
 
   return (
