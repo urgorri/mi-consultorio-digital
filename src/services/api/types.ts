@@ -25,6 +25,8 @@ export interface User {
   trialExpired?: boolean;
   invalidLicense?: boolean;
   subscriptionInactive?: boolean;
+  kycStatus?: KycStatus;
+  kycMetadata?: KycMetadata;
 }
 
 export interface EmailVerificationCode {
@@ -70,6 +72,21 @@ export interface ConsultationFieldsConfig {
 export type ClinicRole = "admin" | "staff";
 
 export type DocumentType = "dni" | "pasaporte" | "cedula" | "otro";
+
+export type KycStatus = "none" | "pending" | "approved" | "rejected";
+
+export interface KycMetadata {
+  status: KycStatus;
+  provider: string;
+  score: number;
+  updatedAt: string;
+  attempts: number;
+  documentFiles?: {
+    front: string;
+    back: string;
+    selfie: string;
+  };
+}
 
 export interface ProfessionalPatientRequest {
   id: string;
@@ -303,6 +320,8 @@ export interface DocumentVerificationResult {
   documentNumber?: string;
   birthDate?: string;
   confidenceScore: number;
+  selfieMatchScore?: number;
+  livenessCheck?: boolean;
   status: "approved" | "manual_review" | "rejected";
   error?: string;
 }

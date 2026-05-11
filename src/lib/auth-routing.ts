@@ -19,6 +19,7 @@ export const getUserRestrictions = (user: User | null) => {
   if (user.invalidLicense) return "INVALID_LICENSE";
   if (user.subscriptionInactive) return "SUBSCRIPTION_INACTIVE";
   if (!user.emailVerifiedAt) return "EMAIL_NOT_VERIFIED";
+  if (user.kycStatus !== "approved") return "KYC_REQUIRED";
 
   return null;
 };

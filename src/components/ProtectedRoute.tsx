@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { OTPVerification } from "./auth/OTPVerification";
+import { DocumentCaptureField } from "./kyc/DocumentCaptureField";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -66,12 +67,39 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   }
 
   // Check account restrictions
-  if (user.role === "profesional") {
+  if (user.role === "profesional" || user.role === "paciente") {
     const restriction = user.trialExpired ? "TRIAL_EXPIRED" :
                         user.invalidLicense ? "INVALID_LICENSE" :
-                        user.subscriptionInactive ? "SUBSCRIPTION_INACTIVE" : null;
+                        user.subscriptionInactive ? "SUBSCRIPTION_INACTIVE" :
+                        (user.kycStatus !== "approved") ? "KYC_REQUIRED" : null;
 
     if (restriction) {
+      if (restriction === "KYC_REQUIRED") {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-background p-4">
+            <div className="max-w-md w-full bg-card border border-primary/20 rounded-xl p-8 space-y-6">
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-bold text-foreground">Verificación de Identidad</h2>
+                <p className="text-muted-foreground text-sm">
+                  Para habilitar funcionalidades sensibles, necesitamos verificar tu identidad.
+                </p>
+              </div>
+
+              <DocumentCaptureField
+                formData={{
+                  firstName: user.firstName,
+                  lastName: user.lastName,
+                  documentType: "dni",
+                  documentNumber: "PENDING",
+                }}
+                onVerified={() => {
+                  setTimeout(() => window.location.reload(), 1500);
+                }}
+              />
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <div className="max-w-md w-full bg-card border border-amber-500/50 rounded-xl p-8 text-center space-y-4">
