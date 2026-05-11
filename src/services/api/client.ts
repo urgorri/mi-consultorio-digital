@@ -679,64 +679,91 @@ export const patientPortalApi = {
 
 // ===== KYC / DOCUMENT VERIFICATION =====
 export const kycApi = {
+  async uploadDocument(file: File, side: "front" | "back" | "selfie"): Promise<ApiResponse<{ url: string }>> {
+    await delay(800);
+    // Simulate secure upload and return a "encrypted" reference as requested in requirements
+    const ref = `secure://documents/${side}-${Date.now()}.enc`;
+    return success({ url: ref });
+  },
+
   async verifyIdentityDocument(
-    files: File[],
-    formData: { firstName: string; lastName: string; documentType: DocumentType; documentNumber: string }
+    files: File[], // [front, back]
+    formData: { firstName: string; lastName: string; documentType: DocumentType; documentNumber: string },
+    selfieFile?: File
   ): Promise<ApiResponse<DocumentVerificationResult>> {
     await delay(2000); // Simulate processing time
 
-    // Mock OCR result extraction based on file presence
-    // In a real scenario, this would come from a backend service processing the images
-    const hasFront = files.length > 0;
+    // Create initial audit log for attempt
+    const attemptLog: AuditLog = {
+      id: `log-kyc-${Date.now()}`,
+      userId: "user-1", // Simplified for mock
+      userName: `${formData.firstName} ${formData.lastName}`,
+      action: "kyc.verification_attempt",
+      resource: "identity",
+      details: `Intento de verificación KYC para documento ${formData.documentNumber}`,
+      ipAddress: "127.0.0.1",
+      timestamp: new Date().toISOString(),
+    };
+    mockAuditLogs.push(attemptLog);
 
-    if (!hasFront) {
-      return success({
+    const hasFront = files.length > 0;
+    const hasBack = files.length > 1;
+    const hasSelfie = !!selfieFile;
+
+    if (!hasFront || !hasBack || !hasSelfie) {
+      const errorResult: DocumentVerificationResult = {
         confidenceScore: 0,
         status: "rejected",
-        error: "No se detectaron imágenes del documento.",
+        error: "Se requieren imágenes del frente, dorso y una selfie para completar el KYC.",
+      };
+
+      mockAuditLogs.push({
+        ...attemptLog,
+        id: `log-kyc-err-${Date.now()}`,
+        action: "kyc.verification_failed",
+        details: "Faltan documentos requeridos (frente, dorso o selfie).",
       });
+
+      return success(errorResult);
     }
 
     // Simulate different results based on document number for testing
-    // If doc number ends in '0', simulate blurred photo
     if (formData.documentNumber.endsWith("0")) {
-      return success({
+      const result: DocumentVerificationResult = {
         confidenceScore: 0.4,
         status: "rejected",
-        error: "La foto está borrosa. Por favor, intenta de nuevo con mejor iluminación.",
+        error: "La foto está borrosa o la iluminación es insuficiente.",
+      };
+      mockAuditLogs.push({
+        ...attemptLog,
+        id: `log-kyc-fail-${Date.now()}`,
+        action: "kyc.verification_rejected",
+        details: "Calidad de imagen insuficiente.",
       });
+      return success(result);
     }
 
-    // If doc number ends in '9', simulate expired document
-    if (formData.documentNumber.endsWith("9")) {
-      return success({
-        confidenceScore: 0.95,
-        status: "rejected",
-        error: "El documento parece estar vencido.",
-      });
-    }
-
-    // Normalize names for comparison
+    // Normalize names for comparison (simulating consistency check)
     const normalize = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-    const ocrResult: Partial<DocumentVerificationResult> = {
-      firstName: formData.firstName, // Mocking correct OCR for most cases
+    const ocrResult: DocumentVerificationResult = {
+      firstName: formData.firstName,
       lastName: formData.lastName,
       documentType: formData.documentType,
       documentNumber: formData.documentNumber,
       birthDate: "1990-01-01",
-      confidenceScore: 0.92,
+      confidenceScore: 0.95,
+      selfieMatchScore: 0.98,
+      livenessCheck: true,
+      status: "approved",
     };
 
-    // Simulate name mismatch if first name is 'Error'
+    // Consistency check: simulate name mismatch
     if (normalize(formData.firstName) === "error") {
-      ocrResult.firstName = "Correcto";
-      return success({
-        ...ocrResult,
-        confidenceScore: 0.85,
-        status: "manual_review",
-        error: "Los datos del documento no coinciden exactamente con el formulario.",
-      } as DocumentVerificationResult);
+      ocrResult.firstName = "Validado";
+      ocrResult.status = "manual_review";
+      ocrResult.error = "El nombre en el documento no coincide exactamente con el registro.";
+      ocrResult.confidenceScore = 0.75;
     }
 
     // Check for document uniqueness (mock)
@@ -745,17 +772,46 @@ export const kycApi = {
     );
 
     if (alreadyExists) {
-      return success({
+      const result: DocumentVerificationResult = {
         confidenceScore: 1.0,
         status: "rejected",
         error: "Este documento ya se encuentra registrado en el sistema.",
+      };
+      mockAuditLogs.push({
+        ...attemptLog,
+        id: `log-kyc-dup-${Date.now()}`,
+        action: "kyc.verification_rejected",
+        details: "Documento ya registrado.",
       });
+      return success(result);
     }
 
-    return success({
-      ...ocrResult,
-      status: "approved",
-    } as DocumentVerificationResult);
+    // Persist KYC metadata in the user object (mock)
+    const mockUser = mockUsers.find(u => u.id === "prof-1"); // Simplified for mock
+    if (mockUser && ocrResult.status === "approved") {
+      mockUser.kycStatus = "approved";
+      mockUser.kycMetadata = {
+        status: "approved",
+        provider: "InternalIdentityService",
+        score: ocrResult.confidenceScore,
+        updatedAt: new Date().toISOString(),
+        attempts: 1,
+        documentFiles: {
+          front: "secure://documents/front-mock.enc",
+          back: "secure://documents/back-mock.enc",
+          selfie: "secure://documents/selfie-mock.enc",
+        }
+      };
+    }
+
+    mockAuditLogs.push({
+      ...attemptLog,
+      id: `log-kyc-res-${Date.now()}`,
+      action: "kyc.verification_completed",
+      details: `Resultado KYC: ${ocrResult.status}. Score: ${ocrResult.confidenceScore}. Liveness: ${ocrResult.livenessCheck}`,
+    });
+
+    return success(ocrResult);
   },
 };
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { DocumentCaptureField } from "../DocumentCaptureField";
 import { kycApi } from "@/services/api";
@@ -7,6 +7,7 @@ import { kycApi } from "@/services/api";
 vi.mock("@/services/api", () => ({
   kycApi: {
     verifyIdentityDocument: vi.fn(),
+    uploadDocument: vi.fn().mockResolvedValue({ success: true, data: { url: "ref" } }),
   },
 }));
 
@@ -14,6 +15,10 @@ vi.mock("@/services/api", () => ({
 vi.mock("@/hooks/use-mobile", () => ({
   useIsMobile: vi.fn(() => false),
 }));
+
+// Mock URL methods
+global.URL.createObjectURL = vi.fn(() => "mock-url");
+global.URL.revokeObjectURL = vi.fn();
 
 describe("DocumentCaptureField", () => {
   const mockFormData = {
@@ -24,14 +29,17 @@ describe("DocumentCaptureField", () => {
   };
   const mockOnVerified = vi.fn();
 
-  it("renders upload buttons on desktop", () => {
-    render(<DocumentCaptureField formData={mockFormData} onVerified={mockOnVerified} />);
-    expect(screen.getByText("Frente")).toBeDefined();
-    expect(screen.getByText("Dorso")).toBeDefined();
-    expect(screen.getAllByText("Subir imagen")).toHaveLength(2);
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it("calls verifyIdentityDocument when both files are uploaded and button is clicked", async () => {
+  it("renders guided steps", () => {
+    render(<DocumentCaptureField formData={mockFormData} onVerified={mockOnVerified} />);
+    expect(screen.getByText("Frente del Documento")).toBeDefined();
+    expect(screen.getByText("Captura la parte frontal de tu identificación oficial.")).toBeDefined();
+  });
+
+  it("navigates through steps and calls verifyIdentityDocument", async () => {
     const mockResponse = {
       success: true,
       data: {
@@ -41,29 +49,41 @@ describe("DocumentCaptureField", () => {
     };
     (kycApi.verifyIdentityDocument as any).mockResolvedValue(mockResponse);
 
-    render(<DocumentCaptureField formData={mockFormData} onVerified={mockOnVerified} />);
+    const { container } = render(<DocumentCaptureField formData={mockFormData} onVerified={mockOnVerified} />);
 
-    // Mock file upload
     const frontFile = new File(["front"], "front.png", { type: "image/png" });
     const backFile = new File(["back"], "back.png", { type: "image/png" });
+    const selfieFile = new File(["selfie"], "selfie.png", { type: "image/png" });
 
-    const frontInput = screen.getByLabelText("Frente") as HTMLInputElement;
-    const backInput = screen.getByLabelText("Dorso") as HTMLInputElement;
-    fireEvent.change(frontInput, { target: { files: [frontFile] } });
-    fireEvent.change(backInput, { target: { files: [backFile] } });
+    // Step 1: Front
+    const fileInput = container.querySelector("input[type='file']") as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [frontFile] } });
+    fireEvent.click(screen.getByText("Siguiente"));
 
-    const verifyButton = screen.getByText("Verificar Documento");
-    fireEvent.click(verifyButton);
+    // Step 2: Back
+    await waitFor(() => expect(screen.getByText("Dorso del Documento")).toBeDefined());
+    fireEvent.change(fileInput, { target: { files: [backFile] } });
+    fireEvent.click(screen.getByText("Siguiente"));
+
+    // Step 3: Selfie
+    await waitFor(() => expect(screen.getByText("Selfie de Verificación")).toBeDefined());
+    fireEvent.change(fileInput, { target: { files: [selfieFile] } });
+    fireEvent.click(screen.getByText("Siguiente"));
+
+    // Step 4: Review
+    await waitFor(() => expect(screen.getByText("Revisar y Enviar")).toBeDefined());
+    fireEvent.click(screen.getByText("Finalizar Verificación"));
 
     await waitFor(() => {
       expect(kycApi.verifyIdentityDocument).toHaveBeenCalledWith(
         [expect.any(File), expect.any(File)],
-        mockFormData
+        mockFormData,
+        expect.any(File)
       );
-    }, { timeout: 3000 });
+    }, { timeout: 5000 });
 
     await waitFor(() => {
-      expect(screen.getByText("Identidad Verificada")).toBeDefined();
+      expect(screen.getByText("¡KYC Aprobado!")).toBeDefined();
     });
 
     expect(mockOnVerified).toHaveBeenCalledWith(mockResponse.data);
@@ -80,20 +100,30 @@ describe("DocumentCaptureField", () => {
     };
     (kycApi.verifyIdentityDocument as any).mockResolvedValue(mockResponse);
 
-    render(<DocumentCaptureField formData={mockFormData} onVerified={mockOnVerified} />);
+    const { container } = render(<DocumentCaptureField formData={mockFormData} onVerified={mockOnVerified} />);
 
     const frontFile = new File(["front"], "front.png", { type: "image/png" });
     const backFile = new File(["back"], "back.png", { type: "image/png" });
+    const selfieFile = new File(["selfie"], "selfie.png", { type: "image/png" });
 
-    const frontInput = screen.getByLabelText("Frente") as HTMLInputElement;
-    const backInput = screen.getByLabelText("Dorso") as HTMLInputElement;
-    fireEvent.change(frontInput, { target: { files: [frontFile] } });
-    fireEvent.change(backInput, { target: { files: [backFile] } });
+    // Navigate to review step
+    const fileInput = container.querySelector("input[type='file']") as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [frontFile] } });
+    fireEvent.click(screen.getByText("Siguiente"));
 
-    fireEvent.click(screen.getByText("Verificar Documento"));
+    await waitFor(() => expect(screen.getByText("Dorso del Documento")).toBeDefined());
+    fireEvent.change(fileInput, { target: { files: [backFile] } });
+    fireEvent.click(screen.getByText("Siguiente"));
+
+    await waitFor(() => expect(screen.getByText("Selfie de Verificación")).toBeDefined());
+    fireEvent.change(fileInput, { target: { files: [selfieFile] } });
+    fireEvent.click(screen.getByText("Siguiente"));
+
+    await waitFor(() => expect(screen.getByText("Revisar y Enviar")).toBeDefined());
+    fireEvent.click(screen.getByText("Finalizar Verificación"));
 
     await waitFor(() => {
       expect(screen.getByText("La foto está borrosa.")).toBeDefined();
-    }, { timeout: 3000 });
+    }, { timeout: 5000 });
   });
 });

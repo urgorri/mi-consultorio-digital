@@ -7,7 +7,7 @@ test.describe("Patient Flow", () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ success: true, data: { user: { id: "p-1", role: "paciente", firstName: "Laura", lastName: "Gomez", email: "laura@email.com", emailVerifiedAt: new Date().toISOString() } } }),
+        body: JSON.stringify({ success: true, data: { user: { id: "p-1", role: "paciente", firstName: "Laura", lastName: "Gomez", email: "laura@email.com", emailVerifiedAt: new Date().toISOString(), kycStatus: "approved" } } }),
       });
     });
 
@@ -23,7 +23,7 @@ test.describe("Patient Flow", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ success: true, data: { id: "p-1", role: "paciente", firstName: "Laura", lastName: "Gomez", email: "laura@email.com", emailVerifiedAt: new Date().toISOString() } }),
+          body: JSON.stringify({ success: true, data: { id: "p-1", role: "paciente", firstName: "Laura", lastName: "Gomez", email: "laura@email.com", emailVerifiedAt: new Date().toISOString(), kycStatus: "approved" } }),
         });
       }
     });
@@ -43,6 +43,7 @@ test.describe("Patient Flow", () => {
     await page.fill('input[type="password"]', "password123");
     await page.click('button:has-text("Iniciar sesión")');
 
+    await expect(page).toHaveURL(/\/portal/);
     await page.click('text=Notificaciones');
     await expect(page).toHaveURL(/\/portal\/notificaciones/);
   });
@@ -53,6 +54,7 @@ test.describe("Patient Flow", () => {
     await page.fill('input[type="password"]', "password123");
     await page.click('button:has-text("Iniciar sesión")');
 
+    await expect(page).toHaveURL(/\/portal/);
     await page.waitForSelector('text=Dra. María García');
     await page.click('text=Dra. María García');
 
