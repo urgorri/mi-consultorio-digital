@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Camera, Upload, CheckCircle2, AlertCircle, Loader2, X, ArrowRight, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -32,6 +32,40 @@ export const DocumentCaptureField: React.FC<DocumentCaptureFieldProps> = ({
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
+
+  const [frontPreview, setFrontPreview] = useState<string | null>(null);
+  const [backPreview, setBackPreview] = useState<string | null>(null);
+  const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!frontFile) {
+      setFrontPreview(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(frontFile);
+    setFrontPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [frontFile]);
+
+  useEffect(() => {
+    if (!backFile) {
+      setBackPreview(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(backFile);
+    setBackPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [backFile]);
+
+  useEffect(() => {
+    if (!selfieFile) {
+      setSelfiePreview(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(selfieFile);
+    setSelfiePreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [selfieFile]);
 
   const [isVerifying, setIsVerifying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -143,6 +177,7 @@ export const DocumentCaptureField: React.FC<DocumentCaptureFieldProps> = ({
 
   const renderCaptureArea = () => {
     const file = currentStep === "front" ? frontFile : currentStep === "back" ? backFile : selfieFile;
+    const preview = currentStep === "front" ? frontPreview : currentStep === "back" ? backPreview : selfiePreview;
 
     return (
       <div className="space-y-4">
@@ -162,13 +197,14 @@ export const DocumentCaptureField: React.FC<DocumentCaptureFieldProps> = ({
             disabled={isVerifying}
           />
 
-          {file ? (
+          {file && preview ? (
             <div className="flex flex-col items-center space-y-4 w-full">
               <div className="relative w-full max-w-[200px] aspect-[3/2] bg-muted rounded-lg overflow-hidden border border-primary/20">
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt="Vista previa"
-                  className="w-full h-full object-cover"
+                <div
+                  className="w-full h-full bg-cover bg-center"
+                  style={{ backgroundImage: `url(${preview})` }}
+                  role="img"
+                  aria-label="Vista previa"
                 />
                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                   <CheckCircle2 className="w-10 h-10 text-white" />
@@ -233,21 +269,24 @@ export const DocumentCaptureField: React.FC<DocumentCaptureFieldProps> = ({
   };
 
   const renderReviewStep = () => {
+    const items = [
+      { file: frontFile, preview: frontPreview, label: "Frente" },
+      { file: backFile, preview: backPreview, label: "Dorso" },
+      { file: selfieFile, preview: selfiePreview, label: "Selfie" }
+    ];
+
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-3 gap-3">
-          {[
-            { file: frontFile, label: "Frente" },
-            { file: backFile, label: "Dorso" },
-            { file: selfieFile, label: "Selfie" }
-          ].map((item, idx) => (
+          {items.map((item, idx) => (
             <div key={idx} className="space-y-2">
               <div className="aspect-square bg-muted rounded-lg overflow-hidden border">
-                {item.file && (
-                  <img
-                    src={URL.createObjectURL(item.file)}
-                    alt={item.label}
-                    className="w-full h-full object-cover"
+                {item.file && item.preview && (
+                  <div
+                    className="w-full h-full bg-cover bg-center"
+                    style={{ backgroundImage: `url(${item.preview})` }}
+                    role="img"
+                    aria-label={item.label}
                   />
                 )}
               </div>

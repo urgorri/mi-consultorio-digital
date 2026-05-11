@@ -16,8 +16,9 @@ vi.mock("@/hooks/use-mobile", () => ({
   useIsMobile: vi.fn(() => false),
 }));
 
-// Mock URL.createObjectURL
+// Mock URL methods
 global.URL.createObjectURL = vi.fn(() => "mock-url");
+global.URL.revokeObjectURL = vi.fn();
 
 describe("DocumentCaptureField", () => {
   const mockFormData = {
