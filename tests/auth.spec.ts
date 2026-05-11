@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Patient Auth Flow", () => {
+test.describe("Patient Auth Flow @smoke", () => {
   test("login, navigate and logout", async ({ page }) => {
     await page.goto("/login/paciente");
     await page.fill('input[type="email"]', "laura@email.com");

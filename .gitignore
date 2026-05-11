@@ -50,6 +50,10 @@ dmypy.json
 # Pytest cache
 .pytest_cache/
 
+# Playwright
+playwright-report/
+test-results/
+
 # OS generated files
 .DS_Store
 .DS_Store?
