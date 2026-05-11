@@ -18,7 +18,7 @@ const ComplianceBanner = () => {
   let Icon = AlertTriangle;
   let title = "";
   let message = "";
-  let showButton = true;
+  const showButton = true;
 
   switch (status) {
     case "pending":
