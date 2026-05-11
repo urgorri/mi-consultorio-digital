@@ -13,6 +13,7 @@ interface AuthContextType {
   logout: () => void;
   assertRole: (expectedRole: User["role"], authUser?: User | null) => boolean;
   refreshSession: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -81,6 +82,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return Boolean(current && current.role === expectedRole);
   }, [user]);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await authApi.getCurrentUser();
+      if (res.success && res.data) {
+        setUser(res.data);
+      }
+    } catch (error) {
+      console.error("Error refreshing user:", error);
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
@@ -91,7 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, sessionStatus, login, logout, assertRole, refreshSession }}>
+    <AuthContext.Provider value={{ user, isLoading, sessionStatus, login, logout, assertRole, refreshSession, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

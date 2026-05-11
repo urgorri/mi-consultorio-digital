@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getLogoutRedirectPath } from "@/lib/auth-routing";
 import NotificationsDropdown from "./NotificationsDropdown";
 import ClinicFilterDropdown from "./ClinicFilterDropdown";
+import ComplianceBanner from "./ComplianceBanner";
 
 const primaryNavItems = [
   { icon: LayoutDashboard, label: "Inicio", path: "/dashboard" },
@@ -162,8 +163,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </DropdownMenu>
         </header>
 
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          {children}
+        <main className="flex-1 overflow-auto">
+          <ComplianceBanner />
+          <div className="p-4 md:p-6">
+            {children}
+          </div>
         </main>
       </div>
     </div>

@@ -11,11 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import PremiumUpgradeDialog from "@/components/dialogs/PremiumUpgradeDialog";
 import NewAppointmentTypeDialog from "@/components/dialogs/NewAppointmentTypeDialog";
 import { useToast } from "@/hooks/use-toast";
-import { authApi } from "@/services/api/client";
+import { authApi, settingsApi } from "@/services/api/client";
 import { UserSession } from "@/services/api/types";
 import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2, RefreshCw } from "lucide-react";
 
 const SettingsPage = () => {
+  const { user, refreshUser } = useAuth();
+  const [isRevalidating, setIsRevalidating] = useState(false);
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
@@ -49,6 +53,21 @@ const SettingsPage = () => {
       console.error("Error fetching sessions:", error);
     } finally {
       setIsLoadingSessions(false);
+    }
+  };
+
+  const handleRevalidate = async () => {
+    setIsRevalidating(true);
+    try {
+      const res = await settingsApi.revalidateLicense();
+      if (res.success) {
+        toast({ title: "Validación completada", description: res.message });
+        await refreshUser();
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "No se pudo conectar con el servicio de validación.", variant: "destructive" });
+    } finally {
+      setIsRevalidating(false);
     }
   };
 
@@ -90,9 +109,35 @@ const SettingsPage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Nombre</Label><Input defaultValue="María" /></div>
                 <div className="space-y-2"><Label>Apellido</Label><Input defaultValue="García" /></div>
-                <div className="space-y-2"><Label>Especialidad</Label><Input defaultValue="Medicina General" /></div>
-                <div className="space-y-2"><Label>Cédula profesional</Label><Input defaultValue="12345678" /></div>
-                <div className="space-y-2"><Label>Correo</Label><Input defaultValue="dra.garcia@email.com" /></div>
+                <div className="space-y-2"><Label>Especialidad</Label><Input defaultValue={user?.specialty || "Medicina General"} /></div>
+                <div className="space-y-2">
+                  <Label>Cédula profesional (Matrícula)</Label>
+                  <div className="flex gap-2">
+                    <Input defaultValue={user?.licenseNumber || "12345678"} className="flex-1" />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleRevalidate}
+                      disabled={isRevalidating}
+                      title="Revalidar con SISA"
+                    >
+                      {isRevalidating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Estado de Matrícula</Label>
+                  <div className="flex items-center gap-2 h-10">
+                    {user?.licenseStatus === 'valid' && <Badge className="bg-green-100 text-green-700 border-green-200">Válida</Badge>}
+                    {user?.licenseStatus === 'pending' && <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200">Pendiente</Badge>}
+                    {user?.licenseStatus === 'invalid' && <Badge variant="destructive">Inválida</Badge>}
+                    {user?.licenseStatus === 'unverifiable' && <Badge variant="outline" className="text-muted-foreground">No verificable</Badge>}
+                    <span className="text-[10px] text-muted-foreground italic">
+                      Sincronizado: {user?.licenseLastCheckedAt ? new Date(user.licenseLastCheckedAt).toLocaleDateString() : 'Nunca'}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2"><Label>Correo</Label><Input defaultValue={user?.email || "dra.garcia@email.com"} /></div>
                 <div className="space-y-2"><Label>Teléfono</Label><Input defaultValue="+52 55 9876 5432" /></div>
               </div>
               <Button className="gap-1"><Save className="w-4 h-4" /> Guardar cambios</Button>

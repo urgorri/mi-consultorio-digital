@@ -15,8 +15,12 @@ export const getLogoutRedirectPath = (role?: User["role"]): string => {
 export const getUserRestrictions = (user: User | null) => {
   if (!user || user.role !== "profesional") return null;
 
-  if (user.trialExpired) return "TRIAL_EXPIRED";
-  if (user.invalidLicense) return "INVALID_LICENSE";
+  if (user.trialExpired) {
+    if (user.licenseStatus !== "valid") return "TRIAL_EXPIRED_LICENSE_REQUIRED";
+    return "TRIAL_EXPIRED";
+  }
+
+  if (user.licenseStatus === "invalid") return "INVALID_LICENSE";
   if (user.subscriptionInactive) return "SUBSCRIPTION_INACTIVE";
   if (!user.emailVerifiedAt) return "EMAIL_NOT_VERIFIED";
   if (user.kycStatus !== "approved") return "KYC_REQUIRED";

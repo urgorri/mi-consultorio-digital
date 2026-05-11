@@ -23,7 +23,8 @@ export interface User {
   status: "activo" | "inactivo" | "bloqueado";
   emailVerifiedAt?: string;
   trialExpired?: boolean;
-  invalidLicense?: boolean;
+  licenseStatus?: LicenseStatus;
+  licenseLastCheckedAt?: string;
   subscriptionInactive?: boolean;
   kycStatus?: KycStatus;
   kycMetadata?: KycMetadata;
@@ -74,6 +75,8 @@ export type ClinicRole = "admin" | "staff";
 export type DocumentType = "dni" | "pasaporte" | "cedula" | "otro";
 
 export type KycStatus = "none" | "pending" | "approved" | "rejected";
+
+export type LicenseStatus = "pending" | "valid" | "invalid" | "unverifiable";
 
 export interface KycMetadata {
   status: KycStatus;
