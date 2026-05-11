@@ -544,6 +544,21 @@ export const settingsApi = {
     console.log(`[TRACKING] User requested premium upgrade for feature: ${feature}`);
     return success({ message: "Solicitud de versión Premium enviada con éxito. Nos pondremos en contacto contigo pronto." });
   },
+  async revalidateLicense() {
+    await delay(1500);
+    const statuses: any[] = ["valid", "invalid", "unverifiable"];
+    const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+
+    // Update mock professional
+    mockProfessional.licenseStatus = newStatus;
+    mockProfessional.licenseLastCheckedAt = new Date().toISOString();
+
+    return success({
+      status: newStatus,
+      lastCheckedAt: mockProfessional.licenseLastCheckedAt,
+      message: `Matrícula validada con resultado: ${newStatus}`
+    });
+  },
 };
 
 // ===== ADMIN =====

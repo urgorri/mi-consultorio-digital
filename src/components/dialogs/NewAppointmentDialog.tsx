@@ -54,11 +54,11 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
         setAvailableSlots(res.data);
         // Reset time if it's no longer available
         if (form.time && !res.data.includes(form.time)) {
-          update("time", "");
+          setForm(prev => ({ ...prev, time: "" }));
         }
       });
     }
-  }, [open, form.date]);
+  }, [open, form.date, form.time]);
 
   const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 

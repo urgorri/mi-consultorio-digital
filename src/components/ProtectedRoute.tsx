@@ -68,8 +68,9 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
 
   // Check account restrictions
   if (user.role === "profesional" || user.role === "paciente") {
-    const restriction = user.trialExpired ? "TRIAL_EXPIRED" :
-                        user.invalidLicense ? "INVALID_LICENSE" :
+    const restriction = (user.trialExpired && user.licenseStatus !== "valid") ? "TRIAL_EXPIRED_LICENSE_REQUIRED" :
+                        user.trialExpired ? "TRIAL_EXPIRED" :
+                        user.licenseStatus === "invalid" ? "INVALID_LICENSE" :
                         user.subscriptionInactive ? "SUBSCRIPTION_INACTIVE" :
                         (user.kycStatus !== "approved") ? "KYC_REQUIRED" : null;
 
@@ -106,7 +107,8 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
             <h2 className="text-2xl font-bold text-foreground">Acceso restringido</h2>
             <p className="text-muted-foreground">
               {restriction === "TRIAL_EXPIRED" && "Tu periodo de prueba ha vencido. Por favor, adquiere un plan para continuar."}
-              {restriction === "INVALID_LICENSE" && "Tu matrícula profesional no ha podido ser validada. Contacta a soporte."}
+              {restriction === "TRIAL_EXPIRED_LICENSE_REQUIRED" && "Tu periodo de prueba ha vencido y tu matrícula no es válida. Se requiere una matrícula válida para continuar."}
+              {restriction === "INVALID_LICENSE" && "Tu matrícula profesional no es válida según los registros oficiales. Por favor, verifica tus datos o contacta a soporte."}
               {restriction === "SUBSCRIPTION_INACTIVE" && "Tu suscripción no está activa. Revisa tu método de pago."}
             </p>
             <div className="pt-4 flex flex-col gap-2">
