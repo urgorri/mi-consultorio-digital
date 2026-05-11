@@ -5,14 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Plus, MapPin, Clock, Stethoscope, Bell, MessageSquare, ListTodo } from "lucide-react";
+import { Save, Plus, MapPin, Clock, Stethoscope, Bell, MessageSquare, ListTodo, Monitor, ShieldCheck } from "lucide-react";
 import NewLocationDialog from "@/components/dialogs/NewLocationDialog";
 import { Badge } from "@/components/ui/badge";
 import PremiumUpgradeDialog from "@/components/dialogs/PremiumUpgradeDialog";
 import NewAppointmentTypeDialog from "@/components/dialogs/NewAppointmentTypeDialog";
 import { useToast } from "@/hooks/use-toast";
+import { authApi } from "@/services/api/client";
+import { UserSession } from "@/services/api/types";
+import { useEffect } from "react";
 
 const SettingsPage = () => {
+  const [sessions, setSessions] = useState<UserSession[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
   const [premiumOpen, setPremiumOpen] = useState(false);
@@ -28,6 +33,36 @@ const SettingsPage = () => {
     bmi: true,
   });
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    setIsLoadingSessions(true);
+    try {
+      const res = await authApi.listSessions();
+      if (res.success) {
+        setSessions(res.data);
+      }
+    } catch (error) {
+      console.error("Error fetching sessions:", error);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  };
+
+  const handleRevokeSession = async (sessionId: string) => {
+    try {
+      const res = await authApi.revokeSession(sessionId);
+      if (res.success) {
+        toast({ title: "Sesión cerrada", description: "La sesión ha sido revocada exitosamente." });
+        fetchSessions();
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "No se pudo cerrar la sesión remota.", variant: "destructive" });
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -46,6 +81,7 @@ const SettingsPage = () => {
             <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
             <TabsTrigger value="diagnosticos">Diagnósticos</TabsTrigger>
             <TabsTrigger value="consulta">Consulta</TabsTrigger>
+            <TabsTrigger value="sesiones">Sesiones</TabsTrigger>
           </TabsList>
 
           <TabsContent value="perfil" className="mt-4 space-y-4">
@@ -288,6 +324,61 @@ const SettingsPage = () => {
               <Button className="gap-1" onClick={() => toast({ title: "Configuración guardada", description: "Tus preferencias de consulta han sido actualizadas." })}>
                 <Save className="w-4 h-4" /> Guardar configuración
               </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="sesiones" className="mt-4 space-y-4">
+            <div className="bg-card rounded-xl border border-border p-5 space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Sesiones activas</h3>
+                  <p className="text-sm text-muted-foreground">Gestiona los dispositivos que tienen acceso a tu cuenta</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {isLoadingSessions ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+                  </div>
+                ) : sessions.length > 0 ? (
+                  sessions.map((session) => (
+                    <div key={session.id} className="flex items-center justify-between border border-border rounded-lg p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                          <Monitor className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-foreground">{session.browser} en {session.os}</p>
+                            {session.isCurrent && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-700 border-none text-[10px] px-1.5 py-0">Esta sesión</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{session.device} • {session.ipAddress}</p>
+                          <p className="text-xs text-muted-foreground">Última actividad: {session.lastActive}</p>
+                        </div>
+                      </div>
+                      {!session.isCurrent && (
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleRevokeSession(session.id)}>
+                          Cerrar sesión
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">No se encontraron otras sesiones activas.</p>
+                )}
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">
+                  Si ves un dispositivo que no reconoces, te recomendamos cerrar la sesión y cambiar tu contraseña inmediatamente.
+                </p>
+              </div>
             </div>
           </TabsContent>
 

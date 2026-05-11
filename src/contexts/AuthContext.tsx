@@ -3,45 +3,76 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import type { User } from "@/services/api/types";
 import { authApi } from "@/services/api/client";
 
+export type SessionStatus = "authenticated" | "expired" | "blocked" | "idle";
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  sessionStatus: SessionStatus;
   login: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   logout: () => void;
   assertRole: (expectedRole: User["role"], authUser?: User | null) => boolean;
+  refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY = "mc_auth_user";
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionStatus, setSessionStatus] = useState<SessionStatus>("idle");
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    }
-    setIsLoading(false);
-  }, []);
-
-  const login = useCallback(async (email: string, _password: string) => {
+  const refreshSession = useCallback(async () => {
     try {
-      const res = await authApi.login(email, _password);
+      const res = await authApi.refresh();
       if (res.success && res.data.user) {
         setUser(res.data.user);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(res.data.user));
+        setSessionStatus("authenticated");
+      }
+    } catch (error) {
+      setSessionStatus("expired");
+      setUser(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const res = await authApi.getCurrentUser();
+        if (res.success && res.data) {
+          setUser(res.data);
+          setSessionStatus(res.data.status === "bloqueado" ? "blocked" : "authenticated");
+        }
+      } catch {
+        setSessionStatus("expired");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    initAuth();
+  }, []);
+
+  // Silent refresh every 10 minutes
+  useEffect(() => {
+    if (sessionStatus === "authenticated") {
+      const interval = setInterval(() => {
+        refreshSession();
+      }, 10 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [sessionStatus, refreshSession]);
+
+  const login = useCallback(async (email: string, password: string) => {
+    try {
+      const res = await authApi.login(email, password);
+      if (res.success && res.data.user) {
+        setUser(res.data.user);
+        setSessionStatus(res.data.user.status === "bloqueado" ? "blocked" : "authenticated");
         return { success: true, user: res.data.user };
       }
       return { success: false, error: "Credenciales inválidas" };
-    } catch {
-      return { success: false, error: "Error al iniciar sesión" };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Error al iniciar sesión" };
     }
   }, []);
 
@@ -50,13 +81,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return Boolean(current && current.role === expectedRole);
   }, [user]);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } finally {
+      setUser(null);
+      setSessionStatus("idle");
+    }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, assertRole }}>
+    <AuthContext.Provider value={{ user, isLoading, sessionStatus, login, logout, assertRole, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );
