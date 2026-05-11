@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, sessionStatus } = useAuth();
 
   if (isLoading) {
     return (
@@ -17,8 +17,55 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     );
   }
 
-  if (!user) {
+  if (!user || sessionStatus === "expired") {
     return <Navigate to="/login" replace />;
+  }
+
+  if (sessionStatus === "blocked") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="max-w-md w-full bg-card border border-destructive/50 rounded-xl p-8 text-center space-y-4">
+          <div className="w-16 h-16 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m10-10V7a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V7z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-foreground">Cuenta bloqueada</h2>
+          <p className="text-muted-foreground">Tu acceso ha sido restringido por seguridad o incumplimiento de términos.</p>
+          <a href="mailto:soporte@miconsultorio.com" className="text-primary font-medium hover:underline block pt-2">Contactar a soporte</a>
+        </div>
+      </div>
+    );
+  }
+
+  // Check account restrictions
+  if (user.role === "profesional") {
+    const restriction = user.trialExpired ? "TRIAL_EXPIRED" :
+                        user.invalidLicense ? "INVALID_LICENSE" :
+                        user.subscriptionInactive ? "SUBSCRIPTION_INACTIVE" : null;
+
+    if (restriction) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <div className="max-w-md w-full bg-card border border-amber-500/50 rounded-xl p-8 text-center space-y-4">
+            <h2 className="text-2xl font-bold text-foreground">Acceso restringido</h2>
+            <p className="text-muted-foreground">
+              {restriction === "TRIAL_EXPIRED" && "Tu periodo de prueba ha vencido. Por favor, adquiere un plan para continuar."}
+              {restriction === "INVALID_LICENSE" && "Tu matrícula profesional no ha podido ser validada. Contacta a soporte."}
+              {restriction === "SUBSCRIPTION_INACTIVE" && "Tu suscripción no está activa. Revisa tu método de pago."}
+            </p>
+            <div className="pt-4 flex flex-col gap-2">
+              <button
+                onClick={() => window.location.href = "/dashboard/configuracion"}
+                className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium"
+              >
+                Ir a configuración
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {

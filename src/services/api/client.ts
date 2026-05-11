@@ -4,7 +4,7 @@ import type {
   Diagnosis, Notification, DashboardStats, ReportMetrics,
   User, AuditLog, SystemHealth, Professional, AppointmentType,
   DocumentType, ProfessionalPatientRequest, RegistrationInvite,
-  DocumentVerificationResult,
+  DocumentVerificationResult, UserSession,
 } from "./types";
 import {
   mockPatients, mockAppointments, mockConsultations, mockDiagnoses,
@@ -28,26 +28,77 @@ function paginated<T>(data: T[], total: number, page = 1, limit = 20): Paginated
 
 // ===== AUTH =====
 export const authApi = {
-  async login(email: string, _password: string) {
-    await delay();
-    const user = mockUsers.find(u => u.email === email);
-    return success({ user: user || mockUsers[0], token: "mock-jwt-token-xyz" });
+  async login(email: string, password: string): Promise<ApiResponse<{ user: User }>> {
+    const response = await fetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Credenciales inválidas");
+    return response.json();
   },
-  async register(_data: { email: string; password: string; firstName: string; lastName: string; role: string }) {
-    await delay();
-    return success({ message: "Cuenta creada exitosamente. Revisa tu correo para verificar." });
+  async register(data: { email: string; password: string; firstName: string; lastName: string; role: string }) {
+    const response = await fetch("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Error al registrar usuario");
+    return response.json();
   },
-  async recoverPassword(_email: string) {
-    await delay();
-    return success({ message: "Instrucciones enviadas al correo electrónico." });
+  async recoverPassword(email: string) {
+    const response = await fetch("/auth/recover-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Error al recuperar contraseña");
+    return response.json();
   },
-  async getCurrentUser() {
-    await delay(100);
-    return success(mockProfessional);
+  async getCurrentUser(): Promise<ApiResponse<User>> {
+    const response = await fetch("/auth/me", {
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("No autenticado");
+    return response.json();
   },
   async logout() {
-    await delay(100);
-    return success({ message: "Sesión cerrada." });
+    const response = await fetch("/auth/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    return response.json();
+  },
+  async refresh(): Promise<ApiResponse<{ user: User }>> {
+    const response = await fetch("/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Error al refrescar sesión");
+    return response.json();
+  },
+  async listSessions(): Promise<ApiResponse<UserSession[]>> {
+    const response = await fetch("/auth/sessions", {
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Error al listar sesiones");
+    return response.json();
+  },
+  async revokeSession(sessionId: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await fetch(`/auth/sessions/${sessionId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Error al revocar sesión");
+    return response.json();
   },
 };
 

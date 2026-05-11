@@ -21,6 +21,19 @@ export interface User {
   phone?: string;
   createdAt: string;
   status: "activo" | "inactivo" | "bloqueado";
+  trialExpired?: boolean;
+  invalidLicense?: boolean;
+  subscriptionInactive?: boolean;
+}
+
+export interface UserSession {
+  id: string;
+  device: string;
+  browser: string;
+  os: string;
+  ipAddress: string;
+  lastActive: string;
+  isCurrent: boolean;
 }
 
 export interface Professional extends User {
