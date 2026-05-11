@@ -18,6 +18,7 @@ export const getUserRestrictions = (user: User | null) => {
   if (user.trialExpired) return "TRIAL_EXPIRED";
   if (user.invalidLicense) return "INVALID_LICENSE";
   if (user.subscriptionInactive) return "SUBSCRIPTION_INACTIVE";
+  if (!user.emailVerifiedAt) return "EMAIL_NOT_VERIFIED";
 
   return null;
 };

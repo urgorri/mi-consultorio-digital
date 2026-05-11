@@ -20,6 +20,29 @@ export const handlers = [
   http.get('/auth/sessions', () => {
     return HttpResponse.json({ success: true, data: [] })
   }),
+  http.post('/auth/register/patient', async ({ request }) => {
+    const data = await request.json() as any
+    const user = { ...data, id: `pat-${Date.now()}`, role: 'paciente', status: 'activo', createdAt: new Date().toISOString() }
+    return HttpResponse.json({ success: true, data: { user } })
+  }),
+  http.post('/auth/register/professional', async ({ request }) => {
+    const data = await request.json() as any
+    const user = { ...data, id: `prof-${Date.now()}`, role: 'profesional', status: 'activo', createdAt: new Date().toISOString() }
+    return HttpResponse.json({ success: true, data: { user } })
+  }),
+  http.post('/auth/email/verify', async ({ request }) => {
+    const { code } = await request.json() as any
+    if (code === '123456') {
+      return HttpResponse.json({
+        success: true,
+        data: { user: { ...mockProfessional, emailVerifiedAt: new Date().toISOString() } }
+      })
+    }
+    return HttpResponse.json({ success: false, message: 'Código inválido' }, { status: 400 })
+  }),
+  http.post('/auth/email/resend', async () => {
+    return HttpResponse.json({ success: true, data: { message: 'Código reenviado' } })
+  }),
 ]
 
 export const server = setupServer(...handlers)

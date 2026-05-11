@@ -38,14 +38,50 @@ export const authApi = {
     if (!response.ok) throw new Error("Credenciales inválidas");
     return response.json();
   },
-  async register(data: { email: string; password: string; firstName: string; lastName: string; role: string }) {
-    const response = await fetch("/auth/register", {
+  async registerPatient(data: Partial<User> & { password?: string; inviteToken?: string }): Promise<ApiResponse<{ user: User }>> {
+    const response = await fetch("/auth/register/patient", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
       credentials: "include",
     });
-    if (!response.ok) throw new Error("Error al registrar usuario");
+    if (!response.ok) throw new Error("Error al registrar paciente");
+    return response.json();
+  },
+  async registerProfessional(data: Partial<Professional> & { password?: string }): Promise<ApiResponse<{ user: User }>> {
+    const response = await fetch("/auth/register/professional", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Error al registrar profesional");
+    return response.json();
+  },
+  async verifyEmail(email: string, code: string): Promise<ApiResponse<{ user: User }>> {
+    const response = await fetch("/auth/email/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, code }),
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Error al verificar correo");
+    }
+    return response.json();
+  },
+  async resendVerificationEmail(email: string): Promise<ApiResponse<{ message: string; cooldownUntil?: string }>> {
+    const response = await fetch("/auth/email/resend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Error al reenviar correo de verificación");
+    }
     return response.json();
   },
   async recoverPassword(email: string) {

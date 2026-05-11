@@ -7,7 +7,7 @@ test.describe("Patient Flow", () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ success: true, data: { user: { id: "p-1", role: "paciente", firstName: "Laura", lastName: "Gomez", email: "laura@email.com" } } }),
+        body: JSON.stringify({ success: true, data: { user: { id: "p-1", role: "paciente", firstName: "Laura", lastName: "Gomez", email: "laura@email.com", emailVerifiedAt: new Date().toISOString() } } }),
       });
     });
 
@@ -23,7 +23,7 @@ test.describe("Patient Flow", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ success: true, data: { id: "p-1", role: "paciente", firstName: "Laura", lastName: "Gomez", email: "laura@email.com" } }),
+          body: JSON.stringify({ success: true, data: { id: "p-1", role: "paciente", firstName: "Laura", lastName: "Gomez", email: "laura@email.com", emailVerifiedAt: new Date().toISOString() } }),
         });
       }
     });
