@@ -21,9 +21,21 @@ export interface User {
   phone?: string;
   createdAt: string;
   status: "activo" | "inactivo" | "bloqueado";
+  emailVerifiedAt?: string;
   trialExpired?: boolean;
   invalidLicense?: boolean;
   subscriptionInactive?: boolean;
+}
+
+export interface EmailVerificationCode {
+  id: string;
+  userId: string;
+  email: string;
+  codeHash: string;
+  expiresAt: string;
+  attemptsConsumed: number;
+  cooldownUntil: string;
+  sendsInWindow: number;
 }
 
 export interface UserSession {

@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { OTPVerification } from "./auth/OTPVerification";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -33,6 +34,32 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
           <h2 className="text-2xl font-bold text-foreground">Cuenta bloqueada</h2>
           <p className="text-muted-foreground">Tu acceso ha sido restringido por seguridad o incumplimiento de términos.</p>
           <a href="mailto:soporte@miconsultorio.com" className="text-primary font-medium hover:underline block pt-2">Contactar a soporte</a>
+        </div>
+      </div>
+    );
+  }
+
+  // Check email verification for all roles
+  if (!user.emailVerifiedAt) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="max-w-md w-full bg-card border border-amber-500/50 rounded-xl p-8 text-center space-y-4">
+          <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+
+          <OTPVerification
+            email={user.email}
+            onVerified={() => {
+              window.location.reload();
+            }}
+            onBack={() => {
+              const loginPath = user.role === "paciente" ? "/login/paciente" : "/login/profesional";
+              window.location.href = loginPath;
+            }}
+          />
         </div>
       </div>
     );

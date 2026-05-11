@@ -380,3 +380,6 @@ export const mockCareAuthorizations: CareAuthorization[] = [
 // Mock professional-patient requests
 export const mockProfessionalPatientRequests: ProfessionalPatientRequest[] = [];
 export const mockRegistrationInvites: RegistrationInvite[] = [];
+
+import type { EmailVerificationCode } from "./types";
+export const mockEmailVerificationCodes: EmailVerificationCode[] = [];
