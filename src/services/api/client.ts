@@ -5,6 +5,7 @@ import type {
   User, AuditLog, SystemHealth, Professional, AppointmentType,
   DocumentType, ProfessionalPatientRequest, RegistrationInvite,
   DocumentVerificationResult, UserSession,
+  ConsentDocument, ConsentAcceptance, AccessGrant, AcceptanceMethod,
 } from "./types";
 import {
   mockPatients, mockAppointments, mockConsultations, mockDiagnoses,
@@ -13,6 +14,7 @@ import {
   mockAppointmentTypes, mockPatientNotifications, mockPatientPortalAppointments,
   mockProfessionalPatientRequests, mockRegistrationInvites, mockCareAuthorizations,
   mockAppointmentTokens, mockClinics, mockSchedules,
+  mockConsentDocuments, mockConsentAcceptances, mockAccessGrants,
 } from "./mockData";
 
 // Simulate network delay
@@ -162,19 +164,36 @@ const resolvePatientIdentity = (data: Partial<Patient>): Patient | undefined => 
   });
 };
 
+const hasActiveAccessGrant = (patientId: string, professionalId: string, clinicId: string | null): boolean => {
+  return mockAccessGrants.some(
+    g => g.patientId === patientId &&
+         g.professionalId === professionalId &&
+         g.clinicId === clinicId &&
+         g.status === "active"
+  );
+};
+
 const enrichPatient = (patient: Patient, professionalId: string): Patient => {
-  const authorizations = mockCareAuthorizations.filter(
-    a => a.patientId === patient.id && a.professionalId === professionalId
+  // Use Access Grants as the source of truth for authorization
+  const activeGrants = mockAccessGrants.filter(
+    g => g.patientId === patient.id && g.professionalId === professionalId && g.status === "active"
   );
 
-  const clinicIds = authorizations
-    .filter(a => a.clinicId !== null)
-    .map(a => a.clinicId as string);
+  const clinicIds = activeGrants
+    .filter(g => g.clinicId !== null)
+    .map(g => g.clinicId as string);
 
-  const isPrivate = authorizations.some(a => a.clinicId === null);
+  const isPrivate = activeGrants.some(g => g.clinicId === null);
 
-  // Status is active if at least one authorization is active
-  const isActive = authorizations.some(a => a.status === "active");
+  // Status is active if at least one access grant is active
+  const isActive = activeGrants.length > 0;
+
+  // For stats, we still use CareAuthorizations but only if there's an active grant
+  const authorizations = mockCareAuthorizations.filter(
+    a => a.patientId === patient.id &&
+         a.professionalId === professionalId &&
+         hasActiveAccessGrant(a.patientId, a.professionalId, a.clinicId)
+  );
 
   // Aggregate stats
   let totalVisits = 0;
@@ -203,11 +222,11 @@ export const patientsApi = {
     await delay();
     const professionalId = mockProfessional.id; // Assume current logged in professional
 
-    // Only show patients the professional has authorization for
+    // Only show patients the professional has an active access grant for
     const authorizedPatientIds = new Set(
-      mockCareAuthorizations
-        .filter(a => a.professionalId === professionalId)
-        .map(a => a.patientId)
+      mockAccessGrants
+        .filter(g => g.professionalId === professionalId && g.status === "active")
+        .map(g => g.patientId)
     );
 
     let results = mockPatients
@@ -239,9 +258,9 @@ export const patientsApi = {
     const patient = mockPatients.find(p => p.id === id);
     if (!patient) throw new Error("Paciente no encontrado");
 
-    // Check if professional has ANY authorization for this patient
-    const hasAuth = mockCareAuthorizations.some(
-      a => a.patientId === id && a.professionalId === professionalId
+    // Check if professional has ANY active access grant for this patient
+    const hasAuth = mockAccessGrants.some(
+      g => g.patientId === id && g.professionalId === professionalId && g.status === "active"
     );
     if (!hasAuth) throw new Error("No tiene autorización para acceder a este paciente");
 
@@ -277,6 +296,17 @@ export const patientsApi = {
           createdAt: new Date().toISOString(),
           totalVisits: 0,
         });
+
+      // Also create Access Grant for this new link
+      mockAccessGrants.push({
+        id: `grant-${Date.now()}`,
+        patientId: existingPatient.id,
+        professionalId,
+        clinicId: targetClinicId,
+        consentAcceptanceId: "acc-1", // Assume pre-existing consent for simplified mock
+        status: "active",
+        grantedAt: new Date().toISOString(),
+      });
       }
 
       mockAuditLogs.push({
@@ -313,6 +343,16 @@ export const patientsApi = {
       status: "active",
       createdAt: new Date().toISOString(),
       totalVisits: 0,
+    });
+
+    mockAccessGrants.push({
+      id: `grant-${Date.now()}`,
+      patientId: newPatientId,
+      professionalId,
+      clinicId: targetClinicId,
+      consentAcceptanceId: "acc-1", // Assume pre-existing consent for simplified mock
+      status: "active",
+      grantedAt: new Date().toISOString(),
     });
 
     mockAuditLogs.push({
@@ -358,19 +398,11 @@ export const appointmentsApi = {
     await delay();
     const professionalId = mockProfessional.id;
 
-    // Validate active authorization
-    const auth = mockCareAuthorizations.find(
-      a => a.patientId === data.patientId &&
-           a.professionalId === professionalId &&
-           a.clinicId === (data.clinicId || null)
-    );
+    // Validate active access grant
+    const hasAuth = hasActiveAccessGrant(data.patientId!, professionalId, data.clinicId || null);
 
-    if (!auth) {
-      throw new Error("No existe una autorización para agendar citas con este paciente en el ámbito seleccionado.");
-    }
-
-    if (auth.status === "revoked") {
-      throw new Error("La autorización para este paciente ha sido revocada. No se pueden agendar nuevas citas.");
+    if (!hasAuth) {
+      throw new Error("No existe una autorización vigente para agendar citas con este paciente en el ámbito seleccionado.");
     }
 
     // Determine visit type automatically if not provided
@@ -523,22 +555,19 @@ export const consultationsApi = {
     await delay();
     const professionalId = mockProfessional.id;
 
-    // Validate active authorization
+    // Validate active access grant
+    const hasAuth = hasActiveAccessGrant(data.patientId!, professionalId, data.clinicId || null);
+
+    if (!hasAuth) {
+      throw new Error("No existe una autorización vigente para realizar consultas a este paciente en el ámbito seleccionado.");
+    }
+
+    // Update authorization stats
     const auth = mockCareAuthorizations.find(
       a => a.patientId === data.patientId &&
            a.professionalId === professionalId &&
            a.clinicId === (data.clinicId || null)
     );
-
-    if (!auth) {
-      throw new Error("No existe una autorización para realizar consultas a este paciente en el ámbito seleccionado.");
-    }
-
-    if (auth.status === "revoked") {
-      throw new Error("La autorización para este paciente ha sido revocada. No se pueden registrar nuevas consultas.");
-    }
-
-    // Update authorization stats
     auth.totalVisits += 1;
     auth.lastVisit = new Date().toISOString();
 
@@ -736,13 +765,47 @@ export const patientPortalApi = {
     const requests = mockProfessionalPatientRequests.filter(r => r.patientId === "p-1");
     return success(requests);
   },
-  async acceptRequest(requestId: string) {
+  async acceptRequest(requestId: string, acceptanceData?: {
+    method: AcceptanceMethod;
+    ipAddress: string;
+    userAgent: string;
+  }) {
     await delay();
     const request = mockProfessionalPatientRequests.find(r => r.id === requestId);
     if (!request) throw new Error("Solicitud no encontrada");
+
+    const docId = request.consentDocumentId || mockConsentDocuments[0].id;
+    const doc = mockConsentDocuments.find(d => d.id === docId);
+    if (!doc) throw new Error("Documento de consentimiento no disponible");
+
     request.status = "accepted";
 
-    // Create patient-professional-clinic authorization relationship
+    // Create Consent Acceptance with full traceability
+    const acceptance: ConsentAcceptance = {
+      id: `acc-${Date.now()}`,
+      consentDocumentId: doc.id,
+      patientId: request.patientId,
+      acceptedAt: new Date().toISOString(),
+      ipAddress: acceptanceData?.ipAddress || "127.0.0.1",
+      userAgent: acceptanceData?.userAgent || "Unknown",
+      method: acceptanceData?.method || "panel",
+      consentVersionHash: doc.versionHash,
+    };
+    mockConsentAcceptances.push(acceptance);
+
+    // Create Access Grant
+    const grant: AccessGrant = {
+      id: `grant-${Date.now()}`,
+      patientId: request.patientId,
+      professionalId: request.professionalId,
+      clinicId: request.clinicId || null,
+      consentAcceptanceId: acceptance.id,
+      status: "active",
+      grantedAt: acceptance.acceptedAt,
+    };
+    mockAccessGrants.push(grant);
+
+    // Keep CareAuthorization for legacy compatibility during transition
     const newAuth: CareAuthorization = {
       id: `auth-${Date.now()}`,
       patientId: request.patientId,
@@ -767,6 +830,51 @@ export const patientPortalApi = {
 
     return success(request);
   },
+  async acceptConsentByToken(token: string, acceptanceData: {
+    method: AcceptanceMethod;
+    ipAddress: string;
+    userAgent: string;
+  }) {
+    await delay();
+    // Simulate finding a request/invitation from a signed token
+    if (!token.startsWith("signed-")) throw new Error("Token no válido");
+
+    // Mock logic: assume it's for the first pending request
+    const request = mockProfessionalPatientRequests.find(r => r.status === "pending");
+    if (!request) throw new Error("No hay solicitudes pendientes para este token");
+
+    return this.acceptRequest(request.id, acceptanceData);
+  },
+  async getAccessGrants(): Promise<ApiResponse<AccessGrant[]>> {
+    await delay();
+    // Simplified: return grants for the current patient (p-1)
+    return success(mockAccessGrants.filter(g => g.patientId === "p-1"));
+  },
+  async revokeAccessGrant(grantId: string) {
+    await delay();
+    const grant = mockAccessGrants.find(g => g.id === grantId);
+    if (!grant) throw new Error("Permiso de acceso no encontrado");
+
+    grant.status = "revoked";
+    grant.revokedAt = new Date().toISOString();
+
+    // Revoke corresponding CareAuthorization if it exists
+    const auth = mockCareAuthorizations.find(
+      a => a.patientId === grant.patientId &&
+           a.professionalId === grant.professionalId &&
+           a.clinicId === grant.clinicId
+    );
+    if (auth) {
+      auth.status = "revoked";
+      auth.revokedAt = grant.revokedAt;
+    }
+
+    // Invalidate sessions/caches for the professional (simulated)
+    console.log(`[REAL-TIME INVALIDATION] Invalidating access for professional ${grant.professionalId} to patient ${grant.patientId}`);
+    // In a real system, we would broadcast a WebSocket event or update a Redis cache
+
+    return success({ message: "Acceso revocado exitosamente" });
+  },
   async rejectRequest(requestId: string) {
     await delay();
     const request = mockProfessionalPatientRequests.find(r => r.id === requestId);
@@ -786,6 +894,25 @@ export const patientPortalApi = {
     });
 
     return success(request);
+  },
+};
+
+// ===== CONSENT =====
+export const consentApi = {
+  async getDocument(id: string): Promise<ApiResponse<ConsentDocument>> {
+    await delay();
+    const doc = mockConsentDocuments.find(d => d.id === id);
+    if (!doc) throw new Error("Documento de consentimiento no encontrado");
+    return success(doc);
+  },
+  async getLatestDocument(): Promise<ApiResponse<ConsentDocument>> {
+    await delay();
+    return success(mockConsentDocuments[mockConsentDocuments.length - 1]);
+  },
+  async getSignedAcceptanceToken(acceptanceId: string): Promise<ApiResponse<{ token: string }>> {
+    await delay();
+    // Simulate generation of a signed token for email/external use
+    return success({ token: `signed-acc-${acceptanceId}-${Date.now()}` });
   },
 };
 

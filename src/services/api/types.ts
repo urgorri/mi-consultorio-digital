@@ -99,6 +99,40 @@ export interface ProfessionalPatientRequest {
   status: "pending" | "accepted" | "rejected" | "expired";
   createdAt: string;
   expiresAt?: string;
+  consentDocumentId?: string; // Document that must be accepted
+}
+
+export interface ConsentDocument {
+  id: string;
+  title: string;
+  content: string;
+  version: string;
+  versionHash: string;
+  createdAt: string;
+}
+
+export type AcceptanceMethod = "panel" | "email-link" | "OTP" | "2FA";
+
+export interface ConsentAcceptance {
+  id: string;
+  consentDocumentId: string;
+  patientId: string;
+  acceptedAt: string; // UTC ISO string
+  ipAddress: string;
+  userAgent: string;
+  method: AcceptanceMethod;
+  consentVersionHash: string;
+}
+
+export interface AccessGrant {
+  id: string;
+  patientId: string;
+  professionalId: string;
+  clinicId: string | null;
+  consentAcceptanceId: string;
+  status: "active" | "revoked";
+  grantedAt: string;
+  revokedAt?: string;
 }
 
 export interface RegistrationInvite {

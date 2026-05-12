@@ -3,7 +3,7 @@ import type {
   DashboardStats, ReportMetrics, AuditLog, SystemHealth,
   User, Location, AppointmentType, Schedule, Professional, Clinic,
   DocumentType, ProfessionalPatientRequest, RegistrationInvite,
-  ConsultationFieldsConfig,
+  ConsultationFieldsConfig, ConsentDocument, ConsentAcceptance, AccessGrant,
 } from "./types";
 
 export const mockClinics: Clinic[] = [
@@ -357,6 +357,45 @@ export const mockAppointmentTokens: AppointmentAccessToken[] = [
   }
 ];
 
+export const mockConsentDocuments: ConsentDocument[] = [
+  {
+    id: "consent-v1",
+    title: "Consentimiento Informado para el Tratamiento de Datos de Salud",
+    content: "Por la presente, autorizo al profesional y a las clínicas asociadas a acceder a mi historial clínico, diagnósticos, tratamientos y notas de evolución con el fin de brindar atención médica coordinada. Entiendo que puedo revocar este consentimiento en cualquier momento desde mi portal de paciente.",
+    version: "1.0",
+    versionHash: "h1-abcde12345",
+    createdAt: "2024-01-01T00:00:00Z"
+  }
+];
+
+export const mockConsentAcceptances: ConsentAcceptance[] = [
+  {
+    id: "acc-1",
+    consentDocumentId: "consent-v1",
+    patientId: "p-1",
+    acceptedAt: "2024-03-10T10:00:00Z",
+    ipAddress: "192.168.1.101",
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    method: "panel",
+    consentVersionHash: "h1-abcde12345"
+  },
+  {
+    id: "acc-2",
+    consentDocumentId: "consent-v1",
+    patientId: "p-1",
+    acceptedAt: "2024-03-15T11:00:00Z",
+    ipAddress: "192.168.1.101",
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    method: "panel",
+    consentVersionHash: "h1-abcde12345"
+  }
+];
+
+export const mockAccessGrants: AccessGrant[] = [
+  { id: "grant-1", patientId: "p-1", professionalId: "prof-1", clinicId: null, consentAcceptanceId: "acc-1", status: "active", grantedAt: "2024-03-10T10:00:00Z" },
+  { id: "grant-2", patientId: "p-1", professionalId: "prof-1", clinicId: "clinic-1", consentAcceptanceId: "acc-2", status: "active", grantedAt: "2024-03-15T11:00:00Z" }
+];
+
 export const mockCareAuthorizations: CareAuthorization[] = [
   // Laura Martínez (p-1): Private + Clinic 1
   { id: "auth-1", patientId: "p-1", professionalId: "prof-1", clinicId: null, status: "active", createdAt: "2024-03-10", lastVisit: "2026-03-20", totalVisits: 5 },
@@ -381,7 +420,18 @@ export const mockCareAuthorizations: CareAuthorization[] = [
 ];
 
 // Mock professional-patient requests
-export const mockProfessionalPatientRequests: ProfessionalPatientRequest[] = [];
+export const mockProfessionalPatientRequests: ProfessionalPatientRequest[] = [
+  {
+    id: "req-1",
+    patientId: "p-1",
+    professionalId: "prof-2", // Dr. Carlos Mendoza
+    clinicId: "clinic-2",
+    status: "pending",
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    consentDocumentId: "consent-v1"
+  }
+];
 export const mockRegistrationInvites: RegistrationInvite[] = [];
 
 import type { EmailVerificationCode } from "./types";
