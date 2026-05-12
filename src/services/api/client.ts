@@ -139,6 +139,29 @@ export const authApi = {
 };
 
 // ===== HELPERS =====
+const normalizeValue = (val: string) => (val || "").trim().toLowerCase();
+const normalizeDocument = (val: string) => (val || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+const resolvePatientIdentity = (data: Partial<Patient>): Patient | undefined => {
+  const normEmail = normalizeValue(data.email || "");
+  const normDoc = normalizeDocument(data.documentNumber || "");
+  const docType = data.documentType || "dni";
+
+  return mockPatients.find(p => {
+    const pEmail = normalizeValue(p.email);
+    const pDoc = normalizeDocument(p.documentNumber);
+    const pDocType = p.documentType || "dni";
+
+    // Primary match: Normalized Document Number + Document Type
+    if (normDoc && pDoc === normDoc && docType === pDocType) return true;
+
+    // Secondary match: Normalized Email
+    if (normEmail && pEmail === normEmail) return true;
+
+    return false;
+  });
+};
+
 const enrichPatient = (patient: Patient, professionalId: string): Patient => {
   const authorizations = mockCareAuthorizations.filter(
     a => a.patientId === patient.id && a.professionalId === professionalId
@@ -227,8 +250,82 @@ export const patientsApi = {
   async create(data: Partial<Patient>) {
     await delay();
     const professionalId = mockProfessional.id;
-    const newPatient = { ...data, id: `p-${Date.now()}` } as Patient;
-    // In a real scenario, we might also create a default authorization here
+    const normalizedData = {
+      ...data,
+      email: data.email ? normalizeValue(data.email) : "",
+      documentNumber: data.documentNumber ? normalizeDocument(data.documentNumber) : "",
+    };
+
+    const existingPatient = resolvePatientIdentity(normalizedData);
+    const targetClinicId = (data.clinicIds && data.clinicIds.length > 0) ? data.clinicIds[0] : null;
+
+    if (existingPatient) {
+      // Identity resolution match
+      const hasAuth = mockCareAuthorizations.some(
+        a => a.patientId === existingPatient.id &&
+             a.professionalId === professionalId &&
+             a.clinicId === targetClinicId
+      );
+
+      if (!hasAuth) {
+        mockCareAuthorizations.push({
+          id: `auth-${Date.now()}`,
+          patientId: existingPatient.id,
+          professionalId,
+          clinicId: targetClinicId,
+          status: "active",
+          createdAt: new Date().toISOString(),
+          totalVisits: 0,
+        });
+      }
+
+      mockAuditLogs.push({
+        id: `log-${Date.now()}`,
+        userId: professionalId,
+        userName: `${mockProfessional.firstName} ${mockProfessional.lastName}`,
+        action: "patient.identity_reuse",
+        resource: "patients",
+        details: `Reutilizada identidad existente para paciente ${existingPatient.firstName} ${existingPatient.lastName} (DNI: ${existingPatient.documentNumber})`,
+        ipAddress: "127.0.0.1",
+        timestamp: new Date().toISOString(),
+      });
+
+      return success(enrichPatient(existingPatient, professionalId));
+    }
+
+    // New patient
+    const newPatientId = `p-${Date.now()}`;
+    const newPatient = {
+      ...normalizedData,
+      id: newPatientId,
+      createdAt: new Date().toISOString(),
+      totalVisits: 0,
+      status: "activo",
+    } as Patient;
+
+    mockPatients.push(newPatient);
+
+    mockCareAuthorizations.push({
+      id: `auth-${Date.now()}`,
+      patientId: newPatientId,
+      professionalId,
+      clinicId: targetClinicId,
+      status: "active",
+      createdAt: new Date().toISOString(),
+      totalVisits: 0,
+    });
+
+    mockAuditLogs.push({
+      id: `log-${Date.now()}`,
+      userId: professionalId,
+      userName: `${mockProfessional.firstName} ${mockProfessional.lastName}`,
+      action: "patient.create",
+      resource: "patients",
+      details: `Creado nuevo paciente ${newPatient.firstName} ${newPatient.lastName} (DNI: ${newPatient.documentNumber})`,
+      ipAddress: "127.0.0.1",
+      timestamp: new Date().toISOString(),
+    });
+
     return success(enrichPatient(newPatient, professionalId));
   },
   async update(id: string, data: Partial<Patient>) {
