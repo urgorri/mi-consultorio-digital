@@ -14,4 +14,5 @@ export {
   bookingApi,
   patientSearchApi,
   kycApi,
+  consentApi,
 } from "./client";
