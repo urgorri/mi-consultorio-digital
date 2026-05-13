@@ -1,3 +1,4 @@
+import { decrypt, encrypt } from "../../lib/crypto";
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { mockUsers, mockProfessional } from '@/services/api/mockData'
@@ -5,8 +6,8 @@ import { mockUsers, mockProfessional } from '@/services/api/mockData'
 export const handlers = [
   http.post('/auth/login', async ({ request }) => {
     const { email } = await request.json() as any
-    const user = mockUsers.find(u => u.email === email) || mockUsers[0]
-    return HttpResponse.json({ success: true, data: { user } })
+    const user = mockUsers.find(u => decrypt(u.email) === email); if (!user) return HttpResponse.json({ success: false, message: "Credenciales inválidas" }, { status: 401 }); const mfaRequired = user.role === "admin" || (user.role === "profesional" && email.includes("mfa"));
+    return HttpResponse.json({ success: true, data: { user, mfaRequired } })
   }),
   http.get('/auth/me', () => {
     return HttpResponse.json({ success: true, data: mockProfessional })
@@ -42,6 +43,25 @@ export const handlers = [
   }),
   http.post('/auth/email/resend', async () => {
     return HttpResponse.json({ success: true, data: { message: 'Código reenviado' } })
+  }),
+  http.post('/auth/recover-password', async ({ request }) => {
+    const { email } = await request.json() as any;
+    return HttpResponse.json({ success: true, data: { message: "Si el correo existe, recibirá instrucciones pronto." } });
+  }),
+  http.post('/auth/reset-password', async ({ request }) => {
+    const { token, password } = await request.json() as any;
+    if (token === 'expired-token') return HttpResponse.json({ success: false, message: "Token expirado" }, { status: 400 });
+    if (token === 'invalid-token') return HttpResponse.json({ success: false, message: "Token inválido" }, { status: 400 });
+    return HttpResponse.json({ success: true, data: { message: "Contraseña actualizada correctamente." } });
+  }),
+  http.post('/auth/mfa/verify', async ({ request }) => {
+    const { code } = await request.json() as any;
+    if (code === '123456') return HttpResponse.json({ success: true, data: { user: mockUsers[0] } });
+    return HttpResponse.json({ success: false, message: "Código MFA incorrecto" }, { status: 400 });
+  }),
+  http.post('/auth/mfa/toggle', async ({ request }) => {
+    const { enabled } = await request.json() as any;
+    return HttpResponse.json({ success: true, data: { secret: "JBSWY3DPEHPK3PXP", qrCode: "data:image/png;base64,..." } });
   }),
 ]
 

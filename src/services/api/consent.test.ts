@@ -17,7 +17,7 @@ describe("Consent and Authorization Logic", () => {
     const patientId2 = "p-2";
 
     await expect(patientsApi.getById(patientId2))
-      .rejects.toThrow("No tiene autorización para acceder a este paciente");
+      .rejects.toThrow("No existe una autorización vigente");
   });
 
   it("should allow access if active access grant exists", async () => {
@@ -62,7 +62,7 @@ describe("Consent and Authorization Logic", () => {
     if (grant2) await patientPortalApi.revokeAccessGrant(grant2.id);
 
     await expect(patientsApi.getById("p-1"))
-      .rejects.toThrow("No tiene autorización para acceder a este paciente");
+      .rejects.toThrow("No existe una autorización vigente");
   });
 
   it("should prevent creating appointments without active access grant", async () => {

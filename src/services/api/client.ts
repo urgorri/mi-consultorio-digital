@@ -6,7 +6,10 @@ import type {
   DocumentType, ProfessionalPatientRequest, RegistrationInvite,
   DocumentVerificationResult, UserSession,
   ConsentDocument, ConsentAcceptance, AccessGrant, AcceptanceMethod,
+  CareAuthorization,
 } from "./types";
+import { decrypt, encrypt } from "../../lib/crypto";
+import { getUserRestrictions } from "../../lib/auth-routing";
 import {
   mockPatients, mockAppointments, mockConsultations, mockDiagnoses,
   mockNotifications, mockDashboardStats, mockReportMetrics,
@@ -14,7 +17,7 @@ import {
   mockAppointmentTypes, mockPatientNotifications, mockPatientPortalAppointments,
   mockProfessionalPatientRequests, mockRegistrationInvites, mockCareAuthorizations,
   mockAppointmentTokens, mockClinics, mockSchedules,
-  mockConsentDocuments, mockConsentAcceptances, mockAccessGrants,
+  mockConsentDocuments, mockConsentAcceptances, mockAccessGrants, mockPasswordResetTokens,
 } from "./mockData";
 
 // Simulate network delay
@@ -39,6 +42,118 @@ const recordAuditEvent = async (event: Omit<AuditLog, "id" | "timestamp" | "hash
   return newLog;
 };
 
+const securityTracker = {
+  loginAttempts: new Map<string, { count: number; lastAttempt: number; lockedUntil?: number }>(),
+  async trackLoginAttempt(email: string, ip: string, success: boolean) {
+    const now = Date.now();
+    const attempts = this.loginAttempts.get(email) || { count: 0, lastAttempt: now };
+
+    if (success) {
+      this.loginAttempts.delete(email);
+      return;
+    }
+
+    attempts.count++;
+    attempts.lastAttempt = now;
+
+    if (attempts.count >= 5) {
+      attempts.lockedUntil = now + 15 * 60 * 1000; // 15 mins
+      recordAuditEvent({
+        actor: { id: "system", name: "Security Service", role: "admin" },
+        action: "account.lockout",
+        resource: "auth",
+        details: `Cuenta bloqueada temporalmente por intentos fallidos: ${email}`,
+        ipAddress: ip,
+        device: "Server",
+        result: "success",
+        correlationId: `lock-${now}`,
+      });
+    }
+    this.loginAttempts.set(email, attempts);
+  },
+  isLocked(email: string) {
+    const attempts = this.loginAttempts.get(email);
+    if (attempts?.lockedUntil && attempts.lockedUntil > Date.now()) {
+      return { locked: true, until: attempts.lockedUntil };
+    }
+    return { locked: false };
+  }
+};
+
+export const SECURITY_HEADERS = {
+  "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self'; object-src 'none';",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin"
+};
+
+const authorize = async (actorId: string, patientId?: string, clinicId: string | null = null, requiredRole?: string) => {
+  const user = mockUsers.find(u => u.id === actorId) || (mockProfessional.id === actorId ? mockProfessional : undefined);
+  if (!user) throw new Error("Usuario no encontrado");
+
+  if (requiredRole && user.role !== requiredRole) {
+    throw new Error(`Acceso denegado: Se requiere rol ${requiredRole}`);
+  }
+
+  const restriction = getUserRestrictions(user);
+  if (restriction) {
+    throw new Error(`Acceso restringido: ${restriction}`);
+  }
+
+  if (patientId && user.role === "profesional") {
+    const hasAuth = mockAccessGrants.some(
+      g => g.patientId === patientId && g.professionalId === actorId && g.status === "active"
+    );
+    if (!hasAuth) {
+      if (requiredRole === "profesional") {
+        throw new Error("No existe una autorización vigente para este paciente en el ámbito seleccionado.");
+      }
+      throw new Error("No tiene autorización para acceder a este paciente");
+    }
+  }
+
+  return true;
+};
+
+const decryptPatient = (p: Patient): Patient => ({
+  ...p,
+  email: decrypt(p.email) || "",
+  phone: decrypt(p.phone) || "",
+  address: decrypt(p.address) || "",
+  allergies: decrypt(p.allergies) || "",
+  conditions: decrypt(p.conditions) || "",
+  documentNumber: decrypt(p.documentNumber) || "",
+});
+
+const encryptPatient = (p: Partial<Patient>): Patient => {
+  const e = { ...p };
+  if (p.email) e.email = encrypt(p.email);
+  if (p.phone) e.phone = encrypt(p.phone);
+  if (p.address) e.address = encrypt(p.address);
+  if (p.documentNumber) e.documentNumber = encrypt(p.documentNumber);
+  if (p.allergies) e.allergies = encrypt(p.allergies);
+  if (p.conditions) e.conditions = encrypt(p.conditions);
+  return e as Patient;
+};
+
+const decryptConsultation = (c: Consultation): Consultation => ({
+  ...c,
+  anamnesis: decrypt(c.anamnesis) || "",
+  physicalExam: decrypt(c.physicalExam) || "",
+  treatment: decrypt(c.treatment) || "",
+  notes: decrypt(c.notes) || "",
+});
+
+const encryptConsultation = (c: Partial<Consultation>): Consultation => {
+  const e = { ...c };
+  if (c.anamnesis) e.anamnesis = encrypt(c.anamnesis);
+  if (c.physicalExam) e.physicalExam = encrypt(c.physicalExam);
+  if (c.treatment) e.treatment = encrypt(c.treatment);
+  if (c.notes) e.notes = encrypt(c.notes);
+  return e as Consultation;
+};
+
 function success<T>(data: T): ApiResponse<T> {
   return { data, success: true };
 }
@@ -49,7 +164,13 @@ function paginated<T>(data: T[], total: number, page = 1, limit = 20): Paginated
 
 // ===== AUTH =====
 export const authApi = {
-  async login(email: string, password: string): Promise<ApiResponse<{ user: User }>> {
+  async login(email: string, password: string): Promise<ApiResponse<{ user: User; mfaRequired?: boolean }>> {
+    const ip = "127.0.0.1";
+    const lockout = securityTracker.isLocked(email);
+    if (lockout.locked) {
+      throw new Error(`Cuenta bloqueada temporalmente. Intente nuevamente en ${Math.ceil((lockout.until! - Date.now()) / 60000)} minutos.`);
+    }
+
     const correlationId = `login-${Date.now()}`;
     try {
       const response = await fetch("/auth/login", {
@@ -58,8 +179,18 @@ export const authApi = {
         body: JSON.stringify({ email, password }),
         credentials: "include",
       });
-      if (!response.ok) throw new Error("Credenciales inválidas");
+
+      if (!response.ok) {
+        await securityTracker.trackLoginAttempt(email, ip, false);
+        throw new Error("Credenciales inválidas");
+      }
+
       const result = await response.json();
+      await securityTracker.trackLoginAttempt(email, ip, true);
+
+      if (result.data.mfaRequired) {
+        return result;
+      }
 
       recordAuditEvent({
         actor: { id: result.data.user.id, name: `${result.data.user.firstName} ${result.data.user.lastName}`, role: result.data.user.role },
@@ -196,7 +327,40 @@ export const authApi = {
       body: JSON.stringify({ email }),
       credentials: "include",
     });
-    if (!response.ok) throw new Error("Error al recuperar contraseña");
+    if (!response.ok) throw new Error("Error al iniciar recuperación de contraseña");
+    return response.json();
+  },
+  async resetPassword(token: string, password: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await fetch("/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, password }),
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Error al restablecer contraseña");
+    }
+    return response.json();
+  },
+  async verifyMfa(code: string): Promise<ApiResponse<{ user: User }>> {
+    const response = await fetch("/auth/mfa/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Código MFA inválido");
+    return response.json();
+  },
+  async toggleMfa(enabled: boolean): Promise<ApiResponse<{ secret?: string; qrCode?: string }>> {
+    const response = await fetch("/auth/mfa/toggle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Error al configurar MFA");
     return response.json();
   },
   async getCurrentUser(): Promise<ApiResponse<User>> {
@@ -262,14 +426,15 @@ const normalizeValue = (val: string) => (val || "").trim().toLowerCase();
 const normalizeDocument = (val: string) => (val || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
 const resolvePatientIdentity = (data: Partial<Patient>): Patient | undefined => {
-  const normEmail = normalizeValue(data.email || "");
-  const normDoc = normalizeDocument(data.documentNumber || "");
+  const normEmail = normalizeValue(decrypt(data.email || ""));
+  const normDoc = normalizeDocument(decrypt(data.documentNumber || ""));
   const docType = data.documentType || "dni";
 
   return mockPatients.find(p => {
-    const pEmail = normalizeValue(p.email);
-    const pDoc = normalizeDocument(p.documentNumber);
-    const pDocType = p.documentType || "dni";
+    const decP = decryptPatient(p);
+    const pEmail = normalizeValue(decP.email);
+    const pDoc = normalizeDocument(decP.documentNumber);
+    const pDocType = decP.documentType || "dni";
 
     // Primary match: Normalized Document Number + Document Type
     if (normDoc && pDoc === normDoc && docType === pDocType) return true;
@@ -353,6 +518,7 @@ export const patientsApi = {
     });
 
     // Only show patients the professional has an active access grant for
+    await authorize(mockProfessional.id, undefined, null, "profesional");
     const authorizedPatientIds = new Set(
       mockAccessGrants
         .filter(g => g.professionalId === professionalId && g.status === "active")
@@ -361,7 +527,7 @@ export const patientsApi = {
 
     let results = mockPatients
       .filter(p => authorizedPatientIds.has(p.id))
-      .map(p => enrichPatient(p, professionalId));
+      .map(p => enrichPatient(decryptPatient(p), professionalId));
 
     if (params?.search) {
       const q = params.search.toLowerCase();
@@ -383,6 +549,7 @@ export const patientsApi = {
     return paginated(results, results.length, params?.page, params?.limit);
   },
   async getById(id: string, audit?: { reason: string; context: string }) {
+    await authorize(mockProfessional.id, id, null, "profesional");
     await delay();
     const professionalId = mockProfessional.id;
     const patient = mockPatients.find(p => p.id === id);
@@ -426,11 +593,13 @@ export const patientsApi = {
       throw new Error("No tiene autorización para acceder a este paciente");
     }
 
+    const decPatient = decryptPatient(patient);
+
     recordAuditEvent({
       actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
       action: "hc.read",
       resource: `patients/${id}`,
-      details: `Lectura de historia clínica de ${patient.firstName} ${patient.lastName}`,
+      details: `Lectura de historia clínica de ${decPatient.firstName} ${decPatient.lastName}`,
       ipAddress: "127.0.0.1",
       device: "Web Browser",
       result: "success",
@@ -439,15 +608,15 @@ export const patientsApi = {
       context: audit?.context || "Perfil de paciente",
     });
 
-    return success(enrichPatient(patient, professionalId));
+    return success(enrichPatient(decPatient, professionalId));
   },
   async create(data: Partial<Patient>) {
     await delay();
     const professionalId = mockProfessional.id;
     const normalizedData = {
       ...data,
-      email: data.email ? normalizeValue(data.email) : "",
-      documentNumber: data.documentNumber ? normalizeDocument(data.documentNumber) : "",
+      email: data.email ? normalizeValue(decrypt(data.email)) : "",
+      documentNumber: data.documentNumber ? normalizeDocument(decrypt(data.documentNumber)) : "",
     };
 
     const existingPatient = resolvePatientIdentity(normalizedData);
@@ -472,35 +641,36 @@ export const patientsApi = {
           totalVisits: 0,
         });
 
-      // Also create Access Grant for this new link
-      mockAccessGrants.push({
-        id: `grant-${Date.now()}`,
-        patientId: existingPatient.id,
-        professionalId,
-        clinicId: targetClinicId,
-        consentAcceptanceId: "acc-1", // Assume pre-existing consent for simplified mock
-        status: "active",
-        grantedAt: new Date().toISOString(),
-      });
+        // Also create Access Grant for this new link
+        mockAccessGrants.push({
+          id: `grant-${Date.now()}`,
+          patientId: existingPatient.id,
+          professionalId,
+          clinicId: targetClinicId,
+          consentAcceptanceId: "acc-1", // Assume pre-existing consent for simplified mock
+          status: "active",
+          grantedAt: new Date().toISOString(),
+        });
       }
 
+      const decExisting = decryptPatient(existingPatient);
       recordAuditEvent({
         actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
         action: "patient.identity_reuse",
         resource: "patients",
-        details: `Reutilizada identidad existente para paciente ${existingPatient.firstName} ${existingPatient.lastName} (DNI: ${existingPatient.documentNumber})`,
+        details: `Reutilizada identidad existente para paciente ${decExisting.firstName} ${decExisting.lastName} (DNI: ${decExisting.documentNumber})`,
         ipAddress: "127.0.0.1",
         device: "Server-side",
         result: "success",
         correlationId: `reuse-${Date.now()}`,
       });
 
-      return success(enrichPatient(existingPatient, professionalId));
+      return success(enrichPatient(decExisting, professionalId));
     }
 
     // New patient
     const newPatientId = `p-${Date.now()}`;
-    const newPatient = {
+    const newPatientBase = {
       ...normalizedData,
       id: newPatientId,
       createdAt: new Date().toISOString(),
@@ -508,7 +678,7 @@ export const patientsApi = {
       status: "activo",
     } as Patient;
 
-    mockPatients.push(newPatient);
+    mockPatients.push(encryptPatient(newPatientBase));
 
     mockCareAuthorizations.push({
       id: `auth-${Date.now()}`,
@@ -534,14 +704,14 @@ export const patientsApi = {
       actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
       action: "patient.create",
       resource: "patients",
-      details: `Creado nuevo paciente ${newPatient.firstName} ${newPatient.lastName} (DNI: ${newPatient.documentNumber})`,
+      details: `Creado nuevo paciente ${newPatientBase.firstName} ${newPatientBase.lastName} (DNI: ${newPatientBase.documentNumber})`,
       ipAddress: "127.0.0.1",
       device: "Server-side",
       result: "success",
       correlationId: `create-${Date.now()}`,
     });
 
-    return success(enrichPatient(newPatient, professionalId));
+    return success(enrichPatient(newPatientBase, professionalId));
   },
   async update(id: string, data: Partial<Patient>) {
     await delay();
@@ -561,13 +731,14 @@ export const patientsApi = {
     });
 
     const updatedPatient = { ...patient, ...data } as Patient;
-    return success(enrichPatient(updatedPatient, professionalId));
+    return success(enrichPatient(decryptPatient(updatedPatient), professionalId));
   },
 };
 
 // ===== APPOINTMENTS =====
 export const appointmentsApi = {
   async list(params?: { date?: string; patientId?: string; status?: string }) {
+    await authorize(mockProfessional.id, params?.patientId, null, "profesional");
     await delay();
     let results = [...mockAppointments];
     if (params?.date) results = results.filter(a => a.date === params.date);
@@ -582,6 +753,7 @@ export const appointmentsApi = {
     return success(apt);
   },
   async create(data: Partial<Appointment>) {
+    await authorize(mockProfessional.id, data.patientId, data.clinicId || null, "profesional");
     await delay();
     const professionalId = mockProfessional.id;
 
@@ -595,7 +767,10 @@ export const appointmentsApi = {
     // Determine visit type automatically if not provided
     let visitType = data.type;
     if (!visitType) {
-      visitType = auth.totalVisits > 0 ? "Seguimiento" : "Primera vez";
+      const auth = mockCareAuthorizations.find(
+        a => a.patientId === data.patientId && a.professionalId === professionalId
+      );
+      visitType = (auth && auth.totalVisits > 0) ? "Seguimiento" : "Primera vez";
     }
 
     const newAppointment: Appointment = {
@@ -687,7 +862,7 @@ export const appointmentsApi = {
     if (!apt.patientPhone) {
       const patient = mockPatients.find(p => p.id === apt.patientId);
       if (patient) {
-        apt.patientPhone = patient.phone;
+        apt.patientPhone = decrypt(patient.phone);
       }
     }
 
@@ -712,7 +887,7 @@ export const appointmentsApi = {
     if (apt && !apt.patientPhone) {
       const patient = mockPatients.find(p => p.id === apt.patientId);
       if (patient) {
-        apt.patientPhone = patient.phone;
+        apt.patientPhone = decrypt(patient.phone);
       }
     }
 
@@ -724,6 +899,7 @@ export const appointmentsApi = {
 // ===== CONSULTATIONS =====
 export const consultationsApi = {
   async list(params?: { patientId?: string; type?: string; reason?: string; context?: string }) {
+    await authorize(mockProfessional.id, params?.patientId, null, "profesional");
     await delay();
     const professionalId = mockProfessional.id;
 
@@ -745,12 +921,15 @@ export const consultationsApi = {
     if (params?.type && params.type !== "all") {
       results = results.filter(c => c.type === params.type);
     }
-    return success(results);
+    return success(results.map(decryptConsultation));
   },
   async getById(id: string, audit?: { reason: string; context: string }) {
-    await delay();
     const professionalId = mockProfessional.id;
-    const consultation = mockConsultations.find(c => c.id === id);
+    let consultation = mockConsultations.find(c => c.id === id);
+    if (consultation) {
+      await authorize(professionalId, consultation.patientId, consultation.clinicId || null, "profesional");
+    }
+    await delay();
 
     if (!consultation) {
       recordAuditEvent({
@@ -781,9 +960,10 @@ export const consultationsApi = {
       context: audit?.context || "Detalle de consulta",
     });
 
-    return success(consultation);
+    return success(decryptConsultation(consultation));
   },
   async create(data: Partial<Consultation>) {
+    await authorize(mockProfessional.id, data.patientId, data.clinicId || null, "profesional");
     await delay();
     const professionalId = mockProfessional.id;
     const correlationId = `con-create-${Date.now()}`;
@@ -822,10 +1002,14 @@ export const consultationsApi = {
            a.professionalId === professionalId &&
            a.clinicId === (data.clinicId || null)
     );
-    auth.totalVisits += 1;
-    auth.lastVisit = new Date().toISOString();
+    if (auth) {
+      auth.totalVisits += 1;
+      auth.lastVisit = new Date().toISOString();
+    }
 
-    return success({ ...data, id: `con-${Date.now()}` } as Consultation);
+    const newConsultation = { ...data, id: `con-${Date.now()}` } as Consultation;
+    mockConsultations.push(encryptConsultation(newConsultation));
+    return success(newConsultation);
   },
 };
 
@@ -1011,7 +1195,7 @@ export const patientPortalApi = {
   },
   async getProfile() {
     await delay();
-    return success(mockPatients[0]);
+    return success(decryptPatient(mockPatients[0]));
   },
   async getRequests() {
     await delay();
@@ -1084,11 +1268,12 @@ export const patientPortalApi = {
     mockCareAuthorizations.push(newAuth);
 
     const patient = mockPatients.find(p => p.id === request.patientId);
+    const patientName = patient ? `${patient.firstName} ${patient.lastName}` : "Paciente";
     mockPatientNotifications.push({
       id: `pn-${Date.now()}`,
       type: "patient",
       title: "Solicitud aceptada",
-      message: `El paciente ${patient?.firstName} ${patient?.lastName} ha aceptado tu solicitud de acceso`,
+      message: `El paciente ${patientName} ha aceptado tu solicitud de acceso`,
       time: "Ahora",
       read: false,
       createdAt: new Date().toISOString(),
@@ -1160,11 +1345,12 @@ export const patientPortalApi = {
 
     // Add notification for professional
     const patient = mockPatients.find(p => p.id === request.patientId);
+    const patientName = patient ? `${patient.firstName} ${patient.lastName}` : "Paciente";
     mockPatientNotifications.push({
       id: `pn-${Date.now()}`,
       type: "patient",
       title: "Solicitud rechazada",
-      message: `El paciente ${patient?.firstName} ${patient?.lastName} ha rechazado tu solicitud de acceso`,
+      message: `El paciente ${patientName} ha rechazado tu solicitud de acceso`,
       time: "Ahora",
       read: false,
       createdAt: new Date().toISOString(),
@@ -1210,7 +1396,8 @@ export const kycApi = {
     await delay(2000); // Simulate processing time
 
     const correlationId = `kyc-${Date.now()}`;
-    const actor = { id: "user-1", name: `${formData.firstName} ${formData.lastName}`, role: "professional" }; // Simplified
+    // Simulate actor as the current professional
+    const actor = { id: mockProfessional.id, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role };
 
     // Create initial audit log for attempt
     recordAuditEvent({
@@ -1294,7 +1481,7 @@ export const kycApi = {
 
     // Check for document uniqueness (mock)
     const alreadyExists = mockPatients.some(
-      p => p.documentNumber === formData.documentNumber && (p.documentType || "dni") === formData.documentType
+      p => decrypt(p.documentNumber) === formData.documentNumber && (p.documentType || "dni") === formData.documentType
     );
 
     if (alreadyExists) {
@@ -1374,7 +1561,7 @@ export const bookingApi = {
 
     if (!visitType) {
       const docNumber = data.patientData.documentNumber;
-      const patient = mockPatients.find(p => p.documentNumber === docNumber);
+      const patient = mockPatients.find(p => decrypt(p.documentNumber) === docNumber);
 
       if (patient) {
         const hasPreviousVisits = mockCareAuthorizations.some(
@@ -1402,10 +1589,10 @@ export const patientSearchApi = {
   async findPatientByDocument(documentType: DocumentType, documentNumber: string) {
     await delay();
     const patient = mockPatients.find(
-      p => p.documentNumber === documentNumber && (p.documentType || "dni") === documentType
+      p => decrypt(p.documentNumber) === documentNumber && (p.documentType || "dni") === documentType
     );
     if (patient) {
-      return success({ found: true, patient });
+      return success({ found: true, patient: decryptPatient(patient) });
     }
     return success({ found: false, patient: null });
   },
