@@ -783,6 +783,7 @@ export const appointmentsApi = {
       cancellationDeadlineHours: data.cancellationDeadlineHours || 24,
     } as Appointment;
 
+    mockAppointments.push(newAppointment);
     return success(newAppointment);
   },
   async update(id: string, data: Partial<Appointment>) {
@@ -921,7 +922,7 @@ export const consultationsApi = {
     if (params?.type && params.type !== "all") {
       results = results.filter(c => c.type === params.type);
     }
-    return success(results.map(decryptConsultation));
+    return success(results);
   },
   async getById(id: string, audit?: { reason: string; context: string }) {
     const professionalId = mockProfessional.id;

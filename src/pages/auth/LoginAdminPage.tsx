@@ -6,32 +6,46 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { MFALoginVerification } from "@/components/auth/MFALoginVerification";
 
 const LoginAdminPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login, user, assertRole, logout } = useAuth();
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const { login, user, assertRole, logout, setUser } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   if (user) return <Navigate to="/admin" replace />;
+
+  const handleLoginSuccess = (user: any) => {
+    if (!assertRole("admin", user)) {
+      logout();
+      return toast({ title: "Acceso inválido", description: "Esta cuenta no corresponde al acceso administrador.", variant: "destructive" });
+    }
+    setUser(user);
+    navigate("/admin", { replace: true });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const result = await login(email, password);
     setLoading(false);
+
+    if (result.success && result.mfaRequired) {
+      setMfaRequired(true);
+      return;
+    }
+
     if (!result.success || !result.user) {
       toast({ title: "Error de autenticación", description: result.error || "Credenciales inválidas", variant: "destructive" });
       return;
     }
-    if (!assertRole("admin", result.user)) {
-      logout();
-      return toast({ title: "Acceso inválido", description: "Esta cuenta no corresponde al acceso administrador.", variant: "destructive" });
-    }
-    navigate("/admin", { replace: true });
+
+    handleLoginSuccess(result.user);
   };
 
   return (
@@ -62,48 +76,57 @@ const LoginAdminPage = () => {
             <span className="text-xl font-bold text-foreground">MiConsultorio</span>
           </div>
 
-          <h1 className="text-2xl font-bold text-foreground mb-2">Iniciar sesión - Administrador</h1>
-          <p className="text-muted-foreground mb-8">
-            Accede al panel de administración
-          </p>
+          {mfaRequired ? (
+            <MFALoginVerification
+              onVerified={handleLoginSuccess}
+              onCancel={() => setMfaRequired(false)}
+            />
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Iniciar sesión - Administrador</h1>
+              <p className="text-muted-foreground mb-8">
+                Accede al panel de administración
+              </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo electrónico</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="tu@correo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" size="lg" disabled={loading}>
-              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Iniciar sesión
-            </Button>
-          </form>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Correo electrónico</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="tu@correo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" size="lg" disabled={loading}>
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Iniciar sesión
+                </Button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>
