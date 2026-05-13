@@ -330,15 +330,27 @@ export interface ReportMetrics {
   monthlyTrend: { month: string; appointments: number }[];
 }
 
+export interface AuditActor {
+  id: string;
+  name: string;
+  role: string;
+}
+
 export interface AuditLog {
   id: string;
-  userId: string;
-  userName: string;
-  action: string;
+  actor: AuditActor;
   resource: string;
-  details: string;
+  action: string;
+  timestamp: string; // UTC ISO string
   ipAddress: string;
-  timestamp: string;
+  device: string;
+  result: "success" | "failure";
+  correlationId: string;
+  details?: string;
+  reason?: string;
+  context?: string;
+  hash: string;
+  previousHash: string;
 }
 
 export interface SystemHealth {

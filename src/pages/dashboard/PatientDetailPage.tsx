@@ -28,9 +28,9 @@ const PatientDetailPage = () => {
   useEffect(() => {
     if (!id) return;
     Promise.all([
-      patientsApi.getById(id),
+      patientsApi.getById(id, { reason: "Consulta de perfil de paciente", context: "Detalle de paciente" }),
       appointmentsApi.list({ patientId: id }),
-      consultationsApi.list({ patientId: id }),
+      consultationsApi.list({ patientId: id, reason: "Carga de historial de consultas", context: "Detalle de paciente" }),
     ]).then(([pRes, aRes, cRes]) => {
       setPatient(pRes.data);
       setAppointments(aRes.data);

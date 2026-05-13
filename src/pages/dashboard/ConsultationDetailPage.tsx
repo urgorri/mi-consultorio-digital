@@ -14,7 +14,7 @@ const ConsultationDetailPage = () => {
 
   useEffect(() => {
     if (id) {
-      consultationsApi.getById(id).then(res => {
+      consultationsApi.getById(id, { reason: "Revisión de consulta detallada", context: "Detalle de consulta" }).then(res => {
         setConsultation(res.data);
         setLoading(false);
       }).catch(() => setLoading(false));

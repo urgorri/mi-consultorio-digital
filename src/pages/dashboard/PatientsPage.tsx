@@ -53,6 +53,8 @@ const PatientsPage = () => {
     patientsApi.list({
       search: search || undefined,
       clinicalType: filters.clinicalType !== "all" ? filters.clinicalType : undefined,
+      reason: "Búsqueda y listado de pacientes",
+      context: "Panel de pacientes",
     }).then(res => {
       setPatients(res.data);
       setLoading(false);
