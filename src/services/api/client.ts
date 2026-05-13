@@ -925,7 +925,7 @@ export const consultationsApi = {
   },
   async getById(id: string, audit?: { reason: string; context: string }) {
     const professionalId = mockProfessional.id;
-    let consultation = mockConsultations.find(c => c.id === id);
+    const consultation = mockConsultations.find(c => c.id === id);
     if (consultation) {
       await authorize(professionalId, consultation.patientId, consultation.clinicId || null, "profesional");
     }
