@@ -20,6 +20,25 @@ import {
 // Simulate network delay
 const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Centralized Audit Pipeline (simulated server-side)
+const recordAuditEvent = async (event: Omit<AuditLog, "id" | "timestamp" | "hash" | "previousHash">) => {
+  const previousLog = mockAuditLogs[mockAuditLogs.length - 1];
+  const previousHash = previousLog ? previousLog.hash : "0";
+
+  const newLog: AuditLog = {
+    ...event,
+    id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    timestamp: new Date().toISOString(),
+    previousHash,
+    // Simulated hash calculation
+    hash: btoa(`${previousHash}-${event.action}-${event.correlationId}-${Date.now()}`).substring(0, 32),
+  };
+
+  mockAuditLogs.push(newLog);
+  console.log(`[AUDIT] Recorded event: ${event.action} by ${event.actor.name}`, newLog);
+  return newLog;
+};
+
 function success<T>(data: T): ApiResponse<T> {
   return { data, success: true };
 }
@@ -31,34 +50,118 @@ function paginated<T>(data: T[], total: number, page = 1, limit = 20): Paginated
 // ===== AUTH =====
 export const authApi = {
   async login(email: string, password: string): Promise<ApiResponse<{ user: User }>> {
-    const response = await fetch("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-      credentials: "include",
-    });
-    if (!response.ok) throw new Error("Credenciales inválidas");
-    return response.json();
+    const correlationId = `login-${Date.now()}`;
+    try {
+      const response = await fetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Credenciales inválidas");
+      const result = await response.json();
+
+      recordAuditEvent({
+        actor: { id: result.data.user.id, name: `${result.data.user.firstName} ${result.data.user.lastName}`, role: result.data.user.role },
+        action: "login",
+        resource: "auth",
+        details: "Inicio de sesión exitoso",
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "success",
+        correlationId,
+      });
+
+      return result;
+    } catch (error: any) {
+      recordAuditEvent({
+        actor: { id: "unknown", name: email, role: "unknown" },
+        action: "login",
+        resource: "auth",
+        details: `Fallo de inicio de sesión: ${error.message}`,
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "failure",
+        correlationId,
+      });
+      throw error;
+    }
   },
   async registerPatient(data: Partial<User> & { password?: string; inviteToken?: string }): Promise<ApiResponse<{ user: User }>> {
-    const response = await fetch("/auth/register/patient", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-      credentials: "include",
-    });
-    if (!response.ok) throw new Error("Error al registrar paciente");
-    return response.json();
+    const correlationId = `reg-pat-${Date.now()}`;
+    try {
+      const response = await fetch("/auth/register/patient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Error al registrar paciente");
+      const result = await response.json();
+
+      recordAuditEvent({
+        actor: { id: result.data.user.id, name: `${result.data.user.firstName} ${result.data.user.lastName}`, role: "paciente" },
+        action: "register",
+        resource: "auth",
+        details: "Registro de nuevo paciente",
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "success",
+        correlationId,
+      });
+
+      return result;
+    } catch (error: any) {
+      recordAuditEvent({
+        actor: { id: "unknown", name: data.email || "unknown", role: "paciente" },
+        action: "register",
+        resource: "auth",
+        details: `Fallo de registro: ${error.message}`,
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "failure",
+        correlationId,
+      });
+      throw error;
+    }
   },
   async registerProfessional(data: Partial<Professional> & { password?: string }): Promise<ApiResponse<{ user: User }>> {
-    const response = await fetch("/auth/register/professional", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-      credentials: "include",
-    });
-    if (!response.ok) throw new Error("Error al registrar profesional");
-    return response.json();
+    const correlationId = `reg-prof-${Date.now()}`;
+    try {
+      const response = await fetch("/auth/register/professional", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Error al registrar profesional");
+      const result = await response.json();
+
+      recordAuditEvent({
+        actor: { id: result.data.user.id, name: `${result.data.user.firstName} ${result.data.user.lastName}`, role: "profesional" },
+        action: "register",
+        resource: "auth",
+        details: "Registro de nuevo profesional",
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "success",
+        correlationId,
+      });
+
+      return result;
+    } catch (error: any) {
+      recordAuditEvent({
+        actor: { id: "unknown", name: data.email || "unknown", role: "profesional" },
+        action: "register",
+        resource: "auth",
+        details: `Fallo de registro: ${error.message}`,
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "failure",
+        correlationId,
+      });
+      throw error;
+    }
   },
   async verifyEmail(email: string, code: string): Promise<ApiResponse<{ user: User }>> {
     const response = await fetch("/auth/email/verify", {
@@ -105,6 +208,20 @@ export const authApi = {
     return response.json();
   },
   async logout() {
+    const user = mockProfessional; // Simulated current user
+    const correlationId = `logout-${Date.now()}`;
+
+    recordAuditEvent({
+      actor: { id: user.id, name: `${user.firstName} ${user.lastName}`, role: user.role },
+      action: "logout",
+      resource: "auth",
+      details: "Cierre de sesión",
+      ipAddress: "127.0.0.1",
+      device: "Web Browser",
+      result: "success",
+      correlationId,
+    });
+
     const response = await fetch("/auth/logout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -218,9 +335,22 @@ const enrichPatient = (patient: Patient, professionalId: string): Patient => {
 
 // ===== PATIENTS =====
 export const patientsApi = {
-  async list(params?: { search?: string; page?: number; limit?: number; clinicalType?: string }) {
+  async list(params?: { search?: string; page?: number; limit?: number; clinicalType?: string; reason?: string; context?: string }) {
     await delay();
     const professionalId = mockProfessional.id; // Assume current logged in professional
+
+    recordAuditEvent({
+      actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
+      action: "hc.list",
+      resource: "patients",
+      details: "Lectura de listado de pacientes",
+      ipAddress: "127.0.0.1",
+      device: "Web Browser",
+      result: "success",
+      correlationId: `list-${Date.now()}`,
+      reason: params?.reason || "Navegación general",
+      context: params?.context || "Panel de pacientes",
+    });
 
     // Only show patients the professional has an active access grant for
     const authorizedPatientIds = new Set(
@@ -252,17 +382,62 @@ export const patientsApi = {
 
     return paginated(results, results.length, params?.page, params?.limit);
   },
-  async getById(id: string) {
+  async getById(id: string, audit?: { reason: string; context: string }) {
     await delay();
     const professionalId = mockProfessional.id;
     const patient = mockPatients.find(p => p.id === id);
-    if (!patient) throw new Error("Paciente no encontrado");
+
+    const correlationId = `read-${id}-${Date.now()}`;
+
+    if (!patient) {
+      recordAuditEvent({
+        actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
+        action: "hc.read",
+        resource: `patients/${id}`,
+        details: "Fallo al leer paciente: No encontrado",
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "failure",
+        correlationId,
+        reason: audit?.reason,
+        context: audit?.context,
+      });
+      throw new Error("Paciente no encontrado");
+    }
 
     // Check if professional has ANY active access grant for this patient
     const hasAuth = mockAccessGrants.some(
       g => g.patientId === id && g.professionalId === professionalId && g.status === "active"
     );
-    if (!hasAuth) throw new Error("No tiene autorización para acceder a este paciente");
+
+    if (!hasAuth) {
+      recordAuditEvent({
+        actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
+        action: "hc.read",
+        resource: `patients/${id}`,
+        details: "Fallo al leer paciente: Sin autorización",
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "failure",
+        correlationId,
+        reason: audit?.reason,
+        context: audit?.context,
+      });
+      throw new Error("No tiene autorización para acceder a este paciente");
+    }
+
+    recordAuditEvent({
+      actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
+      action: "hc.read",
+      resource: `patients/${id}`,
+      details: `Lectura de historia clínica de ${patient.firstName} ${patient.lastName}`,
+      ipAddress: "127.0.0.1",
+      device: "Web Browser",
+      result: "success",
+      correlationId,
+      reason: audit?.reason || "Consulta de paciente",
+      context: audit?.context || "Perfil de paciente",
+    });
 
     return success(enrichPatient(patient, professionalId));
   },
@@ -309,15 +484,15 @@ export const patientsApi = {
       });
       }
 
-      mockAuditLogs.push({
-        id: `log-${Date.now()}`,
-        userId: professionalId,
-        userName: `${mockProfessional.firstName} ${mockProfessional.lastName}`,
+      recordAuditEvent({
+        actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
         action: "patient.identity_reuse",
         resource: "patients",
         details: `Reutilizada identidad existente para paciente ${existingPatient.firstName} ${existingPatient.lastName} (DNI: ${existingPatient.documentNumber})`,
         ipAddress: "127.0.0.1",
-        timestamp: new Date().toISOString(),
+        device: "Server-side",
+        result: "success",
+        correlationId: `reuse-${Date.now()}`,
       });
 
       return success(enrichPatient(existingPatient, professionalId));
@@ -355,15 +530,15 @@ export const patientsApi = {
       grantedAt: new Date().toISOString(),
     });
 
-    mockAuditLogs.push({
-      id: `log-${Date.now()}`,
-      userId: professionalId,
-      userName: `${mockProfessional.firstName} ${mockProfessional.lastName}`,
+    recordAuditEvent({
+      actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
       action: "patient.create",
       resource: "patients",
       details: `Creado nuevo paciente ${newPatient.firstName} ${newPatient.lastName} (DNI: ${newPatient.documentNumber})`,
       ipAddress: "127.0.0.1",
-      timestamp: new Date().toISOString(),
+      device: "Server-side",
+      result: "success",
+      correlationId: `create-${Date.now()}`,
     });
 
     return success(enrichPatient(newPatient, professionalId));
@@ -373,6 +548,18 @@ export const patientsApi = {
     const professionalId = mockProfessional.id;
     const patient = mockPatients.find(p => p.id === id);
     if (!patient) throw new Error("Paciente no encontrado");
+
+    recordAuditEvent({
+      actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
+      action: "hc.update",
+      resource: `patients/${id}`,
+      details: `Actualización de historia clínica de ${patient.firstName} ${patient.lastName}`,
+      ipAddress: "127.0.0.1",
+      device: "Web Browser",
+      result: "success",
+      correlationId: `update-${id}-${Date.now()}`,
+    });
+
     const updatedPatient = { ...patient, ...data } as Patient;
     return success(enrichPatient(updatedPatient, professionalId));
   },
@@ -536,8 +723,23 @@ export const appointmentsApi = {
 
 // ===== CONSULTATIONS =====
 export const consultationsApi = {
-  async list(params?: { patientId?: string; type?: string }) {
+  async list(params?: { patientId?: string; type?: string; reason?: string; context?: string }) {
     await delay();
+    const professionalId = mockProfessional.id;
+
+    recordAuditEvent({
+      actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
+      action: "hc.consultations.list",
+      resource: params?.patientId ? `patients/${params.patientId}/consultations` : "consultations",
+      details: "Lectura de listado de consultas",
+      ipAddress: "127.0.0.1",
+      device: "Web Browser",
+      result: "success",
+      correlationId: `con-list-${Date.now()}`,
+      reason: params?.reason || "Navegación HC",
+      context: params?.context || "Listado de consultas",
+    });
+
     let results = [...mockConsultations];
     if (params?.patientId) results = results.filter(c => c.patientId === params.patientId);
     if (params?.type && params.type !== "all") {
@@ -545,22 +747,74 @@ export const consultationsApi = {
     }
     return success(results);
   },
-  async getById(id: string) {
+  async getById(id: string, audit?: { reason: string; context: string }) {
     await delay();
+    const professionalId = mockProfessional.id;
     const consultation = mockConsultations.find(c => c.id === id);
-    if (!consultation) throw new Error("Consulta no encontrada");
+
+    if (!consultation) {
+      recordAuditEvent({
+        actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
+        action: "hc.consultation.read",
+        resource: `consultations/${id}`,
+        details: "Fallo al leer consulta: No encontrada",
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "failure",
+        correlationId: `con-read-${id}-${Date.now()}`,
+        reason: audit?.reason,
+        context: audit?.context,
+      });
+      throw new Error("Consulta no encontrada");
+    }
+
+    recordAuditEvent({
+      actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
+      action: "hc.consultation.read",
+      resource: `consultations/${id}`,
+      details: `Lectura de consulta médica del paciente ${consultation.patientName}`,
+      ipAddress: "127.0.0.1",
+      device: "Web Browser",
+      result: "success",
+      correlationId: `con-read-${id}-${Date.now()}`,
+      reason: audit?.reason || "Revisión de historial",
+      context: audit?.context || "Detalle de consulta",
+    });
+
     return success(consultation);
   },
   async create(data: Partial<Consultation>) {
     await delay();
     const professionalId = mockProfessional.id;
+    const correlationId = `con-create-${Date.now()}`;
 
     // Validate active access grant
     const hasAuth = hasActiveAccessGrant(data.patientId!, professionalId, data.clinicId || null);
 
     if (!hasAuth) {
+      recordAuditEvent({
+        actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
+        action: "hc.consultation.create",
+        resource: "consultations",
+        details: "Fallo al crear consulta: Sin autorización",
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "failure",
+        correlationId,
+      });
       throw new Error("No existe una autorización vigente para realizar consultas a este paciente en el ámbito seleccionado.");
     }
+
+    recordAuditEvent({
+      actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
+      action: "hc.consultation.create",
+      resource: "consultations",
+      details: `Creación de nueva consulta para paciente ID: ${data.patientId}`,
+      ipAddress: "127.0.0.1",
+      device: "Web Browser",
+      result: "success",
+      correlationId,
+    });
 
     // Update authorization stats
     const auth = mockCareAuthorizations.find(
@@ -779,6 +1033,18 @@ export const patientPortalApi = {
     if (!doc) throw new Error("Documento de consentimiento no disponible");
 
     request.status = "accepted";
+    const correlationId = `consent-accept-${requestId}-${Date.now()}`;
+
+    recordAuditEvent({
+      actor: { id: request.patientId, name: "Paciente", role: "paciente" },
+      action: "consent.accept",
+      resource: `requests/${requestId}`,
+      details: "Aceptación de consentimiento y acceso",
+      ipAddress: acceptanceData?.ipAddress || "127.0.0.1",
+      device: acceptanceData?.userAgent || "Unknown",
+      result: "success",
+      correlationId,
+    });
 
     // Create Consent Acceptance with full traceability
     const acceptance: ConsentAcceptance = {
@@ -854,6 +1120,17 @@ export const patientPortalApi = {
     await delay();
     const grant = mockAccessGrants.find(g => g.id === grantId);
     if (!grant) throw new Error("Permiso de acceso no encontrado");
+
+    recordAuditEvent({
+      actor: { id: grant.patientId, name: "Paciente", role: "paciente" },
+      action: "consent.revoke",
+      resource: `grants/${grantId}`,
+      details: "Revocación de acceso profesional",
+      ipAddress: "127.0.0.1",
+      device: "Web Browser",
+      result: "success",
+      correlationId: `consent-revoke-${grantId}-${Date.now()}`,
+    });
 
     grant.status = "revoked";
     grant.revokedAt = new Date().toISOString();
@@ -932,18 +1209,20 @@ export const kycApi = {
   ): Promise<ApiResponse<DocumentVerificationResult>> {
     await delay(2000); // Simulate processing time
 
+    const correlationId = `kyc-${Date.now()}`;
+    const actor = { id: "user-1", name: `${formData.firstName} ${formData.lastName}`, role: "professional" }; // Simplified
+
     // Create initial audit log for attempt
-    const attemptLog: AuditLog = {
-      id: `log-kyc-${Date.now()}`,
-      userId: "user-1", // Simplified for mock
-      userName: `${formData.firstName} ${formData.lastName}`,
+    recordAuditEvent({
+      actor,
       action: "kyc.verification_attempt",
       resource: "identity",
       details: `Intento de verificación KYC para documento ${formData.documentNumber}`,
       ipAddress: "127.0.0.1",
-      timestamp: new Date().toISOString(),
-    };
-    mockAuditLogs.push(attemptLog);
+      device: "Web Browser",
+      result: "success",
+      correlationId,
+    });
 
     const hasFront = files.length > 0;
     const hasBack = files.length > 1;
@@ -956,11 +1235,15 @@ export const kycApi = {
         error: "Se requieren imágenes del frente, dorso y una selfie para completar el KYC.",
       };
 
-      mockAuditLogs.push({
-        ...attemptLog,
-        id: `log-kyc-err-${Date.now()}`,
+      recordAuditEvent({
+        actor,
         action: "kyc.verification_failed",
+        resource: "identity",
         details: "Faltan documentos requeridos (frente, dorso o selfie).",
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "failure",
+        correlationId,
       });
 
       return success(errorResult);
@@ -973,11 +1256,15 @@ export const kycApi = {
         status: "rejected",
         error: "La foto está borrosa o la iluminación es insuficiente.",
       };
-      mockAuditLogs.push({
-        ...attemptLog,
-        id: `log-kyc-fail-${Date.now()}`,
+      recordAuditEvent({
+        actor,
         action: "kyc.verification_rejected",
+        resource: "identity",
         details: "Calidad de imagen insuficiente.",
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "failure",
+        correlationId,
       });
       return success(result);
     }
@@ -1016,11 +1303,15 @@ export const kycApi = {
         status: "rejected",
         error: "Este documento ya se encuentra registrado en el sistema.",
       };
-      mockAuditLogs.push({
-        ...attemptLog,
-        id: `log-kyc-dup-${Date.now()}`,
+      recordAuditEvent({
+        actor,
         action: "kyc.verification_rejected",
+        resource: "identity",
         details: "Documento ya registrado.",
+        ipAddress: "127.0.0.1",
+        device: "Web Browser",
+        result: "failure",
+        correlationId,
       });
       return success(result);
     }
@@ -1043,11 +1334,15 @@ export const kycApi = {
       };
     }
 
-    mockAuditLogs.push({
-      ...attemptLog,
-      id: `log-kyc-res-${Date.now()}`,
+    recordAuditEvent({
+      actor,
       action: "kyc.verification_completed",
+      resource: "identity",
       details: `Resultado KYC: ${ocrResult.status}. Score: ${ocrResult.confidenceScore}. Liveness: ${ocrResult.livenessCheck}`,
+      ipAddress: "127.0.0.1",
+      device: "Web Browser",
+      result: ocrResult.status === "approved" ? "success" : "failure",
+      correlationId,
     });
 
     return success(ocrResult);
