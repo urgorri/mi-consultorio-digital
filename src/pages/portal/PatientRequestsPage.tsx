@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import PatientPortalLayout from "@/components/portal/PatientPortalLayout";
-import { patientPortalApi, consentApi, authApi } from "@/services/api";
+import { patientPortalApi } from "@/services/api";
+import { consentsAdapter } from "@/adapters/domains";
 import type { ProfessionalPatientRequest, ConsentDocument, AccessGrant } from "@/services/api";
 import { User, Check, X, MapPin, Clock, AlertCircle, FileText, Shield, Trash2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ const PatientRequestsPage = () => {
     setSelectedRequest(request);
     try {
       const docId = request.consentDocumentId || "consent-v1";
-      const res = await consentApi.getDocument(docId);
+      const res = await consentsAdapter.getDocument(docId);
       setConsentDoc(res.data);
       setConsentDialogOpen(true);
     } catch (error) {
