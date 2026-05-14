@@ -61,8 +61,8 @@ test.describe("Patient Flow", () => {
     await page.click('button:has-text("Iniciar sesión")');
 
     await expect(page).toHaveURL(/\/portal/);
-    await page.waitForSelector('text=Dra. María García');
-    await page.click('text=Dra. María García');
+    await page.waitForSelector('text=Dra. María Pérez');
+    await page.click('text=Dra. María Pérez');
 
     await expect(page).toHaveURL(/\/portal\/citas\//);
 

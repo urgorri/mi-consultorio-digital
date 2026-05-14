@@ -2,14 +2,14 @@ import { Star } from "lucide-react";
 
 const testimonials = [
   {
-    name: "Dra. María García",
+    name: "Dra. María Pérez",
     role: "Medicina General",
     content:
       "MiConsultorio transformó mi práctica. Mis pacientes agendan solos y yo me enfoco en lo que importa: atenderlos bien.",
     rating: 5,
   },
   {
-    name: "Dr. Carlos Mendoza",
+    name: "Dr. Julián Mendoza",
     role: "Pediatría",
     content:
       "La agenda es increíblemente intuitiva. Configuré mis horarios en minutos y reduje un 70% las llamadas para agendar.",

@@ -81,7 +81,7 @@ export const PatientDataForm = ({
             id="phone"
             name="phone"
             type="tel"
-            placeholder="+52 55 1234 5678"
+            placeholder=""
             required
             defaultValue={user?.phone || ""}
           />

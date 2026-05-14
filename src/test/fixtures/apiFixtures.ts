@@ -1,6 +1,6 @@
 export const doctorFixtures = [
-  { id: "prof-1", name: "Dra. María García", specialty: "Medicina General", location: "Consultorio Centro", address: "Av. Principal 123", whatsapp: "525512345678" },
-  { id: "prof-2", name: "Dr. Carlos Mendoza", specialty: "Pediatría", location: "Consultorio Norte", address: "Calle Secundaria 456" },
+  { id: "prof-1", name: "Dra. María Pérez", specialty: "Medicina General", location: "Consultorio Centro", address: "Av. Principal 123", whatsapp: "525512345678" },
+  { id: "prof-2", name: "Dr. Julián Mendoza", specialty: "Pediatría", location: "Consultorio Norte", address: "Calle Secundaria 456" },
 ];
 
 export const visitTypeFixtures = [
@@ -15,7 +15,7 @@ export const appointmentFixtures = {
   patientId: "p-1",
   patientName: "Laura Martínez",
   professionalId: "prof-1",
-  professionalName: "Dra. María García",
+  professionalName: "Dra. María Pérez",
   date: "2026-05-15",
   time: "10:00",
   type: "Seguimiento",

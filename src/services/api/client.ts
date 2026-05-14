@@ -1542,8 +1542,8 @@ export const bookingApi = {
   async getDoctors() {
     await delay();
     return success([
-      { id: "prof-1", name: "Dra. María García", specialty: "Medicina General", location: "Consultorio Centro" },
-      { id: "prof-2", name: "Dr. Carlos Mendoza", specialty: "Pediatría", location: "Consultorio Norte" },
+      { id: "prof-1", name: "Dra. María Pérez", specialty: "Medicina General", location: "Consultorio Centro" },
+      { id: "prof-2", name: "Dr. Julián Mendoza", specialty: "Pediatría", location: "Consultorio Norte" },
       { id: "prof-3", name: "Dra. Ana López", specialty: "Dermatología", location: "Consultorio Centro" },
     ]);
   },

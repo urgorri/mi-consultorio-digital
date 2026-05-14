@@ -84,7 +84,7 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
         patientId: form.patientId,
         patientName: patient ? `${patient.firstName} ${patient.lastName}` : "Paciente",
         professionalId: "prof-1",
-        professionalName: "Dra. María García",
+        professionalName: "Dra. María Pérez",
         locationId: "loc-1",
         locationName: clinic?.name ?? "Consultorio privado",
         clinicId,
