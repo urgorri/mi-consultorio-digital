@@ -6,17 +6,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { MFALoginVerification } from "@/components/auth/MFALoginVerification";
 
 const LoginPacientePage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login, user, assertRole, logout } = useAuth();
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const { login, user, assertRole, logout, setUser } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   if (user) return <Navigate to="/portal" replace />;
+
+  const handleLoginSuccess = (user: any) => {
+    if (!assertRole("paciente", user)) {
+      logout();
+      toast({ title: "Acceso inválido", description: "Esta cuenta no corresponde al acceso de paciente.", variant: "destructive" });
+      return;
+    }
+    setUser(user);
+    navigate("/portal", { replace: true });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,18 +36,17 @@ const LoginPacientePage = () => {
     const result = await login(email, password);
     setLoading(false);
 
+    if (result.success && result.mfaRequired) {
+      setMfaRequired(true);
+      return;
+    }
+
     if (!result.success || !result.user) {
       toast({ title: "Error de autenticación", description: result.error || "Credenciales inválidas", variant: "destructive" });
       return;
     }
 
-    if (!assertRole("paciente", result.user)) {
-      logout();
-      toast({ title: "Acceso inválido", description: "Esta cuenta no corresponde al acceso de paciente.", variant: "destructive" });
-      return;
-    }
-
-    navigate("/portal", { replace: true });
+    handleLoginSuccess(result.user);
   };
 
   return (
@@ -66,48 +77,65 @@ const LoginPacientePage = () => {
             <span className="text-xl font-bold text-foreground">MiConsultorio</span>
           </div>
 
-          <h1 className="text-2xl font-bold text-foreground mb-2">Iniciar sesión - Paciente</h1>
-          <p className="text-muted-foreground mb-8">
-            Accede a tu portal de salud
-          </p>
+          {mfaRequired ? (
+            <MFALoginVerification
+              onVerified={handleLoginSuccess}
+              onCancel={() => setMfaRequired(false)}
+            />
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Iniciar sesión - Paciente</h1>
+              <p className="text-muted-foreground mb-8">
+                Accede a tu portal de salud
+              </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo electrónico</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="tu@correo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
-              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Iniciar sesión
-            </Button>
-          </form>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Correo electrónico</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="tu@correo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Link
+                    to="/recuperar-contrasena"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </div>
+                <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Iniciar sesión
+                </Button>
+              </form>
+            </>
+          )}
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             ¿No tienes cuenta?{" "}

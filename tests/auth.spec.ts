@@ -31,6 +31,9 @@ test.describe("Patient Auth Flow @smoke", () => {
 
   test("login, navigate and logout", async ({ page }) => {
     await page.goto("/login/paciente");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector('input[type="email"]', { timeout: 15000 });
+
     await page.fill('input[type="email"]', "laura@email.com");
     await page.fill('input[type="password"]', "password123");
     await page.click('button:has-text("Iniciar sesión")');

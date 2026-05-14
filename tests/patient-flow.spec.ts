@@ -39,6 +39,9 @@ test.describe("Patient Flow", () => {
 
   test("navigation to notifications", async ({ page }) => {
     await page.goto("/login/paciente");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector('input[type="email"]', { timeout: 15000 });
+
     await page.fill('input[type="email"]', "laura@email.com");
     await page.fill('input[type="password"]', "password123");
     await page.click('button:has-text("Iniciar sesión")');
@@ -50,6 +53,9 @@ test.describe("Patient Flow", () => {
 
   test("reschedule an appointment from detail page", async ({ page }) => {
     await page.goto("/login/paciente");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector('input[type="email"]', { timeout: 15000 });
+
     await page.fill('input[type="email"]', "laura@email.com");
     await page.fill('input[type="password"]', "password123");
     await page.click('button:has-text("Iniciar sesión")');

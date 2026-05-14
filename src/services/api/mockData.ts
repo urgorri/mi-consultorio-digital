@@ -1,3 +1,4 @@
+import { encrypt } from "../../lib/crypto";
 import type {
   Patient, Appointment, Consultation, Diagnosis, Notification,
   DashboardStats, ReportMetrics, AuditLog, SystemHealth,
@@ -7,9 +8,9 @@ import type {
 } from "./types";
 
 export const mockClinics: Clinic[] = [
-  { id: "clinic-1", name: "Clínica San Rafael", shortName: "San Rafael", color: "210 70% 35%", address: "Av. Reforma 100, CDMX" },
-  { id: "clinic-2", name: "Centro Médico Polanco", shortName: "Polanco", color: "175 55% 38%", address: "Polanco V Sec, CDMX" },
-  { id: "clinic-3", name: "Clínica Norte", shortName: "Norte", color: "32 85% 50%", address: "Lindavista, CDMX" },
+  { id: "clinic-1", name: "Clínica San Rafael", shortName: "San Rafael", color: "210 70% 35%", address: encrypt("Av. Reforma 100, CDMX") },
+  { id: "clinic-2", name: "Centro Médico Polanco", shortName: "Polanco", color: "175 55% 38%", address: encrypt("Polanco V Sec, CDMX") },
+  { id: "clinic-3", name: "Clínica Norte", shortName: "Norte", color: "32 85% 50%", address: encrypt("Lindavista, CDMX") },
 ];
 
 export const SPECIALTY_DEFAULT_CONFIGS: Record<string, ConsultationFieldsConfig> = {
@@ -57,16 +58,16 @@ export const SPECIALTY_DEFAULT_CONFIGS: Record<string, ConsultationFieldsConfig>
 
 export const mockProfessional: Professional = {
   id: "prof-1",
-  email: "dra.garcia@miconsultorio.com",
+  email: encrypt("dra.garcia@miconsultorio.com"),
   firstName: "María",
   lastName: "García",
   role: "profesional",
-  phone: "+52 55 9876 5432",
+  phone: encrypt("+52 55 9876 5432"),
   createdAt: "2024-01-15",
   status: "activo",
   kycStatus: "approved",
   licenseStatus: "valid",
-  licenseLastCheckedAt: "2026-04-05T10:00:00Z",
+  licenseLastCheckedAt: "2026-04-05T10:00:00Z", emailVerifiedAt: "2024-01-15T10:00:00Z",
   specialty: "Medicina General",
   licenseNumber: "12345678",
   codingConfig: { cie10: true, cie11: false, snomedCt: false },
@@ -79,20 +80,20 @@ export const mockProfessional: Professional = {
     { clinicId: "clinic-3", role: "staff" },
   ],
   locations: [
-    { id: "loc-1", name: "Consultorio Centro", address: "Av. Reforma 123, Col. Centro, CDMX", phone: "+52 55 1234 0001", active: true },
-    { id: "loc-2", name: "Consultorio Norte", address: "Blvd. Ávila Camacho 456, Polanco, CDMX", phone: "+52 55 1234 0002", active: true },
+    { id: "loc-1", name: "Consultorio Centro", address: encrypt("Av. Reforma 123, Col. Centro, CDMX"), phone: encrypt("+52 55 1234 0001"), active: true },
+    { id: "loc-2", name: "Consultorio Norte", address: encrypt("Blvd. Ávila Camacho 456, Polanco, CDMX"), phone: encrypt("+52 55 1234 0002"), active: true },
   ],
 };
 
 export const mockPatients: Patient[] = [
-  { id: "p-1", firstName: "Laura", lastName: "Martínez", email: "laura@email.com", phone: "+52 55 1111 2222", birthDate: "1991-06-15", gender: "Femenino", address: "Col. Roma, Ciudad de México", bloodType: "O+", allergies: "Penicilina", conditions: "Hipertensión arterial controlada", createdAt: "2024-03-10", lastVisit: "2026-04-05", totalVisits: 12, status: "activo", documentType: "dni", documentNumber: "30123456", clinicIds: ["clinic-1"], isPrivate: true },
-  { id: "p-2", firstName: "Pedro", lastName: "Sánchez", email: "pedro@email.com", phone: "+52 55 3333 4444", birthDate: "1985-02-20", gender: "Masculino", address: "Col. Condesa, Ciudad de México", bloodType: "A+", allergies: "Ninguna", conditions: "Diabetes tipo 2", createdAt: "2024-05-12", lastVisit: "2026-04-03", totalVisits: 8, status: "activo", documentType: "dni", documentNumber: "27345678", clinicIds: ["clinic-1", "clinic-2"], isPrivate: false },
-  { id: "p-3", firstName: "Ana", lastName: "Rodríguez", email: "ana@email.com", phone: "+52 55 5555 6666", birthDate: "1993-11-08", gender: "Femenino", address: "Col. Del Valle, Ciudad de México", bloodType: "B-", allergies: "Sulfonamidas", conditions: "Ninguna", createdAt: "2025-01-20", lastVisit: "2026-04-01", totalVisits: 3, status: "activo", documentType: "dni", documentNumber: "32987654", clinicIds: [], isPrivate: true },
-  { id: "p-4", firstName: "Miguel", lastName: "Torres", email: "miguel@email.com", phone: "+52 55 7777 8888", birthDate: "1978-07-30", gender: "Masculino", address: "Col. Narvarte, Ciudad de México", bloodType: "AB+", allergies: "Ibuprofeno", conditions: "Asma leve", createdAt: "2023-09-05", lastVisit: "2026-03-28", totalVisits: 15, status: "activo", documentType: "dni", documentNumber: "25111222", clinicIds: ["clinic-2"], isPrivate: false },
-  { id: "p-5", firstName: "Sofía", lastName: "Hernández", email: "sofia@email.com", phone: "+52 55 9999 0000", birthDate: "1988-04-12", gender: "Femenino", address: "Col. Coyoacán, Ciudad de México", bloodType: "O-", allergies: "Ninguna", conditions: "Hipotiroidismo", createdAt: "2024-11-15", lastVisit: "2026-03-25", totalVisits: 6, status: "activo", documentType: "dni", documentNumber: "29555444", clinicIds: ["clinic-3"], isPrivate: true },
-  { id: "p-6", firstName: "Carlos", lastName: "Ruiz", email: "carlos@email.com", phone: "+52 55 1234 5678", birthDate: "1970-12-01", gender: "Masculino", address: "Col. Polanco, Ciudad de México", bloodType: "A-", allergies: "Aspirina, Latex", conditions: "Hipercolesterolemia, Hipertensión", createdAt: "2022-06-20", lastVisit: "2026-03-20", totalVisits: 22, status: "activo", documentType: "dni", documentNumber: "20888777", clinicIds: ["clinic-1", "clinic-3"], isPrivate: false },
-  { id: "p-7", firstName: "Elena", lastName: "Guzmán", email: "elena@email.com", phone: "+52 55 2468 1357", birthDate: "1995-09-25", gender: "Femenino", address: "Col. Juárez, Ciudad de México", bloodType: "B+", allergies: "Ninguna", conditions: "Ninguna", createdAt: "2025-12-01", lastVisit: "2026-03-15", totalVisits: 2, status: "activo", documentType: "dni", documentNumber: "33222111", clinicIds: [], isPrivate: true },
-  { id: "p-8", firstName: "Roberto", lastName: "Díaz", email: "roberto@email.com", phone: "+52 55 9753 1246", birthDate: "1982-03-17", gender: "Masculino", address: "Col. San Ángel, Ciudad de México", bloodType: "O+", allergies: "Mariscos", conditions: "Reflujo gastroesofágico", createdAt: "2024-08-10", lastVisit: "2026-02-28", totalVisits: 9, status: "inactivo", documentType: "dni", documentNumber: "26999888", clinicIds: ["clinic-2"], isPrivate: false },
+  { id: "p-1", firstName: "Laura", lastName: "Martínez", email: encrypt("laura@email.com"), phone: encrypt("+52 55 1111 2222"), birthDate: "1991-06-15", gender: "Femenino", address: encrypt("Col. Roma, Ciudad de México"), bloodType: "O+", allergies: encrypt("Penicilina"), conditions: encrypt("Hipertensión arterial controlada"), createdAt: "2024-03-10", lastVisit: "2026-04-05", totalVisits: 12, status: "activo", documentType: "dni", documentNumber: encrypt("30123456"), clinicIds: ["clinic-1"], isPrivate: true },
+  { id: "p-2", firstName: "Pedro", lastName: "Sánchez", email: encrypt("pedro@email.com"), phone: encrypt("+52 55 3333 4444"), birthDate: "1985-02-20", gender: "Masculino", address: encrypt("Col. Condesa, Ciudad de México"), bloodType: "A+", allergies: encrypt("Ninguna"), conditions: encrypt("Diabetes tipo 2"), createdAt: "2024-05-12", lastVisit: "2026-04-03", totalVisits: 8, status: "activo", documentType: "dni", documentNumber: encrypt("27345678"), clinicIds: ["clinic-1", "clinic-2"], isPrivate: false },
+  { id: "p-3", firstName: "Ana", lastName: "Rodríguez", email: encrypt("ana@email.com"), phone: encrypt("+52 55 5555 6666"), birthDate: "1993-11-08", gender: "Femenino", address: encrypt("Col. Del Valle, Ciudad de México"), bloodType: "B-", allergies: encrypt("Sulfonamidas"), conditions: encrypt("Ninguna"), createdAt: "2025-01-20", lastVisit: "2026-04-01", totalVisits: 3, status: "activo", documentType: "dni", documentNumber: encrypt("32987654"), clinicIds: [], isPrivate: true },
+  { id: "p-4", firstName: "Miguel", lastName: "Torres", email: encrypt("miguel@email.com"), phone: encrypt("+52 55 7777 8888"), birthDate: "1978-07-30", gender: "Masculino", address: encrypt("Col. Narvarte, Ciudad de México"), bloodType: "AB+", allergies: encrypt("Ibuprofeno"), conditions: encrypt("Asma leve"), createdAt: "2023-09-05", lastVisit: "2026-03-28", totalVisits: 15, status: "activo", documentType: "dni", documentNumber: encrypt("25111222"), clinicIds: ["clinic-2"], isPrivate: false },
+  { id: "p-5", firstName: "Sofía", lastName: "Hernández", email: encrypt("sofia@email.com"), phone: encrypt("+52 55 9999 0000"), birthDate: "1988-04-12", gender: "Femenino", address: encrypt("Col. Coyoacán, Ciudad de México"), bloodType: "O-", allergies: encrypt("Ninguna"), conditions: encrypt("Hipotiroidismo"), createdAt: "2024-11-15", lastVisit: "2026-03-25", totalVisits: 6, status: "activo", documentType: "dni", documentNumber: encrypt("29555444"), clinicIds: ["clinic-3"], isPrivate: true },
+  { id: "p-6", firstName: "Carlos", lastName: "Ruiz", email: encrypt("carlos@email.com"), phone: encrypt("+52 55 1234 5678"), birthDate: "1970-12-01", gender: "Masculino", address: encrypt("Col. Polanco, Ciudad de México"), bloodType: "A-", allergies: encrypt("Aspirina, Latex"), conditions: encrypt("Hipercolesterolemia, Hipertensión"), createdAt: "2022-06-20", lastVisit: "2026-03-20", totalVisits: 22, status: "activo", documentType: "dni", documentNumber: encrypt("20888777"), clinicIds: ["clinic-1", "clinic-3"], isPrivate: false },
+  { id: "p-7", firstName: "Elena", lastName: "Guzmán", email: encrypt("elena@email.com"), phone: encrypt("+52 55 2468 1357"), birthDate: "1995-09-25", gender: "Femenino", address: encrypt("Col. Juárez, Ciudad de México"), bloodType: "B+", allergies: encrypt("Ninguna"), conditions: encrypt("Ninguna"), createdAt: "2025-12-01", lastVisit: "2026-03-15", totalVisits: 2, status: "activo", documentType: "dni", documentNumber: encrypt("33222111"), clinicIds: [], isPrivate: true },
+  { id: "p-8", firstName: "Roberto", lastName: "Díaz", email: encrypt("roberto@email.com"), phone: encrypt("+52 55 9753 1246"), birthDate: "1982-03-17", gender: "Masculino", address: encrypt("Col. San Ángel, Ciudad de México"), bloodType: "O+", allergies: encrypt("Mariscos"), conditions: encrypt("Reflujo gastroesofágico"), createdAt: "2024-08-10", lastVisit: "2026-02-28", totalVisits: 9, status: "inactivo", documentType: "dni", documentNumber: encrypt("26999888"), clinicIds: ["clinic-2"], isPrivate: false },
 ];
 
 export const mockAppointments: Appointment[] = [
@@ -124,55 +125,55 @@ export const mockConsultations: Consultation[] = [
   {
     id: "con-1", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: "clinic-1",
     type: "Seguimiento", date: "2026-04-05", reason: "Control de presión arterial",
-    anamnesis: "Paciente refiere sentirse bien, sin cefalea ni mareos. Toma losartán 50mg diariamente.",
-    physicalExam: "Paciente consciente, orientada, bien hidratada. Ruidos cardíacos rítmicos.",
+    anamnesis: encrypt("Paciente refiere sentirse bien, sin cefalea ni mareos. Toma losartán 50mg diariamente."),
+    physicalExam: encrypt("Paciente consciente, orientada, bien hidratada. Ruidos cardíacos rítmicos."),
     vitalSigns: { bloodPressure: "130/85 mmHg", heartRate: "72 bpm", temperature: "36.5 °C", weight: "65 kg", heightCm: 165, bmi: 23.9 },
     diagnoses: [{ code: "I10", name: "Hipertensión esencial (primaria)", codingSystem: "CIE-10" }],
-    treatment: "Se mantiene losartán 50mg c/24h. Dieta baja en sodio. Ejercicio 30 min diarios.",
+    treatment: encrypt("Se mantiene losartán 50mg c/24h. Dieta baja en sodio. Ejercicio 30 min diarios."),
     followUp: "Control en 4 semanas con perfil lipídico actualizado.",
-    notes: "Paciente estable. Se mantiene medicación actual."
+    notes: encrypt("Paciente estable. Se mantiene medicación actual.")
   },
   {
     id: "con-2", patientId: "p-1", patientName: "Laura Martínez", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: null,
     type: "Seguimiento", date: "2026-03-20", reason: "Revisión de laboratorios",
-    anamnesis: "Paciente acude con resultados de laboratorio solicitados en consulta previa.",
-    physicalExam: "Sin hallazgos relevantes. Paciente en buen estado general.",
+    anamnesis: encrypt("Paciente acude con resultados de laboratorio solicitados en consulta previa."),
+    physicalExam: encrypt("Sin hallazgos relevantes. Paciente en buen estado general."),
     vitalSigns: { bloodPressure: "125/80 mmHg", heartRate: "68 bpm", temperature: "36.3 °C", weight: "65.5 kg", heightCm: 165, bmi: 24.1 },
     diagnoses: [{ code: "Z01.7", name: "Examen de laboratorio", codingSystem: "CIE-10" }],
-    treatment: "Resultados dentro de parámetros normales. Sin cambios en medicación.",
+    treatment: encrypt("Resultados dentro de parámetros normales. Sin cambios en medicación."),
     followUp: "Se agenda seguimiento en 2 semanas para control de presión.",
   },
   {
     id: "con-3", patientId: "p-2", patientName: "Pedro Sánchez", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: "clinic-2",
     type: "Seguimiento", date: "2026-04-03", reason: "Control de glucosa",
-    anamnesis: "Paciente con diabetes tipo 2 diagnosticada hace 3 años. Refiere buena adherencia a metformina.",
-    physicalExam: "IMC 28.5. Piel sin lesiones. Sensibilidad conservada en extremidades.",
+    anamnesis: encrypt("Paciente con diabetes tipo 2 diagnosticada hace 3 años. Refiere buena adherencia a metformina."),
+    physicalExam: encrypt("IMC 28.5. Piel sin lesiones. Sensibilidad conservada en extremidades."),
     vitalSigns: { bloodPressure: "120/80 mmHg", heartRate: "76 bpm", temperature: "36.4 °C", weight: "82 kg", heightCm: 170, bmi: 28.4 },
     diagnoses: [{ code: "E11", name: "Diabetes mellitus tipo 2", codingSystem: "CIE-10" }],
-    treatment: "Metformina 850mg c/12h. Dieta diabética. Ejercicio aeróbico regular.",
+    treatment: encrypt("Metformina 850mg c/12h. Dieta diabética. Ejercicio aeróbico regular."),
     followUp: "Hemoglobina glucosilada en 3 meses. Control en 6 semanas.",
   },
   {
     id: "con-4", patientId: "p-4", patientName: "Miguel Torres", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: "clinic-2",
     type: "Primera vez", date: "2026-03-28", reason: "Crisis asmática leve",
-    anamnesis: "Paciente refiere episodio de disnea y sibilancias desde hace 2 días, posiblemente por cambio climático.",
-    physicalExam: "Sibilancias espiratorias bilaterales leves. Saturación O2 96%. FR 20.",
+    anamnesis: encrypt("Paciente refiere episodio de disnea y sibilancias desde hace 2 días, posiblemente por cambio climático."),
+    physicalExam: encrypt("Sibilancias espiratorias bilaterales leves. Saturación O2 96%. FR 20."),
     vitalSigns: { bloodPressure: "118/75 mmHg", heartRate: "88 bpm", temperature: "36.6 °C", weight: "78 kg", heightCm: 175, bmi: 25.5 },
     diagnoses: [{ code: "J45.0", name: "Asma predominantemente alérgica", codingSystem: "CIE-10" }],
-    treatment: "Salbutamol inhalado PRN. Budesonida inhalada 200mcg c/12h por 2 semanas.",
+    treatment: encrypt("Salbutamol inhalado PRN. Budesonida inhalada 200mcg c/12h por 2 semanas."),
     followUp: "Reevaluar en 2 semanas. Si empeora, acudir a urgencias.",
   },
   {
     id: "con-5", patientId: "p-6", patientName: "Carlos Ruiz", professionalId: "prof-1", professionalName: "Dra. María García", clinicId: "clinic-3",
     type: "Seguimiento", date: "2026-03-15", reason: "Control de colesterol y presión",
-    anamnesis: "Paciente con hipercolesterolemia e hipertensión. Refiere dieta irregular las últimas semanas.",
-    physicalExam: "Paciente con sobrepeso. Auscultación cardiopulmonar normal.",
+    anamnesis: encrypt("Paciente con hipercolesterolemia e hipertensión. Refiere dieta irregular las últimas semanas."),
+    physicalExam: encrypt("Paciente con sobrepeso. Auscultación cardiopulmonar normal."),
     vitalSigns: { bloodPressure: "140/90 mmHg", heartRate: "78 bpm", temperature: "36.5 °C", weight: "88 kg", heightCm: 172, bmi: 29.7 },
     diagnoses: [
       { code: "I10", name: "Hipertensión esencial (primaria)", codingSystem: "CIE-10" },
       { code: "E78.0", name: "Hipercolesterolemia pura", codingSystem: "CIE-10" },
     ],
-    treatment: "Atorvastatina 20mg nocturno. Losartán 50mg c/24h. Dieta hipolipemiante estricta.",
+    treatment: encrypt("Atorvastatina 20mg nocturno. Losartán 50mg c/24h. Dieta hipolipemiante estricta."),
     followUp: "Perfil lipídico en 8 semanas. Control en 4 semanas.",
   },
 ];
@@ -262,17 +263,17 @@ export const mockReportMetrics: ReportMetrics = {
 };
 
 export const mockUsers: User[] = [
-  { id: "prof-1", email: "dra.garcia@email.com", firstName: "María", lastName: "García", role: "profesional", phone: "+52 55 9876 5432", createdAt: "2024-01-15", status: "activo", kycStatus: "approved", licenseStatus: "valid", licenseLastCheckedAt: "2026-04-05T10:00:00Z" },
-  { id: "prof-2", email: "dr.mendoza@email.com", firstName: "Carlos", lastName: "Mendoza", role: "profesional", phone: "+52 55 8765 4321", createdAt: "2024-03-20", status: "activo", kycStatus: "approved", licenseStatus: "pending", trialExpired: false },
-  { id: "prof-3", email: "dra.lopez@email.com", firstName: "Ana", lastName: "López", role: "profesional", phone: "+52 55 7654 3210", createdAt: "2024-06-10", status: "activo", kycStatus: "none", licenseStatus: "unverifiable", trialExpired: true },
-  { id: "pat-1", email: "laura@email.com", firstName: "Laura", lastName: "Martínez", role: "paciente", createdAt: "2024-03-10", status: "activo", kycStatus: "approved", emailVerifiedAt: "2024-03-10T10:00:00Z" },
-  { id: "pat-2", email: "pedro@email.com", firstName: "Pedro", lastName: "Sánchez", role: "paciente", createdAt: "2024-05-12", status: "activo", kycStatus: "none" },
-  { id: "pat-3", email: "ana@email.com", firstName: "Ana", lastName: "Rodríguez", role: "paciente", createdAt: "2025-01-20", status: "activo", kycStatus: "pending" },
-  { id: "pat-4", email: "miguel@email.com", firstName: "Miguel", lastName: "Torres", role: "paciente", createdAt: "2023-09-05", status: "activo", kycStatus: "approved" },
-  { id: "pat-5", email: "sofia@email.com", firstName: "Sofía", lastName: "Hernández", role: "paciente", createdAt: "2024-11-15", status: "activo", kycStatus: "approved" },
-  { id: "pat-6", email: "carlos@email.com", firstName: "Carlos", lastName: "Ruiz", role: "paciente", createdAt: "2022-06-20", status: "activo", kycStatus: "approved" },
-  { id: "pat-7", email: "roberto@email.com", firstName: "Roberto", lastName: "Díaz", role: "paciente", createdAt: "2024-08-10", status: "inactivo", kycStatus: "none" },
-  { id: "admin-1", email: "admin@miconsultorio.com", firstName: "Admin", lastName: "Sistema", role: "admin", createdAt: "2023-01-01", status: "activo", kycStatus: "approved" },
+  { id: "prof-1", email: encrypt("dra.garcia@email.com"), firstName: "María", lastName: "García", role: "profesional", phone: encrypt("+52 55 9876 5432"), createdAt: "2024-01-15", status: "activo", kycStatus: "approved", licenseStatus: "valid", licenseLastCheckedAt: "2026-04-05T10:00:00Z", emailVerifiedAt: "2024-01-15T10:00:00Z" },
+  { id: "prof-2", email: encrypt("dr.mendoza@email.com"), firstName: "Carlos", lastName: "Mendoza", role: "profesional", phone: encrypt("+52 55 8765 4321"), createdAt: "2024-03-20", status: "activo", kycStatus: "approved", licenseStatus: "pending", trialExpired: false, emailVerifiedAt: "2024-03-20T10:00:00Z" },
+  { id: "prof-3", email: encrypt("dra.lopez@email.com"), firstName: "Ana", lastName: "López", role: "profesional", phone: encrypt("+52 55 7654 3210"), createdAt: "2024-06-10", status: "activo", kycStatus: "none", licenseStatus: "unverifiable", trialExpired: true },
+  { id: "pat-1", email: encrypt("laura@email.com"), firstName: "Laura", lastName: "Martínez", role: "paciente", createdAt: "2024-03-10", status: "activo", kycStatus: "approved", emailVerifiedAt: "2024-03-10T10:00:00Z" },
+  { id: "pat-2", email: encrypt("pedro@email.com"), firstName: "Pedro", lastName: "Sánchez", role: "paciente", createdAt: "2024-05-12", status: "activo", kycStatus: "none" },
+  { id: "pat-3", email: encrypt("ana@email.com"), firstName: "Ana", lastName: "Rodríguez", role: "paciente", createdAt: "2025-01-20", status: "activo", kycStatus: "pending" },
+  { id: "pat-4", email: encrypt("miguel@email.com"), firstName: "Miguel", lastName: "Torres", role: "paciente", createdAt: "2023-09-05", status: "activo", kycStatus: "approved" },
+  { id: "pat-5", email: encrypt("sofia@email.com"), firstName: "Sofía", lastName: "Hernández", role: "paciente", createdAt: "2024-11-15", status: "activo", kycStatus: "approved" },
+  { id: "pat-6", email: encrypt("carlos@email.com"), firstName: "Carlos", lastName: "Ruiz", role: "paciente", createdAt: "2022-06-20", status: "activo", kycStatus: "approved" },
+  { id: "pat-7", email: encrypt("roberto@email.com"), firstName: "Roberto", lastName: "Díaz", role: "paciente", createdAt: "2024-08-10", status: "inactivo", kycStatus: "none" },
+  { id: "admin-1", email: encrypt("admin@miconsultorio.com"), firstName: "Admin", lastName: "Sistema", role: "admin", createdAt: "2023-01-01", status: "activo", kycStatus: "approved" },
 ];
 
 export const mockAuditLogs: AuditLog[] = [
@@ -468,3 +469,5 @@ export const mockRegistrationInvites: RegistrationInvite[] = [];
 
 import type { EmailVerificationCode } from "./types";
 export const mockEmailVerificationCodes: EmailVerificationCode[] = [];
+
+export const mockPasswordResetTokens: { email: string; token: string; expiresAt: string }[] = [];
