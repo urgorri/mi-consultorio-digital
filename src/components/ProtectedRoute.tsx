@@ -34,7 +34,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
           </div>
           <h2 className="text-2xl font-bold text-foreground">Cuenta bloqueada</h2>
           <p className="text-muted-foreground">Tu acceso ha sido restringido por seguridad o incumplimiento de términos.</p>
-          <a href="mailto:soporte@miconsultorio.com" className="text-primary font-medium hover:underline block pt-2">Contactar a soporte</a>
+          <a href="mailto:soporte@miconsultorio.ar" className="text-primary font-medium hover:underline block pt-2">Contactar a soporte</a>
         </div>
       </div>
     );

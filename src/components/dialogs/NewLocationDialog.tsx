@@ -41,7 +41,7 @@ const NewLocationDialog = ({ open, onOpenChange }: NewLocationDialogProps) => {
           </div>
           <div className="space-y-2">
             <Label>Teléfono</Label>
-            <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+52 55 1234 5678" />
+            <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="" />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>

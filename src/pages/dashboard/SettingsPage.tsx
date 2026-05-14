@@ -108,7 +108,7 @@ const SettingsPage = () => {
               <h3 className="font-semibold text-foreground">Datos personales</h3>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Nombre</Label><Input defaultValue="María" /></div>
-                <div className="space-y-2"><Label>Apellido</Label><Input defaultValue="García" /></div>
+                <div className="space-y-2"><Label>Apellido</Label><Input defaultValue="Pérez" /></div>
                 <div className="space-y-2"><Label>Especialidad</Label><Input defaultValue={user?.specialty || "Medicina General"} /></div>
                 <div className="space-y-2">
                   <Label>Cédula profesional (Matrícula)</Label>

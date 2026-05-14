@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CalendarCheck } from "lucide-react";
 
 const CTASection = () => {
   return (
@@ -28,8 +28,9 @@ const CTASection = () => {
             <Button
               size="lg"
               variant="outline"
-              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+              className="gap-2 w-full sm:w-auto"
             >
+              <CalendarCheck className="w-4 h-4" />
               Ver demo
             </Button>
           </Link>

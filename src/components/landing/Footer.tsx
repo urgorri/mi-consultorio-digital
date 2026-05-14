@@ -36,14 +36,23 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold text-background mb-3 text-sm uppercase tracking-wider">Contacto</h4>
             <ul className="space-y-2 text-sm">
-              <li>info@miconsultorio.com</li>
-              <li>+52 55 1234 5678</li>
-              <li>Ciudad de México, MX</li>
+              <li>info@miconsultorio.ar</li>
             </ul>
           </div>
         </div>
         <div className="border-t border-background/10 pt-6 text-center text-sm">
-          <p>© {new Date().getFullYear()} MiConsultorio. Todos los derechos reservados.</p>
+          <p>
+            © {new Date().getFullYear()} MiConsultorio. Todos los derechos reservados. Desarrollado por{" "}
+            <a
+              href="https://gastonurgorri.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-background hover:text-background/80 underline underline-offset-2 transition-colors"
+            >
+              Gastón Urgorri
+            </a>
+            .
+          </p>
         </div>
       </div>
     </footer>
