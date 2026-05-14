@@ -51,7 +51,7 @@ const DashboardPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Buenos días, Dra. García</h1>
+            <h1 className="text-2xl font-bold text-foreground">Buenos días, Dra. Pérez</h1>
             <p className="text-muted-foreground">Aquí está el resumen de tu día</p>
           </div>
           <div
