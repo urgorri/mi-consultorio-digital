@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Plus, Clock, Filter } from "lucide-react";
 import { appointmentsApi, settingsApi } from "@/services/api";
-import type { Appointment, Schedule } from "@/services/api";
+import type { Appointment, Schedule, AppointmentType } from "@/services/api";
 import NewAppointmentDialog from "@/components/dialogs/NewAppointmentDialog";
 import AppointmentDetailDialog from "@/components/dialogs/AppointmentDetailDialog";
 import ClinicBadge from "@/components/dashboard/ClinicBadge";
@@ -26,6 +26,7 @@ const AgendaPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
   const [newOpen, setNewOpen] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -35,6 +36,7 @@ const AgendaPage = () => {
   useEffect(() => {
     appointmentsApi.list().then(res => setAllAppointments(res.data));
     settingsApi.getSchedules().then(res => setSchedules(res.data));
+    settingsApi.getAppointmentTypes().then(res => setAppointmentTypes(res.data));
   }, []);
 
   const hours = useMemo(() => {
@@ -173,8 +175,9 @@ const AgendaPage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los tipos</SelectItem>
-                <SelectItem value="Primera vez">Primera vez</SelectItem>
-                <SelectItem value="Seguimiento">Seguimiento</SelectItem>
+                {appointmentTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
