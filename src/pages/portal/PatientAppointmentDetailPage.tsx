@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PatientPortalLayout from "@/components/portal/PatientPortalLayout";
 import { useParams, Link } from "react-router-dom";
 import { appointmentsApi } from "@/services/api";
@@ -26,8 +26,7 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
   const [error, setError] = useState<string | null>(null);
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchAppointment = async () => {
+  const fetchAppointment = useCallback(async () => {
       try {
         setLoading(true);
         setError(null);
@@ -43,19 +42,20 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
       } finally {
         setLoading(false);
       }
-    };
+    }, [id, token, isPublic]);
 
+  useEffect(() => {
     fetchAppointment();
-  }, [id, token, isPublic]);
+  }, [fetchAppointment]);
 
   const handleConfirm = async () => {
     if (!appointment) return;
     try {
-      const res = await appointmentsApi.update(appointment.id, {
+      await appointmentsApi.update(appointment.id, {
         status: "confirmada",
         confirmationSource: "paciente"
       });
-      setAppointment(res.data);
+      await fetchAppointment();
     } catch (err: any) {
       console.error(err);
     }
@@ -65,7 +65,7 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
     if (!appointment) return;
     try {
       await appointmentsApi.cancel(appointment.id);
-      setAppointment({ ...appointment, status: "cancelada" });
+      await fetchAppointment();
     } catch (err: any) {
       console.error(err);
     }
@@ -235,7 +235,7 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
             appointment={appointment}
             open={isRescheduleDialogOpen}
             onOpenChange={setIsRescheduleDialogOpen}
-            onSuccess={(updated) => setAppointment(updated)}
+            onSuccess={() => fetchAppointment()}
           />
         )}
       </div>

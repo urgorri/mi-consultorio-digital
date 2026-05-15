@@ -146,8 +146,9 @@ const DashboardPage = () => {
         open={detailOpen}
         onOpenChange={setDetailOpen}
         appointment={selectedAppt}
-        onStatusChange={(id, status) => {
-          setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+        onStatusChange={(updated) => {
+          setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
+          setSelectedAppt(updated);
         }}
       />
       <PremiumUpgradeDialog open={premiumOpen} onOpenChange={setPremiumOpen} />

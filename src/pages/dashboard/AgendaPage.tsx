@@ -33,8 +33,13 @@ const AgendaPage = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const { matchesFilter } = useClinicFilter();
 
+  const loadAppointments = async () => {
+    const res = await appointmentsApi.list();
+    setAllAppointments(res.data);
+  };
+
   useEffect(() => {
-    appointmentsApi.list().then(res => setAllAppointments(res.data));
+    loadAppointments();
     settingsApi.getSchedules().then(res => setSchedules(res.data));
     settingsApi.getAppointmentTypes().then(res => setAppointmentTypes(res.data));
   }, []);
@@ -124,8 +129,9 @@ const AgendaPage = () => {
     setDetailOpen(true);
   };
 
-  const handleStatusChange = (id: string, status: Appointment["status"]) => {
-    setAllAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+  const handleStatusChange = (updated: Appointment) => {
+    setAllAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
+    setSelectedAppt(updated);
   };
 
   return (
@@ -324,7 +330,7 @@ const AgendaPage = () => {
         open={newOpen}
         onOpenChange={setNewOpen}
         defaultDate={formatDate(currentDate)}
-        onCreated={(apt) => setAllAppointments(prev => [...prev, apt])}
+        onCreated={() => loadAppointments()}
       />
 
       <AppointmentDetailDialog

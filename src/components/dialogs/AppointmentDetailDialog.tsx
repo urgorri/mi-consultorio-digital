@@ -15,7 +15,7 @@ interface AppointmentDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   appointment: Appointment | null;
-  onStatusChange?: (id: string, status: Appointment["status"]) => void;
+  onStatusChange?: (appointment: Appointment) => void;
 }
 
 const statusLabels: Record<string, string> = {
@@ -38,10 +38,22 @@ const AppointmentDetailDialog = ({ open, onOpenChange, appointment, onStatusChan
   const { toast } = useToast();
   if (!appointment) return null;
 
-  const changeStatus = (status: Appointment["status"]) => {
-    onStatusChange?.(appointment.id, status);
-    toast({ title: "Estado actualizado", description: `La cita se marcó como ${statusLabels[status].toLowerCase()}.` });
-    onOpenChange(false);
+  const changeStatus = async (status: Appointment["status"]) => {
+    try {
+      const res = status === "cancelada"
+        ? await appointmentsApi.cancel(appointment.id)
+        : await appointmentsApi.update(appointment.id, { status });
+
+      onStatusChange?.(res.data);
+      toast({ title: "Estado actualizado", description: `La cita se marcó como ${statusLabels[status].toLowerCase()}.` });
+      onOpenChange(false);
+    } catch {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de la cita.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleSendWhatsApp = async () => {
