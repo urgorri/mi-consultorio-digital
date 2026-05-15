@@ -1,4 +1,5 @@
 import { isBefore, subHours, parseISO } from "date-fns";
+import { DEFAULT_CANCELLATION_DEADLINE_HOURS, DEFAULT_RESCHEDULE_DEADLINE_HOURS } from "./schedulingConfig";
 
 /**
  * Checks if the current time is before the deadline for an appointment.
@@ -18,7 +19,7 @@ export function isWithinDeadline(appointmentDate: string, appointmentTime: strin
  * Global rule to check if an appointment can be cancelled.
  */
 export function canCancelAppointment(appointment: { date: string; time: string; cancellationDeadlineHours?: number }): boolean {
-  const deadline = appointment.cancellationDeadlineHours ?? 24;
+  const deadline = appointment.cancellationDeadlineHours ?? DEFAULT_CANCELLATION_DEADLINE_HOURS;
   return isWithinDeadline(appointment.date, appointment.time, deadline);
 }
 
@@ -26,7 +27,7 @@ export function canCancelAppointment(appointment: { date: string; time: string; 
  * Global rule to check if an appointment can be rescheduled.
  */
 export function canRescheduleAppointment(appointment: { date: string; time: string; cancellationDeadlineHours?: number }): boolean {
-  const deadline = appointment.cancellationDeadlineHours ?? 24;
+  const deadline = appointment.cancellationDeadlineHours ?? DEFAULT_RESCHEDULE_DEADLINE_HOURS;
   return isWithinDeadline(appointment.date, appointment.time, deadline);
 }
 

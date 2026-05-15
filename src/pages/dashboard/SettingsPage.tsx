@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { AppointmentType, Schedule, Clinic } from "@/services/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,9 @@ const SettingsPage = () => {
   const [locationOpen, setLocationOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
   const [premiumOpen, setPremiumOpen] = useState(false);
+  const [appointmentTypes, setAppointmentTypes] = useState<(AppointmentType & { cancellationDeadlineHours?: number })[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [locations, setLocations] = useState<Clinic[]>([]);
   const [cie10, setCie10] = useState(true);
   const [cie11, setCie11] = useState(false);
   const [snomedCt, setSnomedCt] = useState(false);
@@ -40,6 +44,9 @@ const SettingsPage = () => {
 
   useEffect(() => {
     fetchSessions();
+    settingsApi.getAppointmentTypes().then((res) => setAppointmentTypes(res.data as any));
+    settingsApi.getSchedules().then((res) => setSchedules(res.data));
+    settingsApi.getLocations().then((res) => setLocations(res.data));
   }, []);
 
   const fetchSessions = async () => {
@@ -153,18 +160,15 @@ const SettingsPage = () => {
                 </Button>
               </div>
               <div className="space-y-3">
-                {[
-                  { name: "Consultorio Centro", address: "Av. Reforma 123, Col. Centro, CDMX" },
-                  { name: "Consultorio Norte", address: "Blvd. Ávila Camacho 456, Polanco, CDMX" },
-                ].map(loc => (
-                  <div key={loc.name} className="border border-border rounded-lg p-4">
+                {locations.map(loc => (
+                  <div key={loc.id} className="border border-border rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
                         <MapPin className="w-5 h-5 text-primary" />
                       </div>
                       <div className="flex-1">
                         <p className="font-medium text-foreground">{loc.name}</p>
-                        <p className="text-sm text-muted-foreground">{loc.address}</p>
+                        <p className="text-sm text-muted-foreground">{loc.address || "Sin dirección"}</p>
                       </div>
                       <Button variant="ghost" size="sm">Editar</Button>
                     </div>
@@ -177,20 +181,20 @@ const SettingsPage = () => {
           <TabsContent value="horarios" className="mt-4 space-y-4">
             <div className="bg-card rounded-xl border border-border p-5 space-y-4">
               <h3 className="font-semibold text-foreground">Horario de atención</h3>
-              {["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"].map((day) => (
-                <div key={day} className="flex items-center gap-4 py-2">
-                  <div className="w-28"><span className="text-sm font-medium text-foreground">{day}</span></div>
+              {schedules.filter(s => s.enabled).map((schedule) => (
+                <div key={schedule.dayOfWeek} className="flex items-center gap-4 py-2">
+                  <div className="w-28"><span className="text-sm font-medium text-foreground">{["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"][schedule.dayOfWeek]}</span></div>
                   <Switch defaultChecked />
                   <div className="flex items-center gap-2 text-sm">
-                    <Input className="w-24 h-8" defaultValue="09:00" />
+                    <Input className="w-24 h-8" defaultValue={schedule.startTime} />
                     <span className="text-muted-foreground">a</span>
-                    <Input className="w-24 h-8" defaultValue="17:00" />
+                    <Input className="w-24 h-8" defaultValue={schedule.endTime} />
                   </div>
                 </div>
               ))}
-              {["Sábado", "Domingo"].map((day) => (
-                <div key={day} className="flex items-center gap-4 py-2">
-                  <div className="w-28"><span className="text-sm font-medium text-foreground">{day}</span></div>
+              {schedules.filter(s => !s.enabled).map((schedule) => (
+                <div key={schedule.dayOfWeek} className="flex items-center gap-4 py-2">
+                  <div className="w-28"><span className="text-sm font-medium text-foreground">{["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"][schedule.dayOfWeek]}</span></div>
                   <Switch />
                   <span className="text-sm text-muted-foreground">No disponible</span>
                 </div>
@@ -207,11 +211,7 @@ const SettingsPage = () => {
                   <Plus className="w-4 h-4" /> Agregar tipo
                 </Button>
               </div>
-              {[
-                { name: "Seguimiento", duration: "20 min", visible: true, deadline: 24 },
-                { name: "Primera vez", duration: "45 min", visible: true, deadline: 48 },
-                { name: "Urgencia", duration: "15 min", visible: false, deadline: 0 },
-              ].map((type) => (
+              {appointmentTypes.map((type) => (
                 <div key={type.name} className="flex flex-col gap-4 border border-border rounded-lg p-4">
                   <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
@@ -219,7 +219,7 @@ const SettingsPage = () => {
                   </div>
                     <div className="flex-1">
                       <p className="font-medium text-foreground">{type.name}</p>
-                      <p className="text-sm text-muted-foreground">{type.duration}</p>
+                      <p className="text-sm text-muted-foreground">{`${type.duration} min`}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-muted-foreground">{type.visible ? "Público" : "Privado"}</span>
@@ -234,7 +234,7 @@ const SettingsPage = () => {
                         id={`deadline-${type.name}`}
                         type="number"
                         className="w-16 h-7 text-xs"
-                        defaultValue={type.deadline}
+                        defaultValue={type.cancellationDeadlineHours ?? 24}
                       />
                     </div>
                   </div>

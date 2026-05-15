@@ -10,6 +10,7 @@ import type {
 } from "./types";
 import { decrypt, encrypt } from "../../lib/crypto";
 import { getUserRestrictions } from "../../lib/auth-routing";
+import { DEFAULT_CANCELLATION_DEADLINE_HOURS, getAppointmentTypePolicy, schedulingConfig } from "@/features/appointments/domain/schedulingConfig";
 import {
   mockPatients, mockAppointments, mockConsultations, mockDiagnoses,
   mockNotifications, mockDashboardStats, mockReportMetrics,
@@ -780,7 +781,7 @@ export const appointmentsApi = {
       status: data.status || "pendiente",
       createdByRole: data.createdByRole || "profesional",
       confirmationSource: data.confirmationSource || (data.status === "confirmada" ? "profesional" : null),
-      cancellationDeadlineHours: data.cancellationDeadlineHours || 24,
+      cancellationDeadlineHours: data.cancellationDeadlineHours || getAppointmentTypePolicy(undefined, visitType)?.cancellationDeadlineHours || DEFAULT_CANCELLATION_DEADLINE_HOURS,
     } as Appointment;
 
     mockAppointments.push(newAppointment);
@@ -826,7 +827,7 @@ export const appointmentsApi = {
   async getAvailableSlots(professionalId: string, date: string) {
     await delay();
     const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
-    const schedule = mockSchedules.find(s => s.dayOfWeek === dayOfWeek && s.enabled);
+    const schedule = schedulingConfig.schedules.find(s => s.dayOfWeek === dayOfWeek && s.enabled);
 
     if (!schedule) return success([]);
 
@@ -841,7 +842,7 @@ export const appointmentsApi = {
       const h = Math.floor(currentTotal / 60);
       const m = currentTotal % 60;
       slots.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
-      currentTotal += 30;
+      currentTotal += schedulingConfig.slotIntervalMinutes;
     }
 
     const booked = mockAppointments
@@ -1094,7 +1095,7 @@ export const settingsApi = {
   },
   async getAppointmentTypes() {
     await delay();
-    return success(mockAppointmentTypes);
+    return success(schedulingConfig.appointmentTypes);
   },
   async updateAppointmentType(id: string, data: Partial<AppointmentType>) {
     await delay();
@@ -1102,7 +1103,11 @@ export const settingsApi = {
   },
   async getSchedules() {
     await delay();
-    return success(mockSchedules);
+    return success(schedulingConfig.schedules);
+  },
+  async getLocations() {
+    await delay();
+    return success(schedulingConfig.locations);
   },
   async requestPremiumUpgrade(feature: string) {
     await delay();
@@ -1542,14 +1547,14 @@ export const bookingApi = {
   async getDoctors() {
     await delay();
     return success([
-      { id: "prof-1", name: "Dra. María Pérez", specialty: "Medicina General", location: "Consultorio Centro" },
-      { id: "prof-2", name: "Dr. Julián Mendoza", specialty: "Pediatría", location: "Consultorio Norte" },
-      { id: "prof-3", name: "Dra. Ana López", specialty: "Dermatología", location: "Consultorio Centro" },
+      { id: "prof-1", name: "Dra. María Pérez", specialty: "Medicina General", location: schedulingConfig.locations[0]?.name || "Consultorio" },
+      { id: "prof-2", name: "Dr. Julián Mendoza", specialty: "Pediatría", location: schedulingConfig.locations[1]?.name || schedulingConfig.locations[0]?.name || "Consultorio" },
+      { id: "prof-3", name: "Dra. Ana López", specialty: "Dermatología", location: schedulingConfig.locations[0]?.name || "Consultorio" },
     ]);
   },
   async getVisitTypes() {
     await delay();
-    return success(mockAppointmentTypes.filter(t => t.visible));
+    return success(schedulingConfig.appointmentTypes.filter(t => t.visible));
   },
   async getAvailableSlots(professionalId: string, date: string) {
     return appointmentsApi.getAvailableSlots(professionalId, date);
@@ -1558,7 +1563,7 @@ export const bookingApi = {
     await delay(500);
 
     // Determine visit type automatically if not provided
-    let visitType = data.typeId ? mockAppointmentTypes.find(t => t.id === data.typeId)?.name : null;
+    let visitType = data.typeId ? schedulingConfig.appointmentTypes.find(t => t.id === data.typeId)?.name : null;
 
     if (!visitType) {
       const docNumber = data.patientData.documentNumber;
