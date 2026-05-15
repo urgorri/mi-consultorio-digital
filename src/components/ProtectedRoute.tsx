@@ -2,14 +2,17 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { OTPVerification } from "./auth/OTPVerification";
 import { DocumentCaptureField } from "./kyc/DocumentCaptureField";
+import type { Capability, ModuleKey } from "@/access/moduleAccess";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: Array<"profesional" | "paciente" | "admin">;
+  requiredModule?: ModuleKey;
+  requiredCapability?: Capability;
 }
 
-const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const { user, isLoading, sessionStatus } = useAuth();
+const ProtectedRoute = ({ children, allowedRoles, requiredModule, requiredCapability }: ProtectedRouteProps) => {
+  const { user, isLoading, sessionStatus, canAccessModule, canUseCapability } = useAuth();
 
   if (isLoading) {
     return (
@@ -133,6 +136,14 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
       admin: "/admin",
     };
     return <Navigate to={redirectMap[user.role]} replace />;
+  }
+
+  if (requiredModule && !canAccessModule(requiredModule, user)) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requiredCapability && !canUseCapability(requiredCapability, user)) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

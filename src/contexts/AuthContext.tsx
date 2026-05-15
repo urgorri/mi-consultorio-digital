@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 // Auth context for MiConsultorio
 import type { User } from "@/services/api/types";
 import { authApi } from "@/services/api/client";
+import { canAccessModule, canUseCapability, type Capability, type ModuleKey } from "@/access/moduleAccess";
 
 export type SessionStatus = "authenticated" | "expired" | "blocked" | "idle";
 
@@ -12,6 +13,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   logout: () => void;
   assertRole: (expectedRole: User["role"], authUser?: User | null) => boolean;
+  canAccessModule: (moduleKey: ModuleKey, authUser?: User | null) => boolean;
+  canUseCapability: (capability: Capability, authUser?: User | null) => boolean;
   refreshSession: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -102,8 +105,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const canAccessModuleForUser = useCallback((moduleKey: ModuleKey, authUser?: User | null) => {
+    const current = authUser ?? user;
+    return Boolean(current && canAccessModule(current.role, moduleKey));
+  }, [user]);
+
+  const canUseCapabilityForUser = useCallback((capability: Capability, authUser?: User | null) => {
+    const current = authUser ?? user;
+    return Boolean(current && canUseCapability(current.role, capability));
+  }, [user]);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, sessionStatus, login, logout, assertRole, refreshSession, refreshUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        sessionStatus,
+        login,
+        logout,
+        assertRole,
+        canAccessModule: canAccessModuleForUser,
+        canUseCapability: canUseCapabilityForUser,
+        refreshSession,
+        refreshUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
