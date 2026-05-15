@@ -36,3 +36,8 @@ Este documento detalla los requerimientos para el flujo de agendamiento de citas
 - **Spam / Reservas Falsas**:
   - *Riesgo*: Creación masiva de citas por bots al ser un flujo público.
   - *Mitigación*: Implementación futura de CAPTCHA o verificación de teléfono/correo.
+
+## Contrato API pública versionada
+- Especificación técnica: `docs/api/public-appointments-v1.md`.
+- Cubre disponibilidad, reserva, estado y gestión por token sin login (RF-03, RF-05, RF-06).
+- Define controles de seguridad, límites operativos y trazabilidad mínima por solicitud para auditoría/soporte.
