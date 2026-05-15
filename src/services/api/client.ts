@@ -789,25 +789,29 @@ export const appointmentsApi = {
   },
   async update(id: string, data: Partial<Appointment>) {
     await delay();
-    const apt = mockAppointments.find(a => a.id === id);
-    if (!apt) throw new Error("Cita no encontrada");
+    const index = mockAppointments.findIndex(a => a.id === id);
+    if (index === -1) throw new Error("Cita no encontrada");
 
+    const previous = mockAppointments[index];
     const updatedApt = {
-      ...apt,
+      ...previous,
       ...data
     } as Appointment;
 
     // If status changes to confirmed and no confirmation info is provided, set defaults
-    if (data.status === "confirmada" && apt.status !== "confirmada") {
+    if (data.status === "confirmada" && previous.status !== "confirmada") {
       updatedApt.confirmedAt = updatedApt.confirmedAt || new Date().toISOString();
       updatedApt.confirmationSource = updatedApt.confirmationSource || "profesional";
     }
 
+    mockAppointments[index] = updatedApt;
     return success(updatedApt);
   },
   async cancel(id: string) {
-    await delay();
-    return success({ message: "Cita cancelada exitosamente." });
+    return this.update(id, {
+      status: "cancelada",
+      cancelledAt: new Date().toISOString(),
+    });
   },
   async reschedule(id: string, data: { date: string; time: string; endTime: string }) {
     await delay();
