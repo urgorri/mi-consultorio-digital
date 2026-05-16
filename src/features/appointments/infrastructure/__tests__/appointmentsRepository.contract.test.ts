@@ -1,0 +1,50 @@
+import { describe, expect, it } from "vitest";
+import type { AppointmentRepository } from "../../domain/appointmentsRepository";
+import { MockAppointmentsRepository } from "../mockAppointmentsRepository";
+import { SqliteAppointmentsRepository } from "../sqliteAppointmentsRepository";
+import type { Appointment } from "@/services/api/types";
+
+const baseAppointment: Appointment = {
+  id: "apt-contract-1",
+  patientId: "p-contract",
+  patientName: "Paciente Contract",
+  professionalId: "prof-contract",
+  professionalName: "Profesional Contract",
+  locationId: "loc-1",
+  locationName: "Consultorio",
+  clinicId: null,
+  date: "2026-05-20",
+  time: "09:00",
+  endTime: "09:30",
+  type: "Primera vez",
+  status: "pendiente",
+  confirmationSource: null,
+  createdByRole: "paciente",
+};
+
+const runContract = (name: string, build: () => AppointmentRepository) => {
+  describe(name, () => {
+    it("create/list/update/reschedule/cancel/findToken", async () => {
+      const repo = build();
+      await repo.createAppointment({ ...baseAppointment, id: `id-${name}` });
+      const byPro = await repo.listAppointmentsByProfessional("prof-contract");
+      expect(byPro.length).toBeGreaterThan(0);
+
+      const updated = await repo.updateAppointmentStatus(`id-${name}`, "confirmada", { confirmationSource: "profesional" });
+      expect(updated.status).toBe("confirmada");
+
+      const rescheduled = await repo.rescheduleAppointment(`id-${name}`, { date: "2026-06-01", time: "10:00", endTime: "10:30" });
+      expect(rescheduled.date).toBe("2026-06-01");
+
+      const cancelled = await repo.cancelAppointment(`id-${name}`);
+      expect(cancelled.status).toBe("cancelada");
+
+      await repo.saveAccessToken({ token: `token-${name}`, appointmentId: `id-${name}`, expiresAt: "2099-01-01T00:00:00.000Z", permissions: ["confirm"] });
+      const found = await repo.findAppointmentByToken(`token-${name}`);
+      expect(found?.id).toBe(`id-${name}`);
+    });
+  });
+};
+
+runContract("mock", () => new MockAppointmentsRepository());
+runContract("sqlite", () => new SqliteAppointmentsRepository());
