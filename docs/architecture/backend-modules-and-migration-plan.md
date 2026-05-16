@@ -8,6 +8,7 @@ Se define una arquitectura modular por bounded context:
 - `identity`: onboarding KYC, verificación documental y estado de identidad.
 - `patients`: datos demográficos, contacto y estado administrativo del paciente.
 - `professionals`: perfiles profesionales, matrículas/licencias, disponibilidad.
+- `appointments`: agenda clínica, disponibilidad y ciclo de vida de citas públicas/privadas.
 - `consents`: consentimiento informado, autorizaciones de acceso y revocaciones.
 - `clinical-records`: consultas, diagnósticos, evolución y adjuntos clínicos.
 - `audit`: bitácora inmutable de eventos de seguridad y acceso.
@@ -27,6 +28,8 @@ Ejemplos:
 - `/api/identity/v1/verifications/{id}`
 - `/api/patients/v1/patients/{patientId}`
 - `/api/professionals/v1/licenses/{licenseId}`
+- `/api/appointments/v1/appointments/{appointmentId}`
+- `/api/appointments-public/v1/reservations/token/{token}`
 - `/api/consents/v1/documents/{documentId}/acceptances`
 - `/api/clinical-records/v1/consultations/{consultationId}`
 - `/api/audit/v1/events`

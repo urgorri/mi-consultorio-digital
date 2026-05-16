@@ -81,6 +81,15 @@ const securityTracker = {
   }
 };
 
+export const PUBLIC_APPOINTMENTS_API_V1 = {
+  basePath: "/api/appointments-public/v1",
+  availability: "/api/appointments-public/v1/availability",
+  reservations: "/api/appointments-public/v1/reservations",
+  reservationByToken: (token: string) => `/api/appointments-public/v1/reservations/token/${token}`,
+  confirmByToken: (token: string) => `/api/appointments-public/v1/reservations/token/${token}/confirm`,
+  cancelByToken: (token: string) => `/api/appointments-public/v1/reservations/token/${token}/cancel`,
+} as const;
+
 export const SECURITY_HEADERS = {
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
   "Content-Security-Policy": "default-src 'self'; script-src 'self'; object-src 'none';",
