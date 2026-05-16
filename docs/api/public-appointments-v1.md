@@ -16,6 +16,8 @@ Base path (v1): `/api/appointments-public/v1`
 
 ## Reglas generales del contrato
 - **Versionado**: breaking changes solo en `v2+`.
+- **SemVer del contrato v1**: `1.1.0` (adición no-breaking de validación/metadata).
+- **OpenAPI fuente de verdad**: `docs/api/openapi-appointments-public-v1.yaml`.
 - **Formato**: `Content-Type: application/json; charset=utf-8`.
 - **Timestamps**: ISO-8601 UTC (`2026-05-15T13:00:00.000Z`).
 - **Idempotencia**:
@@ -98,3 +100,9 @@ Retención sugerida: 90 días operativos + política extendida en bitácora de s
 - `POST /reservations/token/{token}/confirm` -> `appointmentsApi.update(id, { status: "confirmed" })`
 - `POST /reservations/token/{token}/cancel` -> `appointmentsApi.cancel(id)`
 - Emisión enlace/token -> `appointmentsApi.generateSignedUrl`
+
+
+## Política de deprecación explícita
+- Anticipación mínima de deprecación: **180 días** antes del sunset.
+- Header recomendado durante deprecación: `Deprecation: true` + `Sunset: <RFC-1123 date>`.
+- `v1` actual: **no deprecada** (deprecated=false).
