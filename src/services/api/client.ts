@@ -786,11 +786,22 @@ export const appointmentsApi = {
       visitType = (auth && auth.totalVisits > 0) ? "Seguimiento" : "Primera vez";
     }
 
+    const existingAppointments = await appointmentsRepository.listAppointmentsByProfessional(professionalId);
+    if (appointmentPolicyEngine.hasScheduleConflict(existingAppointments, {
+      id: "new",
+      professionalId,
+      date: data.date as string,
+      time: data.time as string,
+      endTime: data.endTime as string,
+    })) {
+      throw new Error("Ya existe una cita en ese horario para el profesional.");
+    }
+
     const newAppointment: Appointment = {
       ...data,
       type: visitType,
       id: `apt-${Date.now()}`,
-      status: data.status || "pendiente",
+      status: data.status || APPOINTMENT_STATUS.PENDING,
       createdByRole: data.createdByRole || "profesional",
       confirmationSource: data.confirmationSource || (data.status === "confirmada" ? "profesional" : null),
       cancellationDeadlineHours: data.cancellationDeadlineHours || getAppointmentTypePolicy(undefined, visitType)?.cancellationDeadlineHours || DEFAULT_CANCELLATION_DEADLINE_HOURS,
@@ -799,35 +810,60 @@ export const appointmentsApi = {
     await appointmentsRepository.createAppointment(newAppointment);
     return success(newAppointment);
   },
-  async update(id: string, data: Partial<Appointment>) {
+  async update(id: string, data: Partial<Appointment> & { transitionReason?: string; transitionActor?: "paciente" | "profesional" | "admin" | "system" }) {
     await delay();
     const existing = (await appointmentsRepository.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === id);
     if (!existing) throw new Error("Cita no encontrada");
 
-    const updatedApt = {
-      ...existing,
-      ...data
-    } as Appointment;
-
-    // If status changes to confirmed and no confirmation info is provided, set defaults
-    if (data.status === "confirmada" && existing.status !== "confirmada") {
-      updatedApt.confirmedAt = updatedApt.confirmedAt || new Date().toISOString();
-      updatedApt.confirmationSource = updatedApt.confirmationSource || "profesional";
+    if (data.status && data.status !== existing.status) {
+      const transitioned = appointmentPolicyEngine.buildTransition({
+        appointment: existing,
+        toStatus: data.status,
+        actor: data.transitionActor || "profesional",
+        reason: data.transitionReason || "Cambio de estado",
+      });
+      const saved = await appointmentsRepository.updateAppointmentStatus(id, transitioned.status, transitioned);
+      return success(saved);
     }
 
+    if ("status" in data) {
+      throw new Error("Los cambios de estado deben pasar por AppointmentPolicyEngine.");
+    }
+
+    const updatedApt = { ...existing, ...data } as Appointment;
     const saved = await appointmentsRepository.updateAppointmentStatus(id, updatedApt.status, updatedApt);
     return success(saved);
   },
-  async cancel(id: string) {
+  async cancel(id: string, reason = "Cancelación solicitada", actor: "paciente" | "profesional" | "admin" | "system" = "profesional") {
     return this.update(id, {
-      status: "cancelada",
-      cancelledAt: new Date().toISOString(),
+      status: APPOINTMENT_STATUS.CANCELLED,
+      transitionReason: reason,
+      transitionActor: actor,
     });
   },
-  async reschedule(id: string, data: { date: string; time: string; endTime: string }) {
+  async transitionStatus(id: string, status: Appointment["status"], reason: string, actor: "paciente" | "profesional" | "admin" | "system" = "profesional") {
+    return this.update(id, { status, transitionReason: reason, transitionActor: actor });
+  },
+  async reschedule(id: string, data: { date: string; time: string; endTime: string; reason?: string; actor?: "paciente" | "profesional" | "admin" | "system" }) {
     await delay();
+    const existing = (await appointmentsRepository.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === id);
+    if (!existing) throw new Error("Cita no encontrada");
+    if (!appointmentPolicyEngine.canRescheduleAppointment(existing)) {
+      throw new Error("La cita está fuera de la ventana de reprogramación.");
+    }
+    const professionalAppointments = await appointmentsRepository.listAppointmentsByProfessional(existing.professionalId);
+    if (appointmentPolicyEngine.hasScheduleConflict(professionalAppointments, { ...existing, ...data })) {
+      throw new Error("Ya existe una cita en ese horario para el profesional.");
+    }
+
     const updatedApt = await appointmentsRepository.rescheduleAppointment(id, data);
-    return success(updatedApt);
+    const now = new Date().toISOString();
+    const reason = data.reason || "Reprogramación";
+    const actor = data.actor || "profesional";
+    const withAudit = { ...updatedApt, notes: `${updatedApt.notes ? `${updatedApt.notes}
+` : ""}[${now}] ${actor}: RESCHEDULE | ${reason}` } as Appointment;
+    const saved = await appointmentsRepository.updateAppointmentStatus(id, withAudit.status, withAudit);
+    return success(saved);
   },
   async getAvailableSlots(professionalId: string, date: string) {
     await delay();
