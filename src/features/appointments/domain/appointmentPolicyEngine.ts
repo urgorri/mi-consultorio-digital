@@ -2,19 +2,11 @@ import { isBefore, parseISO, subHours } from "date-fns";
 import type { Appointment } from "@/services/api/types";
 import { DEFAULT_CANCELLATION_DEADLINE_HOURS, DEFAULT_RESCHEDULE_DEADLINE_HOURS } from "./schedulingConfig";
 
-export const APPOINTMENT_STATUS = {
-  PENDING: "pendiente",
-  CONFIRMED: "confirmada",
-  CANCELLED: "cancelada",
-  COMPLETED: "completada",
-  NO_SHOW: "no_asistio",
-} as const;
-
-export type AppointmentStatus = typeof APPOINTMENT_STATUS[keyof typeof APPOINTMENT_STATUS];
+import { APPOINTMENT_STATUS, type AppointmentStatus } from "./appointmentStatus";
 export type TransitionActor = "paciente" | "profesional" | "admin" | "system";
 
 const ALLOWED_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
-  [APPOINTMENT_STATUS.PENDING]: [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.CANCELLED, APPOINTMENT_STATUS.NO_SHOW],
+  [APPOINTMENT_STATUS.SCHEDULED]: [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.CANCELLED, APPOINTMENT_STATUS.NO_SHOW],
   [APPOINTMENT_STATUS.CONFIRMED]: [APPOINTMENT_STATUS.CANCELLED, APPOINTMENT_STATUS.COMPLETED, APPOINTMENT_STATUS.NO_SHOW],
   [APPOINTMENT_STATUS.CANCELLED]: [],
   [APPOINTMENT_STATUS.COMPLETED]: [],

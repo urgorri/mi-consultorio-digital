@@ -95,6 +95,6 @@ Retención sugerida: 90 días operativos + política extendida en bitácora de s
 - `GET /availability` -> `appointmentsApi.getAvailableSlots` + `bookingApi.getAvailableSlots`
 - `POST /reservations` -> `bookingApi.createBooking`
 - `GET /reservations/token/{token}` -> `appointmentsApi.getByToken`
-- `POST /reservations/token/{token}/confirm` -> `appointmentsApi.update(id, { status: "confirmada" })`
+- `POST /reservations/token/{token}/confirm` -> `appointmentsApi.update(id, { status: "confirmed" })`
 - `POST /reservations/token/{token}/cancel` -> `appointmentsApi.cancel(id)`
 - Emisión enlace/token -> `appointmentsApi.generateSignedUrl`

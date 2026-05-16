@@ -10,6 +10,7 @@ import { appointmentsApi } from "@/services/api";
 import { canCancelAppointment } from "@/features/appointments/domain/rules";
 import { AlertCircle } from "lucide-react";
 import { mockClinics, mockProfessional } from "@/services/api/mockData";
+import { APPOINTMENT_STATUS, assertAppointmentStatus, getAppointmentStatusLabel } from "@/features/appointments/domain/appointmentStatus";
 
 interface AppointmentDetailDialogProps {
   open: boolean;
@@ -18,20 +19,12 @@ interface AppointmentDetailDialogProps {
   onStatusChange?: (appointment: Appointment) => void;
 }
 
-const statusLabels: Record<string, string> = {
-  confirmada: "Confirmada",
-  pendiente: "Pendiente",
-  completada: "Completada",
-  cancelada: "Cancelada",
-  no_asistio: "No asistió",
-};
-
 const statusColors: Record<string, string> = {
-  confirmada: "bg-primary/10 text-primary border-primary/30",
-  pendiente: "bg-warning/10 text-warning border-warning/30",
-  completada: "bg-success/10 text-success border-success/30",
-  cancelada: "bg-destructive/10 text-destructive border-destructive/30",
-  no_asistio: "bg-muted text-muted-foreground border-border",
+  [APPOINTMENT_STATUS.CONFIRMED]: "bg-primary/10 text-primary border-primary/30",
+  [APPOINTMENT_STATUS.SCHEDULED]: "bg-warning/10 text-warning border-warning/30",
+  [APPOINTMENT_STATUS.COMPLETED]: "bg-success/10 text-success border-success/30",
+  [APPOINTMENT_STATUS.CANCELLED]: "bg-destructive/10 text-destructive border-destructive/30",
+  [APPOINTMENT_STATUS.NO_SHOW]: "bg-muted text-muted-foreground border-border",
 };
 
 const AppointmentDetailDialog = ({ open, onOpenChange, appointment, onStatusChange }: AppointmentDetailDialogProps) => {
@@ -40,12 +33,12 @@ const AppointmentDetailDialog = ({ open, onOpenChange, appointment, onStatusChan
 
   const changeStatus = async (status: Appointment["status"]) => {
     try {
-      const res = status === "cancelada"
+      const res = status === APPOINTMENT_STATUS.CANCELLED
         ? await appointmentsApi.cancel(appointment.id, "Cancelación desde detalle", "profesional")
         : await appointmentsApi.transitionStatus(appointment.id, status, "Actualización desde agenda profesional", "profesional");
 
       onStatusChange?.(res.data);
-      toast({ title: "Estado actualizado", description: `La cita se marcó como ${statusLabels[status].toLowerCase()}.` });
+      toast({ title: "Estado actualizado", description: `La cita se marcó como ${getAppointmentStatusLabel(assertAppointmentStatus(status), "es-MX").toLowerCase()}.` });
       onOpenChange(false);
     } catch {
       toast({
@@ -96,8 +89,8 @@ const AppointmentDetailDialog = ({ open, onOpenChange, appointment, onStatusChan
         </DialogHeader>
         <div className="space-y-6">
           <section className="flex items-center justify-between border-b pb-4">
-            <span className={`text-xs font-medium px-3 py-1.5 rounded-full border ${statusColors[appointment.status]}`}>
-              {statusLabels[appointment.status]}
+            <span className={`text-xs font-medium px-3 py-1.5 rounded-full border ${statusColors[assertAppointmentStatus(appointment.status)]}`}>
+              {getAppointmentStatusLabel(assertAppointmentStatus(appointment.status), "es-MX")}
             </span>
             <Badge variant="outline" className="max-w-[140px] truncate block" title={appointment.type}>
               {appointment.type}
@@ -140,13 +133,13 @@ const AppointmentDetailDialog = ({ open, onOpenChange, appointment, onStatusChan
               <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)} className="w-full sm:w-auto shrink-0">
                 Cerrar
               </Button>
-              {(appointment.status === "confirmada" || appointment.status === "pendiente") && (
+              {(appointment.status === APPOINTMENT_STATUS.CONFIRMED || appointment.status === APPOINTMENT_STATUS.SCHEDULED) && (
                 <div className="flex flex-col gap-1 w-full sm:w-auto min-w-0">
                   <Button
                     size="sm"
                     variant="outline"
                     className="text-destructive w-full focus-visible:ring-destructive"
-                    onClick={() => changeStatus("cancelada")}
+                    onClick={() => changeStatus(APPOINTMENT_STATUS.CANCELLED)}
                     disabled={!canCancelAppointment(appointment)}
                   >
                     Cancelar cita
@@ -161,19 +154,19 @@ const AppointmentDetailDialog = ({ open, onOpenChange, appointment, onStatusChan
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 sm:flex-wrap">
-              {(appointment.status === "pendiente" || appointment.status === "confirmada") && (
+              {(appointment.status === APPOINTMENT_STATUS.SCHEDULED || appointment.status === APPOINTMENT_STATUS.CONFIRMED) && (
                 <Button size="sm" variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleSendWhatsApp}>
                   <MessageSquare className="w-4 h-4" />
                   WhatsApp
                 </Button>
               )}
-              {(appointment.status === "confirmada" || appointment.status === "pendiente") && (
-                <Button size="sm" variant="outline" onClick={() => changeStatus("completada")} className="w-full sm:w-auto">
+              {(appointment.status === APPOINTMENT_STATUS.CONFIRMED || appointment.status === APPOINTMENT_STATUS.SCHEDULED) && (
+                <Button size="sm" variant="outline" onClick={() => changeStatus(APPOINTMENT_STATUS.COMPLETED)} className="w-full sm:w-auto">
                   Completar
                 </Button>
               )}
-              {appointment.status === "pendiente" && (
-                <Button size="sm" onClick={() => changeStatus("confirmada")} className="w-full sm:w-auto">
+              {appointment.status === APPOINTMENT_STATUS.SCHEDULED && (
+                <Button size="sm" onClick={() => changeStatus(APPOINTMENT_STATUS.CONFIRMED)} className="w-full sm:w-auto">
                   Confirmar
                 </Button>
               )}
