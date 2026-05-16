@@ -11,6 +11,7 @@ vi.mock("@/services/api/client", () => ({
     getById: vi.fn(),
     cancel: vi.fn(),
     update: vi.fn(),
+    transitionStatus: vi.fn(),
   },
 }));
 
@@ -66,6 +67,6 @@ describe("PatientAppointmentDetailPage Integration", () => {
     const cancelBtn = screen.getByText(/Cancelar cita/i);
     fireEvent.click(cancelBtn);
 
-    await waitFor(() => expect(appointmentsApi.cancel).toHaveBeenCalledWith(appointmentFixtures.id));
+    await waitFor(() => expect(appointmentsApi.cancel).toHaveBeenCalledWith(appointmentFixtures.id, "Cancelación desde portal paciente", "paciente"));
   });
 });

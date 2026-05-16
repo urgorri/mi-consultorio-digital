@@ -87,6 +87,8 @@ export const RescheduleAppointmentDialog = ({
         date: formattedDate,
         time: selectedTime,
         endTime: formattedEndTime,
+        reason: "Reprogramación desde agenda profesional",
+        actor: "profesional",
       });
 
       toast({

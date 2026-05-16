@@ -51,10 +51,7 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
   const handleConfirm = async () => {
     if (!appointment) return;
     try {
-      await appointmentsApi.update(appointment.id, {
-        status: "confirmada",
-        confirmationSource: "paciente"
-      });
+      await appointmentsApi.transitionStatus(appointment.id, "confirmada", "Confirmación desde portal paciente", "paciente");
       await fetchAppointment();
     } catch (err: any) {
       console.error(err);
@@ -64,7 +61,7 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
   const handleCancel = async () => {
     if (!appointment) return;
     try {
-      await appointmentsApi.cancel(appointment.id);
+      await appointmentsApi.cancel(appointment.id, "Cancelación desde portal paciente", "paciente");
       await fetchAppointment();
     } catch (err: any) {
       console.error(err);

@@ -41,8 +41,8 @@ const AppointmentDetailDialog = ({ open, onOpenChange, appointment, onStatusChan
   const changeStatus = async (status: Appointment["status"]) => {
     try {
       const res = status === "cancelada"
-        ? await appointmentsApi.cancel(appointment.id)
-        : await appointmentsApi.update(appointment.id, { status });
+        ? await appointmentsApi.cancel(appointment.id, "Cancelación desde detalle", "profesional")
+        : await appointmentsApi.transitionStatus(appointment.id, status, "Actualización desde agenda profesional", "profesional");
 
       onStatusChange?.(res.data);
       toast({ title: "Estado actualizado", description: `La cita se marcó como ${statusLabels[status].toLowerCase()}.` });
