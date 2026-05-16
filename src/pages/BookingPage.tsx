@@ -63,14 +63,8 @@ const BookingPage = () => {
   useEffect(() => {
     if (selectedDoctorId && selectedDate) {
       const fetchSlots = async () => {
-        // Formatear fecha para el API (YYYY-MM-DD)
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = (today.getMonth() + 1).toString().padStart(2, "0");
-        const formattedDate = `${year}-${month}-${selectedDate.padStart(2, "0")}`;
-
         try {
-          const slots = await appointmentsAdapter.getAvailableSlots(selectedDoctorId, formattedDate);
+          const slots = await appointmentsAdapter.getAvailableSlots(selectedDoctorId, selectedDate);
           setAvailableSlots(slots);
         } catch (error) {
           console.error("Error fetching available slots:", error);
@@ -83,20 +77,18 @@ const BookingPage = () => {
   const doctor = doctors.find(d => d.id === selectedDoctorId);
   const visitType = visitTypes.find(t => t.id === selectedTypeId);
 
-  const today = new Date();
-  const currentMonth = today.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+  const formatSelectedDate = (iso: string) => {
+    if (!iso) return "";
+    const date = new Date(iso + "T12:00:00");
+    return date.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+  };
 
   const handleBookingSubmit = async (patientData: Record<string, unknown>) => {
     try {
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = (today.getMonth() + 1).toString().padStart(2, "0");
-      const formattedDate = `${year}-${month}-${selectedDate.padStart(2, "0")}`;
-
       const result = await appointmentsAdapter.createBooking({
         professionalId: selectedDoctorId,
         typeId: selectedTypeId,
-        date: formattedDate,
+        date: selectedDate,
         time: selectedTime,
         patientData
       });
@@ -143,7 +135,6 @@ const BookingPage = () => {
             visitType={visitType}
             selectedTime={selectedTime}
             selectedDate={selectedDate}
-            currentMonth={currentMonth}
             onSubmit={handleBookingSubmit}
           />
         );
@@ -180,7 +171,7 @@ const BookingPage = () => {
               </div>
               <div className="pt-2 border-t border-border">
                 <p className="text-muted-foreground"><span className="font-medium text-foreground">{confirmedType || visitType?.name}</span></p>
-                <p className="text-muted-foreground">Día {selectedDate} de {currentMonth} a las {selectedTime}</p>
+                <p className="text-muted-foreground">{formatSelectedDate(selectedDate)} a las {selectedTime}</p>
               </div>
             </div>
             <Link to={user ? (user.role === "paciente" ? "/portal" : "/dashboard") : "/"}>

@@ -16,8 +16,7 @@ interface PatientDataFormProps {
     name: string;
   } | undefined;
   selectedTime: string;
-  selectedDate: string;
-  currentMonth: string;
+  selectedDate: string; // ISO YYYY-MM-DD
   onSubmit: (data: Record<string, unknown>) => void;
 }
 
@@ -27,7 +26,6 @@ export const PatientDataForm = ({
   visitType,
   selectedTime,
   selectedDate,
-  currentMonth,
   onSubmit
 }: PatientDataFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
@@ -116,7 +114,7 @@ export const PatientDataForm = ({
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 shrink-0 text-primary/70" />
-              <p>{visitType?.name || "Determinado automáticamente"} - {selectedTime} ({selectedDate} de {currentMonth})</p>
+              <p>{visitType?.name || "Determinado automáticamente"} - {selectedTime} ({new Date(selectedDate + "T12:00:00").toLocaleDateString("es-MX", { day: "numeric", month: "long" })})</p>
             </div>
           </div>
         </div>
