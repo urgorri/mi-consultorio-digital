@@ -216,7 +216,7 @@ export interface Appointment {
   time: string;
   endTime: string;
   type: string;
-  status: "confirmada" | "pendiente" | "cancelada" | "completada" | "no_asistio";
+  status: import("@/features/appointments/domain/appointmentStatus").AppointmentStatus;
   reason?: string;
   notes?: string;
   confirmationSource: "paciente" | "profesional" | null;

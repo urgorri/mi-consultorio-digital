@@ -9,16 +9,18 @@ import NewAppointmentDialog from "@/components/dialogs/NewAppointmentDialog";
 import AppointmentDetailDialog from "@/components/dialogs/AppointmentDetailDialog";
 import ClinicBadge from "@/components/dashboard/ClinicBadge";
 import { useClinicFilter } from "@/contexts/ClinicFilterContext";
+import { APPOINTMENT_STATUS, assertAppointmentStatus } from "@/features/appointments/domain/appointmentStatus";
 
 type ViewType = "dia" | "semana" | "mes";
 
 const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 const statusColors: Record<string, string> = {
-  confirmada: "bg-primary/10 border-primary/30 text-primary",
-  pendiente: "bg-warning/10 border-warning/30 text-warning",
-  completada: "bg-success/10 border-success/30 text-success",
-  cancelada: "bg-destructive/10 border-destructive/30 text-destructive",
+  [APPOINTMENT_STATUS.CONFIRMED]: "bg-primary/10 border-primary/30 text-primary",
+  [APPOINTMENT_STATUS.SCHEDULED]: "bg-warning/10 border-warning/30 text-warning",
+  [APPOINTMENT_STATUS.COMPLETED]: "bg-success/10 border-success/30 text-success",
+  [APPOINTMENT_STATUS.CANCELLED]: "bg-destructive/10 border-destructive/30 text-destructive",
+  [APPOINTMENT_STATUS.NO_SHOW]: "bg-muted/40 border-border text-muted-foreground",
 };
 
 const AgendaPage = () => {
@@ -205,7 +207,7 @@ const AgendaPage = () => {
                         <div
                           key={apt.id}
                           onClick={() => openApptDetail(apt)}
-                          className={`p-3 rounded-lg border ${statusColors[apt.status]} cursor-pointer hover:opacity-90 transition-opacity`}
+                          className={`p-3 rounded-lg border ${statusColors[assertAppointmentStatus(apt.status)]} cursor-pointer hover:opacity-90 transition-opacity`}
                         >
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-sm font-medium truncate">{apt.patientName}</p>
@@ -254,7 +256,7 @@ const AgendaPage = () => {
                           <div
                             key={apt.id}
                             onClick={() => openApptDetail(apt)}
-                            className={`p-1.5 rounded text-xs border mb-1 cursor-pointer hover:opacity-80 ${statusColors[apt.status]}`}
+                            className={`p-1.5 rounded text-xs border mb-1 cursor-pointer hover:opacity-80 ${statusColors[assertAppointmentStatus(apt.status)]}`}
                           >
                             <p className="font-medium truncate">{apt.patientName}</p>
                             <p className="opacity-70">{apt.time}</p>
@@ -300,7 +302,7 @@ const AgendaPage = () => {
                           <div
                             key={apt.id}
                             onClick={() => openApptDetail(apt)}
-                            className={`text-xs p-1 rounded mb-0.5 truncate cursor-pointer hover:opacity-80 ${statusColors[apt.status]}`}
+                            className={`text-xs p-1 rounded mb-0.5 truncate cursor-pointer hover:opacity-80 ${statusColors[assertAppointmentStatus(apt.status)]}`}
                           >
                             {apt.time} {apt.patientName.split(" ")[0]}
                           </div>
