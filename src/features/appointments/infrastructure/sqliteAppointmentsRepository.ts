@@ -1,5 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import type { Appointment, AppointmentAccessToken } from "@/services/api/types";
+import type { AvailabilityException, ProfessionalAppointmentType, Schedule } from "@/services/api/types";
 import type { AppointmentRepository } from "../domain/appointmentsRepository";
 
 const MIGRATIONS = [
@@ -22,6 +23,35 @@ const MIGRATIONS = [
     permissions TEXT NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_appointment_tokens_appointment ON appointment_tokens(appointment_id);`,
+  `CREATE TABLE IF NOT EXISTS weekly_availability (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    professional_id TEXT NOT NULL,
+    day_of_week INTEGER NOT NULL,
+    enabled INTEGER NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    location_id TEXT NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_weekly_availability_unique ON weekly_availability(tenant_id, professional_id, day_of_week);`,
+  `CREATE TABLE IF NOT EXISTS availability_exceptions (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    professional_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    reason TEXT
+  );`,
+  `CREATE TABLE IF NOT EXISTS professional_appointment_types (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    professional_id TEXT NOT NULL,
+    appointment_type_id TEXT NOT NULL,
+    duration INTEGER NOT NULL,
+    enabled INTEGER NOT NULL
+  );`,
 ];
 
 export class SqliteAppointmentsRepository implements AppointmentRepository {
@@ -83,6 +113,36 @@ export class SqliteAppointmentsRepository implements AppointmentRepository {
     const row = this.db.prepare("SELECT token, appointment_id, expires_at, permissions FROM appointment_tokens WHERE appointment_id = ?").get(appointmentId) as { token: string; appointment_id: string; expires_at: string; permissions: string } | undefined;
     if (!row) return null;
     return { token: row.token, appointmentId: row.appointment_id, expiresAt: row.expires_at, permissions: JSON.parse(row.permissions) };
+  }
+  async listWeeklyAvailability(tenantId: string, professionalId: string) {
+    const rows = this.db.prepare("SELECT * FROM weekly_availability WHERE tenant_id=? AND professional_id=?").all(tenantId, professionalId) as any[];
+    return rows.map((r) => ({ id: r.id, tenantId: r.tenant_id, professionalId: r.professional_id, dayOfWeek: r.day_of_week, enabled: !!r.enabled, startTime: r.start_time, endTime: r.end_time, locationId: r.location_id }));
+  }
+  async upsertWeeklyAvailability(entries: Schedule[]) {
+    const stmt = this.db.prepare(`INSERT INTO weekly_availability(id,tenant_id,professional_id,day_of_week,enabled,start_time,end_time,location_id)
+      VALUES (?,?,?,?,?,?,?,?)
+      ON CONFLICT(tenant_id,professional_id,day_of_week) DO UPDATE SET enabled=excluded.enabled,start_time=excluded.start_time,end_time=excluded.end_time,location_id=excluded.location_id`);
+    for (const e of entries) stmt.run(e.id ?? `wa-${e.tenantId}-${e.professionalId}-${e.dayOfWeek}`, e.tenantId, e.professionalId, e.dayOfWeek, e.enabled ? 1 : 0, e.startTime, e.endTime, e.locationId);
+  }
+  async listAvailabilityExceptions(tenantId: string, professionalId: string, date: string) {
+    const rows = this.db.prepare("SELECT * FROM availability_exceptions WHERE tenant_id=? AND professional_id=? AND date=?").all(tenantId, professionalId, date) as any[];
+    return rows.map((r) => ({ id: r.id, tenantId: r.tenant_id, professionalId: r.professional_id, date: r.date, startTime: r.start_time, endTime: r.end_time, kind: r.kind, reason: r.reason }));
+  }
+  async upsertAvailabilityExceptions(entries: AvailabilityException[]) {
+    const stmt = this.db.prepare(`INSERT INTO availability_exceptions(id,tenant_id,professional_id,date,start_time,end_time,kind,reason)
+      VALUES (?,?,?,?,?,?,?,?)
+      ON CONFLICT(id) DO UPDATE SET date=excluded.date,start_time=excluded.start_time,end_time=excluded.end_time,kind=excluded.kind,reason=excluded.reason`);
+    for (const e of entries) stmt.run(e.id, e.tenantId, e.professionalId, e.date, e.startTime, e.endTime, e.kind, e.reason ?? null);
+  }
+  async listProfessionalAppointmentTypes(tenantId: string, professionalId: string) {
+    const rows = this.db.prepare("SELECT * FROM professional_appointment_types WHERE tenant_id=? AND professional_id=?").all(tenantId, professionalId) as any[];
+    return rows.map((r) => ({ id: r.id, tenantId: r.tenant_id, professionalId: r.professional_id, appointmentTypeId: r.appointment_type_id, duration: r.duration, enabled: !!r.enabled }));
+  }
+  async upsertProfessionalAppointmentTypes(entries: ProfessionalAppointmentType[]) {
+    const stmt = this.db.prepare(`INSERT INTO professional_appointment_types(id,tenant_id,professional_id,appointment_type_id,duration,enabled)
+      VALUES (?,?,?,?,?,?)
+      ON CONFLICT(id) DO UPDATE SET appointment_type_id=excluded.appointment_type_id,duration=excluded.duration,enabled=excluded.enabled`);
+    for (const e of entries) stmt.run(e.id, e.tenantId, e.professionalId, e.appointmentTypeId, e.duration, e.enabled ? 1 : 0);
   }
 
   private getAppointmentById(id: string): Appointment {

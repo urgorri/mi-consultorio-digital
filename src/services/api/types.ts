@@ -286,11 +286,34 @@ export interface Location {
 }
 
 export interface Schedule {
+  id?: string;
+  tenantId?: string;
+  professionalId?: string;
   dayOfWeek: number;
   enabled: boolean;
   startTime: string;
   endTime: string;
   locationId: string;
+}
+
+export interface AvailabilityException {
+  id: string;
+  tenantId: string;
+  professionalId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  kind: "blocked" | "override";
+  reason?: string;
+}
+
+export interface ProfessionalAppointmentType {
+  id: string;
+  tenantId: string;
+  professionalId: string;
+  appointmentTypeId: string;
+  duration: number;
+  enabled: boolean;
 }
 
 export interface AppointmentType {
