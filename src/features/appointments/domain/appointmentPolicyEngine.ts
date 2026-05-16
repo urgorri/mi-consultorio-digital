@@ -41,12 +41,13 @@ export const appointmentPolicyEngine = {
     appointments: Appointment[],
     candidate: Pick<Appointment, "id" | "professionalId" | "date" | "time" | "endTime">
   ) {
+    const toUtc = (date: string, hhmm: string) => new Date(`${date}T${hhmm}:00Z`).getTime();
     return appointments.some((a) =>
       a.id !== candidate.id &&
       a.professionalId === candidate.professionalId &&
       a.date === candidate.date &&
-      a.time < candidate.endTime &&
-      candidate.time < a.endTime &&
+      toUtc(a.date, a.time) < toUtc(candidate.date, candidate.endTime) &&
+      toUtc(candidate.date, candidate.time) < toUtc(a.date, a.endTime) &&
       a.status !== APPOINTMENT_STATUS.CANCELLED,
     );
   },

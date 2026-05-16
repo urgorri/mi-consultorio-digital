@@ -1,4 +1,5 @@
 import type { Appointment, AppointmentAccessToken } from "@/services/api/types";
+import type { AvailabilityException, ProfessionalAppointmentType, Schedule } from "@/services/api/types";
 
 export interface AppointmentRepository {
   createAppointment(data: Appointment): Promise<Appointment>;
@@ -10,4 +11,10 @@ export interface AppointmentRepository {
   findAppointmentByToken(token: string): Promise<Appointment | null>;
   saveAccessToken(token: AppointmentAccessToken): Promise<void>;
   findTokenByAppointmentId(appointmentId: string): Promise<AppointmentAccessToken | null>;
+  listWeeklyAvailability(tenantId: string, professionalId: string): Promise<Schedule[]>;
+  upsertWeeklyAvailability(entries: Schedule[]): Promise<void>;
+  listAvailabilityExceptions(tenantId: string, professionalId: string, date: string): Promise<AvailabilityException[]>;
+  upsertAvailabilityExceptions(entries: AvailabilityException[]): Promise<void>;
+  listProfessionalAppointmentTypes(tenantId: string, professionalId: string): Promise<ProfessionalAppointmentType[]>;
+  upsertProfessionalAppointmentTypes(entries: ProfessionalAppointmentType[]): Promise<void>;
 }

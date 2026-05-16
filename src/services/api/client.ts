@@ -883,27 +883,41 @@ export const appointmentsApi = {
   },
   async getAvailableSlots(professionalId: string, date: string) {
     await delay();
-    const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
-    const schedule = schedulingConfig.schedules.find(s => s.dayOfWeek === dayOfWeek && s.enabled);
+    const tenantId = mockProfessional.clinicMemberships[0]?.clinicId || "tenant-default";
+    const dayOfWeek = new Date(`${date}T12:00:00Z`).getUTCDay();
+    const weekly = await appointmentsRepository.listWeeklyAvailability(tenantId, professionalId);
+    if (weekly.length === 0) {
+      await appointmentsRepository.upsertWeeklyAvailability(
+        schedulingConfig.schedules.map((s, index) => ({ ...s, id: `wa-${index}`, tenantId, professionalId }))
+      );
+    }
+    const runtimeWeekly = (await appointmentsRepository.listWeeklyAvailability(tenantId, professionalId)).filter(s => s.dayOfWeek === dayOfWeek && s.enabled);
+    if (!runtimeWeekly.length) return success([]);
 
-    if (!schedule) return success([]);
-
-    const [startH, startM] = schedule.startTime.split(":").map(Number);
-    const [endH, endM] = schedule.endTime.split(":").map(Number);
-
+    const exceptions = await appointmentsRepository.listAvailabilityExceptions(tenantId, professionalId, date);
+    const blocked = exceptions.filter(e => e.kind === "blocked").map(e => `${e.startTime}-${e.endTime}`);
     const slots: string[] = [];
-    let currentTotal = startH * 60 + startM;
-    const endTotal = endH * 60 + endM;
-
-    while (currentTotal < endTotal) {
-      const h = Math.floor(currentTotal / 60);
-      const m = currentTotal % 60;
-      slots.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
-      currentTotal += schedulingConfig.slotIntervalMinutes;
+    for (const schedule of runtimeWeekly) {
+      const [startH, startM] = schedule.startTime.split(":").map(Number);
+      const [endH, endM] = schedule.endTime.split(":").map(Number);
+      let currentTotal = startH * 60 + startM;
+      const endTotal = endH * 60 + endM;
+      while (currentTotal < endTotal) {
+        const h = Math.floor(currentTotal / 60);
+        const m = currentTotal % 60;
+        const hhmm = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+        if (!blocked.some((b) => { const [bs, be] = b.split("-"); return hhmm >= bs && hhmm < be; })) slots.push(hhmm);
+        currentTotal += schedulingConfig.slotIntervalMinutes;
+      }
     }
 
     const booked = (await appointmentsRepository.listAppointmentsByProfessional(professionalId))
       .filter(a => a.date === date)
+      .filter(a => {
+        const s = new Date(`${a.date}T${a.time}:00Z`).getTime();
+        const e = new Date(`${a.date}T${a.endTime}:00Z`).getTime();
+        return e > s;
+      })
       .map(a => a.time);
 
     return success(slots.filter(s => !booked.includes(s)));
@@ -1195,7 +1209,15 @@ export const settingsApi = {
   },
   async getAppointmentTypes() {
     await delay();
-    return success(schedulingConfig.appointmentTypes);
+    const tenantId = mockProfessional.clinicMemberships[0]?.clinicId || "tenant-default";
+    const runtime = await appointmentsRepository.listProfessionalAppointmentTypes(tenantId, mockProfessional.id);
+    if (runtime.length === 0) {
+      await appointmentsRepository.upsertProfessionalAppointmentTypes(
+        schedulingConfig.appointmentTypes.map((t) => ({ id: `pat-${t.id}`, tenantId, professionalId: mockProfessional.id, appointmentTypeId: t.id, duration: t.duration, enabled: t.visible }))
+      );
+      return success(schedulingConfig.appointmentTypes);
+    }
+    return success(schedulingConfig.appointmentTypes.filter((base) => runtime.some((r) => r.appointmentTypeId === base.id && r.enabled)).map((base) => ({ ...base, duration: runtime.find((r) => r.appointmentTypeId === base.id)?.duration ?? base.duration })));
   },
   async updateAppointmentType(id: string, data: Partial<AppointmentType>) {
     await delay();
@@ -1203,7 +1225,15 @@ export const settingsApi = {
   },
   async getSchedules() {
     await delay();
-    return success(schedulingConfig.schedules);
+    const tenantId = mockProfessional.clinicMemberships[0]?.clinicId || "tenant-default";
+    const runtime = await appointmentsRepository.listWeeklyAvailability(tenantId, mockProfessional.id);
+    if (runtime.length === 0) {
+      await appointmentsRepository.upsertWeeklyAvailability(
+        schedulingConfig.schedules.map((s, index) => ({ ...s, id: `wa-${index}`, tenantId, professionalId: mockProfessional.id }))
+      );
+      return success(schedulingConfig.schedules);
+    }
+    return success(runtime);
   },
   async getLocations() {
     await delay();

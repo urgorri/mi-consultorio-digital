@@ -1,8 +1,12 @@
 import type { Appointment, AppointmentAccessToken } from "@/services/api/types";
 import { mockAppointments, mockAppointmentTokens } from "@/services/api/mockData";
+import type { AvailabilityException, ProfessionalAppointmentType, Schedule } from "@/services/api/types";
 import type { AppointmentRepository } from "../domain/appointmentsRepository";
 
 export class MockAppointmentsRepository implements AppointmentRepository {
+  private weeklyAvailability: Schedule[] = [];
+  private availabilityExceptions: AvailabilityException[] = [];
+  private professionalAppointmentTypes: ProfessionalAppointmentType[] = [];
   async createAppointment(data: Appointment) { mockAppointments.push(data); return data; }
   async updateAppointmentStatus(id: string, status: Appointment["status"], metadata?: Partial<Appointment>) {
     const i = mockAppointments.findIndex(a => a.id === id);
@@ -35,5 +39,35 @@ export class MockAppointmentsRepository implements AppointmentRepository {
   }
   async findTokenByAppointmentId(appointmentId: string) {
     return mockAppointmentTokens.find(t => t.appointmentId === appointmentId) ?? null;
+  }
+  async listWeeklyAvailability(tenantId: string, professionalId: string) {
+    return this.weeklyAvailability.filter(w => w.tenantId === tenantId && w.professionalId === professionalId);
+  }
+  async upsertWeeklyAvailability(entries: Schedule[]) {
+    for (const entry of entries) {
+      const i = this.weeklyAvailability.findIndex(w => w.tenantId === entry.tenantId && w.professionalId === entry.professionalId && w.dayOfWeek === entry.dayOfWeek);
+      if (i >= 0) this.weeklyAvailability[i] = entry;
+      else this.weeklyAvailability.push(entry);
+    }
+  }
+  async listAvailabilityExceptions(tenantId: string, professionalId: string, date: string) {
+    return this.availabilityExceptions.filter(e => e.tenantId === tenantId && e.professionalId === professionalId && e.date === date);
+  }
+  async upsertAvailabilityExceptions(entries: AvailabilityException[]) {
+    for (const entry of entries) {
+      const i = this.availabilityExceptions.findIndex(e => e.id === entry.id);
+      if (i >= 0) this.availabilityExceptions[i] = entry;
+      else this.availabilityExceptions.push(entry);
+    }
+  }
+  async listProfessionalAppointmentTypes(tenantId: string, professionalId: string) {
+    return this.professionalAppointmentTypes.filter(t => t.tenantId === tenantId && t.professionalId === professionalId);
+  }
+  async upsertProfessionalAppointmentTypes(entries: ProfessionalAppointmentType[]) {
+    for (const entry of entries) {
+      const i = this.professionalAppointmentTypes.findIndex(t => t.id === entry.id);
+      if (i >= 0) this.professionalAppointmentTypes[i] = entry;
+      else this.professionalAppointmentTypes.push(entry);
+    }
   }
 }
