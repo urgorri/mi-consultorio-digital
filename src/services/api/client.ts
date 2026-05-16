@@ -9,6 +9,7 @@ import type {
   CareAuthorization,
 } from "./types";
 
+import { canAccessModule, canUseCapability, type Capability, type ModuleKey } from "../../access/moduleAccess";
 import {
   API_DEPRECATION_POLICY,
   API_SEMVER,
@@ -116,7 +117,7 @@ export const SECURITY_HEADERS = {
   "Referrer-Policy": "strict-origin-when-cross-origin"
 };
 
-const authorize = async (actorId: string, patientId?: string, clinicId: string | null = null, requiredRole?: string) => {
+const authorize = async (actorId: string, patientId?: string, clinicId: string | null = null, requiredRole?: string, requiredModule?: ModuleKey, requiredCapability?: Capability) => {
   const user = mockUsers.find(u => u.id === actorId) || (mockProfessional.id === actorId ? mockProfessional : undefined);
   if (!user) throw new Error("Usuario no encontrado");
 
@@ -127,6 +128,14 @@ const authorize = async (actorId: string, patientId?: string, clinicId: string |
   const restriction = getUserRestrictions(user);
   if (restriction) {
     throw new Error(`Acceso restringido: ${restriction}`);
+  }
+
+  if (requiredModule && !canAccessModule(user, requiredModule)) {
+    throw new Error(`Acceso denegado: Módulo '${requiredModule}' no habilitado para su plan.`);
+  }
+
+  if (requiredCapability && !canUseCapability(user, requiredCapability)) {
+    throw new Error(`Acceso denegado: Capacidad '${requiredCapability}' no habilitada.`);
   }
 
   if (patientId && user.role === "profesional") {
@@ -447,6 +456,26 @@ export const authApi = {
     if (!response.ok) throw new Error("Error al revocar sesión");
     return response.json();
   },
+  async getEntitlements(): Promise<ApiResponse<{ plan?: string; activeModules: string[]; capabilities: string[] }>> {
+    await delay(100);
+    const user = mockProfessional; // Simulated current user
+
+    // In a real implementation we would iterate and check
+    const modules = ["turnos", "pacientes", "consultas", "reportes", "configuracion", "portal", "admin"] as ModuleKey[];
+    const enabledModules = modules.filter(m => canAccessModule(user, m));
+
+    const capabilitiesList: Capability[] = [
+      "turnos.view", "turnos.manage", "pacientes.view", "consultas.manage",
+      "reportes.view", "configuracion.manage", "portal.self", "admin.system"
+    ];
+    const enabledCapabilities = capabilitiesList.filter(c => canUseCapability(user, c));
+
+    return success({
+      plan: user.plan,
+      activeModules: enabledModules,
+      capabilities: enabledCapabilities
+    });
+  }
 };
 
 // ===== HELPERS =====
@@ -531,6 +560,7 @@ export const patientsApi = {
   async list(params?: { search?: string; page?: number; limit?: number; clinicalType?: string; reason?: string; context?: string }) {
     await delay();
     const professionalId = mockProfessional.id; // Assume current logged in professional
+    await authorize(professionalId, undefined, null, "profesional", "pacientes", "pacientes.view");
 
     recordAuditEvent({
       actor: { id: professionalId, name: `${mockProfessional.firstName} ${mockProfessional.lastName}`, role: mockProfessional.role },
@@ -577,7 +607,7 @@ export const patientsApi = {
     return paginated(results, results.length, params?.page, params?.limit);
   },
   async getById(id: string, audit?: { reason: string; context: string }) {
-    await authorize(mockProfessional.id, id, null, "profesional");
+    await authorize(mockProfessional.id, id, null, "profesional", "pacientes", "pacientes.view");
     await delay();
     const professionalId = mockProfessional.id;
     const patient = mockPatients.find(p => p.id === id);
@@ -639,6 +669,7 @@ export const patientsApi = {
     return success(enrichPatient(decPatient, professionalId));
   },
   async create(data: Partial<Patient>) {
+    await authorize(mockProfessional.id, undefined, null, "profesional", "pacientes", "pacientes.view");
     await delay();
     const professionalId = mockProfessional.id;
     const normalizedData = {
@@ -742,6 +773,7 @@ export const patientsApi = {
     return success(enrichPatient(newPatientBase, professionalId));
   },
   async update(id: string, data: Partial<Patient>) {
+    await authorize(mockProfessional.id, id, null, "profesional", "pacientes", "pacientes.view");
     await delay();
     const professionalId = mockProfessional.id;
     const patient = mockPatients.find(p => p.id === id);
@@ -766,7 +798,7 @@ export const patientsApi = {
 // ===== APPOINTMENTS =====
 export const appointmentsApi = {
   async list(params?: { date?: string; patientId?: string; status?: string }) {
-    await authorize(mockProfessional.id, params?.patientId, null, "profesional");
+    await authorize(mockProfessional.id, params?.patientId, null, "profesional", "turnos", "turnos.view");
     await delay();
     let results = await appointmentsRepository.listAppointmentsByProfessional(mockProfessional.id);
     if (params?.date) results = results.filter(a => a.date === params.date);
@@ -775,6 +807,7 @@ export const appointmentsApi = {
     return success(results);
   },
   async getById(id: string) {
+    await authorize(mockProfessional.id, undefined, null, "profesional", "turnos", "turnos.view");
     await delay();
     const list = await appointmentsRepository.listAppointmentsByProfessional(mockProfessional.id);
     const apt = list.find(a => a.id === id);
@@ -782,7 +815,7 @@ export const appointmentsApi = {
     return success(apt);
   },
   async create(data: Partial<Appointment>) {
-    await authorize(mockProfessional.id, data.patientId, data.clinicId || null, "profesional");
+    await authorize(mockProfessional.id, data.patientId, data.clinicId || null, "profesional", "turnos", "turnos.manage");
     await delay();
     const professionalId = mockProfessional.id;
 
@@ -1015,7 +1048,7 @@ export const publicAppointmentsApi = {
 // ===== CONSULTATIONS =====
 export const consultationsApi = {
   async list(params?: { patientId?: string; type?: string; reason?: string; context?: string }) {
-    await authorize(mockProfessional.id, params?.patientId, null, "profesional");
+    await authorize(mockProfessional.id, params?.patientId, null, "profesional", "consultas", "consultas.manage");
     await delay();
     const professionalId = mockProfessional.id;
 
@@ -1043,7 +1076,7 @@ export const consultationsApi = {
     const professionalId = mockProfessional.id;
     const consultation = mockConsultations.find(c => c.id === id);
     if (consultation) {
-      await authorize(professionalId, consultation.patientId, consultation.clinicId || null, "profesional");
+      await authorize(professionalId, consultation.patientId, consultation.clinicId || null, "profesional", "consultas", "consultas.manage");
     }
     await delay();
 
@@ -1079,7 +1112,7 @@ export const consultationsApi = {
     return success(decryptConsultation(consultation));
   },
   async create(data: Partial<Consultation>) {
-    await authorize(mockProfessional.id, data.patientId, data.clinicId || null, "profesional");
+    await authorize(mockProfessional.id, data.patientId, data.clinicId || null, "profesional", "consultas", "consultas.manage");
     await delay();
     const professionalId = mockProfessional.id;
     const correlationId = `con-create-${Date.now()}`;
@@ -1192,6 +1225,7 @@ export const dashboardApi = {
 // ===== REPORTS =====
 export const reportsApi = {
   async getMetrics() {
+    await authorize(mockProfessional.id, undefined, null, "profesional", "reportes", "reportes.view");
     await delay();
     return success(mockReportMetrics);
   },
@@ -1264,6 +1298,7 @@ export const settingsApi = {
 // ===== ADMIN =====
 export const adminApi = {
   async listUsers(params?: { search?: string; role?: string }) {
+    await authorize(mockProfessional.id, undefined, null, "admin", "admin", "admin.system");
     await delay();
     let results = [...mockUsers];
     if (params?.search) {
@@ -1277,6 +1312,7 @@ export const adminApi = {
     return paginated(results, results.length);
   },
   async getAuditLogs(params?: { search?: string }) {
+    await authorize(mockProfessional.id, undefined, null, "admin", "admin", "admin.system");
     await delay();
     let results = [...mockAuditLogs];
     if (params?.search) {
@@ -1290,10 +1326,12 @@ export const adminApi = {
     return success(results);
   },
   async getSystemHealth() {
+    await authorize(mockProfessional.id, undefined, null, "admin", "admin", "admin.system");
     await delay();
     return success(mockSystemHealth);
   },
   async getNotificationLogs() {
+    await authorize(mockProfessional.id, undefined, null, "admin", "admin", "admin.system");
     await delay();
     return success(mockNotifications);
   },

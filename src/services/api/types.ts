@@ -28,6 +28,8 @@ export interface User {
   subscriptionInactive?: boolean;
   kycStatus?: KycStatus;
   kycMetadata?: KycMetadata;
+  plan?: import("@/access/moduleAccess").PlanType;
+  activeModules?: import("@/access/moduleAccess").ModuleKey[];
 }
 
 export interface EmailVerificationCode {

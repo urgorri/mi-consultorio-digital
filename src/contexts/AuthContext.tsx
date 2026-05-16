@@ -107,12 +107,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const canAccessModuleForUser = useCallback((moduleKey: ModuleKey, authUser?: User | null) => {
     const current = authUser ?? user;
-    return Boolean(current && canAccessModule(current.role, moduleKey));
+    return Boolean(current && canAccessModule(current, moduleKey));
   }, [user]);
 
   const canUseCapabilityForUser = useCallback((capability: Capability, authUser?: User | null) => {
     const current = authUser ?? user;
-    return Boolean(current && canUseCapability(current.role, capability));
+    return Boolean(current && canUseCapability(current, capability));
   }, [user]);
 
   return (
