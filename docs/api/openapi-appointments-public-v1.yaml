@@ -1,0 +1,89 @@
+openapi: 3.1.0
+info:
+  title: Appointments Public API
+  version: 1.1.0
+  description: Contrato OpenAPI para /api/appointments-public/v1.
+  x-api-lifecycle:
+    deprecated: false
+    minimumNoticeDays: 180
+servers:
+  - url: /api/appointments-public/v1
+paths:
+  /availability:
+    get:
+      operationId: availability
+      parameters:
+        - in: query
+          name: professionalId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: date
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: OK
+  /reservations:
+    post:
+      operationId: reservations
+      requestBody:
+        required: true
+      responses:
+        '200':
+          description: Reserva creada
+  /reservations/token/{token}:
+    get:
+      operationId: tokenStatus
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Estado de reserva
+  /reservations/token/{token}/confirm:
+    post:
+      operationId: confirm
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Reserva confirmada
+  /reservations/token/{token}/cancel:
+    post:
+      operationId: cancel
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Reserva cancelada
+components:
+  schemas:
+    PublicError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum: [TOKEN_EXPIRED, TOKEN_INVALID, VALIDATION_ERROR, RATE_LIMITED]
+            message:
+              type: string
+            details:
+              type: object
+              properties:
+                correlationId:
+                  type: string
+      required: [success, error]

@@ -8,10 +8,26 @@ import type {
   ConsentDocument, ConsentAcceptance, AccessGrant, AcceptanceMethod,
   CareAuthorization,
 } from "./types";
+
+import {
+  API_DEPRECATION_POLICY,
+  API_SEMVER,
+  availabilityQuerySchema,
+  availabilityResponseSchema,
+  reservationResponseSchema,
+  reservationsRequestSchema,
+  tokenActionResponseSchema,
+  tokenStatusResponseSchema,
+  toPublicTokenError,
+  validateRequest,
+  validateResponse,
+} from "./publicAppointmentsContract";
 import { decrypt, encrypt } from "../../lib/crypto";
 import { getAppointmentsRepository } from "@/features/appointments/infrastructure/repositoryFactory";
 import { getUserRestrictions } from "../../lib/auth-routing";
 import { DEFAULT_CANCELLATION_DEADLINE_HOURS, getAppointmentTypePolicy, schedulingConfig } from "@/features/appointments/domain/schedulingConfig";
+import { appointmentPolicyEngine } from "@/features/appointments/domain/appointmentPolicyEngine";
+import { APPOINTMENT_STATUS } from "@/features/appointments/domain/appointmentStatus";
 import {
   mockPatients, mockAppointments, mockConsultations, mockDiagnoses,
   mockNotifications, mockDashboardStats, mockReportMetrics,
@@ -801,7 +817,7 @@ export const appointmentsApi = {
       ...data,
       type: visitType,
       id: `apt-${Date.now()}`,
-      status: data.status || APPOINTMENT_STATUS.PENDING,
+      status: data.status || APPOINTMENT_STATUS.SCHEDULED,
       createdByRole: data.createdByRole || "profesional",
       confirmationSource: data.confirmationSource || (data.status === "confirmada" ? "profesional" : null),
       cancellationDeadlineHours: data.cancellationDeadlineHours || getAppointmentTypePolicy(undefined, visitType)?.cancellationDeadlineHours || DEFAULT_CANCELLATION_DEADLINE_HOURS,
@@ -931,6 +947,54 @@ export const appointmentsApi = {
 
     const url = `${window.location.origin}/citas/v/${tokenData.token}`;
     return success({ url });
+  },
+};
+
+
+export const publicAppointmentsApi = {
+  meta: {
+    basePath: PUBLIC_APPOINTMENTS_API_V1.basePath,
+    semver: API_SEMVER,
+    deprecation: API_DEPRECATION_POLICY,
+  },
+  async availability(query: { professionalId: string; date: string }) {
+    const input = validateRequest(availabilityQuerySchema, query);
+    const response = await appointmentsApi.getAvailableSlots(input.professionalId, input.date);
+    return validateResponse(availabilityResponseSchema, response);
+  },
+  async reservations(payload: { patientId: string; professionalId: string; date: string; time: string; endTime: string; clinicId?: string | null }) {
+    const input = validateRequest(reservationsRequestSchema, payload);
+    const response = await appointmentsApi.create({ ...input, createdByRole: "paciente" });
+    return validateResponse(reservationResponseSchema, response);
+  },
+  async tokenStatus(token: string) {
+    const correlationId = `corr-${Date.now()}`;
+    try {
+      const response = await appointmentsApi.getByToken(token);
+      return validateResponse(tokenStatusResponseSchema, response);
+    } catch {
+      throw toPublicTokenError(correlationId, "TOKEN_EXPIRED");
+    }
+  },
+  async confirm(token: string) {
+    const correlationId = `corr-${Date.now()}`;
+    try {
+      const byToken = await appointmentsApi.getByToken(token);
+      const response = await appointmentsApi.transitionStatus(byToken.data.id, APPOINTMENT_STATUS.CONFIRMED, "Confirmación por token", "paciente");
+      return validateResponse(tokenActionResponseSchema, response);
+    } catch {
+      throw toPublicTokenError(correlationId, "TOKEN_EXPIRED");
+    }
+  },
+  async cancel(token: string) {
+    const correlationId = `corr-${Date.now()}`;
+    try {
+      const byToken = await appointmentsApi.getByToken(token);
+      const response = await appointmentsApi.cancel(byToken.data.id, "Cancelación por token", "paciente");
+      return validateResponse(tokenActionResponseSchema, response);
+    } catch {
+      throw toPublicTokenError(correlationId, "TOKEN_EXPIRED");
+    }
   },
 };
 
