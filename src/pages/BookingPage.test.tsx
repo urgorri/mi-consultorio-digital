@@ -48,7 +48,7 @@ vi.mock("@/features/appointments/ui/VisitTypeSelector", () => ({
 vi.mock("@/features/appointments/ui/SlotSelector", () => ({
   SlotSelector: ({ onDateSelect, onTimeSelect, availableSlots }: any) => (
     <div>
-      <button onClick={() => onDateSelect("15")}>Select Date 15</button>
+      <button onClick={() => onDateSelect("2024-12-15")}>Select Date 15</button>
       {availableSlots.map((s: any) => (
         <button key={s} onClick={() => onTimeSelect(s)}>{s}</button>
       ))}
