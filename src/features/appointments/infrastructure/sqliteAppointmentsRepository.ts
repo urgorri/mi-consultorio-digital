@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import type { Appointment, AppointmentAccessToken } from "@/services/api/types";
+import type { Appointment, AppointmentAccessToken, AppointmentStatusHistory } from "@/services/api/types";
 import type { AvailabilityException, ProfessionalAppointmentType, Schedule } from "@/services/api/types";
 import type { AppointmentRepository } from "../domain/appointmentsRepository";
 
@@ -52,6 +52,19 @@ const MIGRATIONS = [
     duration INTEGER NOT NULL,
     enabled INTEGER NOT NULL
   );`,
+  `CREATE TABLE IF NOT EXISTS appointment_status_history (
+    id TEXT PRIMARY KEY,
+    appointment_id TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    previous_status TEXT,
+    new_status TEXT NOT NULL,
+    actor_id TEXT NOT NULL,
+    actor_name TEXT NOT NULL,
+    actor_role TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    correlation_id TEXT NOT NULL UNIQUE
+  );
+  CREATE INDEX IF NOT EXISTS idx_appointment_status_history_appointment ON appointment_status_history(appointment_id);`,
 ];
 
 export class SqliteAppointmentsRepository implements AppointmentRepository {
@@ -113,6 +126,38 @@ export class SqliteAppointmentsRepository implements AppointmentRepository {
     const row = this.db.prepare("SELECT token, appointment_id, expires_at, permissions FROM appointment_tokens WHERE appointment_id = ?").get(appointmentId) as { token: string; appointment_id: string; expires_at: string; permissions: string } | undefined;
     if (!row) return null;
     return { token: row.token, appointmentId: row.appointment_id, expiresAt: row.expires_at, permissions: JSON.parse(row.permissions) };
+  }
+
+  async saveStatusHistory(h: AppointmentStatusHistory) {
+    try {
+      this.db.prepare(`INSERT INTO appointment_status_history(id, appointment_id, timestamp, previous_status, new_status, actor_id, actor_name, actor_role, reason, correlation_id)
+        VALUES (?,?,?,?,?,?,?,?,?,?)`)
+        .run(h.id, h.appointmentId, h.timestamp, h.previousStatus, h.newStatus, h.actor.id, h.actor.name, h.actor.role, h.reason, h.correlationId);
+    } catch (e: any) {
+      if (e.message?.includes("UNIQUE constraint failed: appointment_status_history.correlation_id")) {
+        console.log(`[REPO] Ignored duplicate history entry for correlationId: ${h.correlationId}`);
+        return;
+      }
+      throw e;
+    }
+  }
+
+  async listStatusHistory(appointmentId: string) {
+    const rows = this.db.prepare("SELECT * FROM appointment_status_history WHERE appointment_id = ? ORDER BY timestamp ASC").all(appointmentId) as any[];
+    return rows.map(r => ({
+      id: r.id,
+      appointmentId: r.appointment_id,
+      timestamp: r.timestamp,
+      previousStatus: r.previous_status,
+      newStatus: r.new_status,
+      actor: {
+        id: r.actor_id,
+        name: r.actor_name,
+        role: r.actor_role,
+      },
+      reason: r.reason,
+      correlationId: r.correlation_id,
+    })) as AppointmentStatusHistory[];
   }
   async listWeeklyAvailability(tenantId: string, professionalId: string) {
     const rows = this.db.prepare("SELECT * FROM weekly_availability WHERE tenant_id=? AND professional_id=?").all(tenantId, professionalId) as any[];

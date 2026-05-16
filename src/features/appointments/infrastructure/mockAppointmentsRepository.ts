@@ -1,4 +1,4 @@
-import type { Appointment, AppointmentAccessToken } from "@/services/api/types";
+import type { Appointment, AppointmentAccessToken, AppointmentStatusHistory } from "@/services/api/types";
 import { mockAppointments, mockAppointmentTokens } from "@/services/api/mockData";
 import type { AvailabilityException, ProfessionalAppointmentType, Schedule } from "@/services/api/types";
 import type { AppointmentRepository } from "../domain/appointmentsRepository";
@@ -7,6 +7,8 @@ export class MockAppointmentsRepository implements AppointmentRepository {
   private weeklyAvailability: Schedule[] = [];
   private availabilityExceptions: AvailabilityException[] = [];
   private professionalAppointmentTypes: ProfessionalAppointmentType[] = [];
+  private statusHistory: AppointmentStatusHistory[] = [];
+
   async createAppointment(data: Appointment) { mockAppointments.push(data); return data; }
   async updateAppointmentStatus(id: string, status: Appointment["status"], metadata?: Partial<Appointment>) {
     const i = mockAppointments.findIndex(a => a.id === id);
@@ -39,6 +41,21 @@ export class MockAppointmentsRepository implements AppointmentRepository {
   }
   async findTokenByAppointmentId(appointmentId: string) {
     return mockAppointmentTokens.find(t => t.appointmentId === appointmentId) ?? null;
+  }
+
+  async saveStatusHistory(history: AppointmentStatusHistory) {
+    // Idempotency check
+    if (this.statusHistory.some(h => h.correlationId === history.correlationId)) {
+      console.log(`[REPO] Ignored duplicate history entry for correlationId: ${history.correlationId}`);
+      return;
+    }
+    this.statusHistory.push(history);
+  }
+
+  async listStatusHistory(appointmentId: string) {
+    return this.statusHistory
+      .filter(h => h.appointmentId === appointmentId)
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }
   async listWeeklyAvailability(tenantId: string, professionalId: string) {
     return this.weeklyAvailability.filter(w => w.tenantId === tenantId && w.professionalId === professionalId);

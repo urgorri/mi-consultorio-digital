@@ -814,6 +814,12 @@ export const appointmentsApi = {
     if (!apt) throw new Error("Cita no encontrada");
     return success(apt);
   },
+  async getStatusHistory(id: string) {
+    await authorize(mockProfessional.id, undefined, null, "profesional", "turnos", "turnos.view");
+    await delay();
+    const history = await appointmentsRepository.listStatusHistory(id);
+    return success(history);
+  },
   async create(data: Partial<Appointment>) {
     await authorize(mockProfessional.id, data.patientId, data.clinicId || null, "profesional", "turnos", "turnos.manage");
     await delay();
@@ -846,32 +852,70 @@ export const appointmentsApi = {
       throw new Error("Ya existe una cita en ese horario para el profesional.");
     }
 
+    const appointmentId = `apt-${Date.now()}`;
+    const correlationId = data.correlationId || `create-${appointmentId}-${Date.now()}`;
+
     const newAppointment: Appointment = {
       ...data,
       type: visitType,
-      id: `apt-${Date.now()}`,
+      id: appointmentId,
       status: data.status || APPOINTMENT_STATUS.SCHEDULED,
+      correlationId,
       createdByRole: data.createdByRole || "profesional",
       confirmationSource: data.confirmationSource || (data.status === "confirmada" ? "profesional" : null),
       cancellationDeadlineHours: data.cancellationDeadlineHours || getAppointmentTypePolicy(undefined, visitType)?.cancellationDeadlineHours || DEFAULT_CANCELLATION_DEADLINE_HOURS,
     } as Appointment;
 
     await appointmentsRepository.createAppointment(newAppointment);
+
+    // Initial history entry
+    const actor = mockProfessional; // Default for internal API
+    await appointmentsRepository.saveStatusHistory({
+      id: `hist-${Date.now()}`,
+      appointmentId,
+      timestamp: new Date().toISOString(),
+      previousStatus: null,
+      newStatus: newAppointment.status,
+      actor: { id: actor.id, name: `${actor.firstName} ${actor.lastName}`, role: actor.role },
+      reason: "Cita agendada",
+      correlationId,
+    });
+
     return success(newAppointment);
   },
-  async update(id: string, data: Partial<Appointment> & { transitionReason?: string; transitionActor?: "paciente" | "profesional" | "admin" | "system" }) {
+  async update(id: string, data: Partial<Appointment> & { transitionReason?: string; transitionActor?: "paciente" | "profesional" | "admin" | "system"; transitionActorName?: string; transitionActorRole?: string }) {
     await delay();
     const existing = (await appointmentsRepository.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === id);
     if (!existing) throw new Error("Cita no encontrada");
 
     if (data.status && data.status !== existing.status) {
+      const correlationId = data.correlationId || `trans-${id}-${Date.now()}`;
       const transitioned = appointmentPolicyEngine.buildTransition({
         appointment: existing,
         toStatus: data.status,
         actor: data.transitionActor || "profesional",
         reason: data.transitionReason || "Cambio de estado",
+        correlationId,
       });
+
       const saved = await appointmentsRepository.updateAppointmentStatus(id, transitioned.status, transitioned);
+
+      // Record history
+      const actorId = data.transitionActor === "profesional" ? mockProfessional.id : "system";
+      const actorName = data.transitionActorName || (data.transitionActor === "profesional" ? `${mockProfessional.firstName} ${mockProfessional.lastName}` : "Sistema");
+      const actorRole = data.transitionActorRole || (data.transitionActor === "profesional" ? "profesional" : "system");
+
+      await appointmentsRepository.saveStatusHistory({
+        id: `hist-${Date.now()}`,
+        appointmentId: id,
+        timestamp: new Date().toISOString(),
+        previousStatus: existing.status,
+        newStatus: transitioned.status,
+        actor: { id: actorId, name: actorName, role: actorRole },
+        reason: data.transitionReason || "Cambio de estado",
+        correlationId,
+      });
+
       return success(saved);
     }
 
@@ -883,17 +927,27 @@ export const appointmentsApi = {
     const saved = await appointmentsRepository.updateAppointmentStatus(id, updatedApt.status, updatedApt);
     return success(saved);
   },
-  async cancel(id: string, reason = "Cancelación solicitada", actor: "paciente" | "profesional" | "admin" | "system" = "profesional") {
+  async cancel(id: string, reason = "Cancelación solicitada", actor: "paciente" | "profesional" | "admin" | "system" = "profesional", metadata?: { actorName?: string; actorRole?: string; correlationId?: string }) {
     return this.update(id, {
       status: APPOINTMENT_STATUS.CANCELLED,
       transitionReason: reason,
       transitionActor: actor,
+      transitionActorName: metadata?.actorName,
+      transitionActorRole: metadata?.actorRole,
+      correlationId: metadata?.correlationId,
     });
   },
-  async transitionStatus(id: string, status: Appointment["status"], reason: string, actor: "paciente" | "profesional" | "admin" | "system" = "profesional") {
-    return this.update(id, { status, transitionReason: reason, transitionActor: actor });
+  async transitionStatus(id: string, status: Appointment["status"], reason: string, actor: "paciente" | "profesional" | "admin" | "system" = "profesional", metadata?: { actorName?: string; actorRole?: string; correlationId?: string }) {
+    return this.update(id, {
+      status,
+      transitionReason: reason,
+      transitionActor: actor,
+      transitionActorName: metadata?.actorName,
+      transitionActorRole: metadata?.actorRole,
+      correlationId: metadata?.correlationId,
+    });
   },
-  async reschedule(id: string, data: { date: string; time: string; endTime: string; reason?: string; actor?: "paciente" | "profesional" | "admin" | "system" }) {
+  async reschedule(id: string, data: { date: string; time: string; endTime: string; reason?: string; actor?: "paciente" | "profesional" | "admin" | "system"; actorName?: string; actorRole?: string; correlationId?: string }) {
     await delay();
     const existing = (await appointmentsRepository.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === id);
     if (!existing) throw new Error("Cita no encontrada");
@@ -905,13 +959,37 @@ export const appointmentsApi = {
       throw new Error("Ya existe una cita en ese horario para el profesional.");
     }
 
-    const updatedApt = await appointmentsRepository.rescheduleAppointment(id, data);
+    const correlationId = data.correlationId || `resched-${id}-${Date.now()}`;
+    const updatedApt = await appointmentsRepository.rescheduleAppointment(id, { ...data });
     const now = new Date().toISOString();
     const reason = data.reason || "Reprogramación";
     const actor = data.actor || "profesional";
-    const withAudit = { ...updatedApt, notes: `${updatedApt.notes ? `${updatedApt.notes}
-` : ""}[${now}] ${actor}: RESCHEDULE | ${reason}` } as Appointment;
+
+    const withAudit = {
+      ...updatedApt,
+      correlationId,
+      notes: `${updatedApt.notes ? `${updatedApt.notes}
+` : ""}[${now}] ${actor}: RESCHEDULE | ${reason}`
+    } as Appointment;
+
     const saved = await appointmentsRepository.updateAppointmentStatus(id, withAudit.status, withAudit);
+
+    // Record history
+    const actorId = actor === "profesional" ? mockProfessional.id : "system";
+    const actorName = data.actorName || (actor === "profesional" ? `${mockProfessional.firstName} ${mockProfessional.lastName}` : "Sistema");
+    const actorRole = data.actorRole || (actor === "profesional" ? "profesional" : "system");
+
+    await appointmentsRepository.saveStatusHistory({
+      id: `hist-${Date.now()}`,
+      appointmentId: id,
+      timestamp: now,
+      previousStatus: existing.status,
+      newStatus: existing.status, // Status doesn't change on reschedule usually, but it's a lifecycle event
+      actor: { id: actorId, name: actorName, role: actorRole },
+      reason: `Reprogramada: ${data.date} ${data.time}. Motivo: ${reason}`,
+      correlationId,
+    });
+
     return success(saved);
   },
   async getAvailableSlots(professionalId: string, date: string) {
@@ -1024,22 +1102,36 @@ export const publicAppointmentsApi = {
     }
   },
   async confirm(token: string) {
-    const correlationId = `corr-${Date.now()}`;
+    const correlationId = `pub-conf-${Date.now()}`;
     try {
       const byToken = await appointmentsApi.getByToken(token);
-      const response = await appointmentsApi.transitionStatus(byToken.data.id, APPOINTMENT_STATUS.CONFIRMED, "Confirmación por token", "paciente");
+      const response = await appointmentsApi.transitionStatus(byToken.data.id, APPOINTMENT_STATUS.CONFIRMED, "Confirmación por token", "paciente", {
+        actorName: byToken.data.patientName,
+        actorRole: "paciente",
+        correlationId
+      });
       return validateResponse(tokenActionResponseSchema, response);
-    } catch {
+    } catch (e: any) {
+      if (e.message?.includes("Transición inválida") || e.message?.includes("ventana")) {
+        throw e;
+      }
       throw toPublicTokenError(correlationId, "TOKEN_EXPIRED");
     }
   },
   async cancel(token: string) {
-    const correlationId = `corr-${Date.now()}`;
+    const correlationId = `pub-canc-${Date.now()}`;
     try {
       const byToken = await appointmentsApi.getByToken(token);
-      const response = await appointmentsApi.cancel(byToken.data.id, "Cancelación por token", "paciente");
+      const response = await appointmentsApi.cancel(byToken.data.id, "Cancelación por token", "paciente", {
+        actorName: byToken.data.patientName,
+        actorRole: "paciente",
+        correlationId
+      });
       return validateResponse(tokenActionResponseSchema, response);
-    } catch {
+    } catch (e: any) {
+      if (e.message?.includes("Transición inválida") || e.message?.includes("ventana")) {
+        throw e;
+      }
       throw toPublicTokenError(correlationId, "TOKEN_EXPIRED");
     }
   },
