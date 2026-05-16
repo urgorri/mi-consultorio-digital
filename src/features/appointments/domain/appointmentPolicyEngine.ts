@@ -18,6 +18,7 @@ export interface TransitionInput {
   toStatus: AppointmentStatus;
   actor: TransitionActor;
   reason: string;
+  correlationId?: string;
 }
 
 export const appointmentPolicyEngine = {
@@ -52,7 +53,7 @@ export const appointmentPolicyEngine = {
     );
   },
   buildTransition(input: TransitionInput): Appointment {
-    const { appointment, toStatus, actor, reason } = input;
+    const { appointment, toStatus, actor, reason, correlationId } = input;
     if (!this.canTransition(appointment.status, toStatus)) {
       throw new Error(`Transición inválida: ${appointment.status} -> ${toStatus}`);
     }
@@ -62,6 +63,8 @@ export const appointmentPolicyEngine = {
     }
 
     const now = new Date().toISOString();
+    const transitionCorrelationId = correlationId || `corr-${appointment.id}-${Date.now()}`;
+
     const auditEntry = {
       at: now,
       fromStatus: appointment.status,
@@ -73,6 +76,7 @@ export const appointmentPolicyEngine = {
     return {
       ...appointment,
       status: toStatus,
+      correlationId: transitionCorrelationId,
       confirmedAt: toStatus === APPOINTMENT_STATUS.CONFIRMED ? appointment.confirmedAt || now : appointment.confirmedAt,
       confirmationSource: toStatus === APPOINTMENT_STATUS.CONFIRMED ? (actor === "paciente" ? "paciente" : "profesional") : appointment.confirmationSource,
       notes: `${appointment.notes ? `${appointment.notes}\n` : ""}[${auditEntry.at}] ${auditEntry.actor}: ${auditEntry.fromStatus} -> ${auditEntry.toStatus} | ${auditEntry.reason}`,

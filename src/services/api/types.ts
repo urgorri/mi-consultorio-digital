@@ -221,6 +221,7 @@ export interface Appointment {
   status: import("@/features/appointments/domain/appointmentStatus").AppointmentStatus;
   reason?: string;
   notes?: string;
+  correlationId?: string;
   confirmationSource: "paciente" | "profesional" | null;
   patientPhone?: string;
   confirmedAt?: string;
@@ -385,6 +386,21 @@ export interface SystemHealth {
   totalRequests: number;
   avgResponseTime: number;
   services: { name: string; status: "up" | "down"; latency: number }[];
+}
+
+export interface AppointmentStatusHistory {
+  id: string;
+  appointmentId: string;
+  timestamp: string;
+  previousStatus: import("@/features/appointments/domain/appointmentStatus").AppointmentStatus | null;
+  newStatus: import("@/features/appointments/domain/appointmentStatus").AppointmentStatus;
+  actor: {
+    id: string;
+    name: string;
+    role: string;
+  };
+  reason: string;
+  correlationId: string;
 }
 
 export interface DocumentVerificationResult {
