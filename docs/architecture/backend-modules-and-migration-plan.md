@@ -111,3 +111,89 @@ Matriz formal en `docs/architecture/authorization-matrix.md` y validación autom
 
 - Retirar cliente monolítico y contratos legacy.
 - Congelar `v1`, planificar `v2` solo con ADR y changelog.
+
+
+## 6) Data strategy for preproduction SQLite (`appointments` module)
+
+Objetivo: usar SQLite en preproductivo con un esquema que ya sea compatible con el modelo final del módulo `appointments`, evitando refactors estructurales al pasar a proveedor cloud (PostgreSQL administrado u otro).
+
+### Design principles (schema-stable first)
+
+- Diseñar tablas con nombres, claves y relaciones definitivas desde ahora; evitar tablas temporales “de transición”.
+- Incluir claves técnicas UUID (`TEXT`) y claves de negocio explícitas para facilitar migración y trazabilidad.
+- Declarar `created_at`, `updated_at`, y `deleted_at` (soft delete) en entidades transaccionales que forman parte del ciclo de vida de turnos.
+- Modelar estado con columnas validadas por `CHECK` y no por tablas auxiliares si el catálogo es finito y estable.
+- Evitar features específicas de motor en la capa de dominio (SQL portable); reservar optimizaciones engine-specific para migraciones de infraestructura.
+
+### Transactional data that MUST persist in DB
+
+Persistir en SQLite (y luego cloud) únicamente datos operativos que cambian por interacción real del sistema:
+
+- `appointments`: turno, paciente/profesional, inicio/fin, modalidad, estado, origen de reserva, timestamps de negocio.
+- `appointment_status_history`: historial de cambios de estado (quién, cuándo, motivo) para auditoría funcional.
+- `availability_blocks`: bloques de disponibilidad/indisponibilidad administrados por profesional/centro.
+- `reschedule_requests` (si aplica al flujo): solicitud de cambio con estado y resolución.
+- `appointment_notifications` (solo si hay idempotencia/reintento): registro de envíos para no duplicar recordatorios críticos.
+
+Criterio: si el dato impacta trazabilidad, conciliación operativa o recuperación ante fallas, debe persistirse.
+
+### Fixed catalogs that MUST live in code (not tables)
+
+No crear tablas para catálogos de baja cardinalidad y alta estabilidad. Definirlos en código tipado (constantes/enums) y versionarlos con el backend:
+
+- Estados de turno permitidos y transiciones válidas (`scheduled`, `confirmed`, `checked_in`, `completed`, `cancelled`, `no_show`).
+- Canales de origen (`web`, `staff`, `api_partner`) cuando el set esté cerrado.
+- Motivos de cancelación internos predefinidos (si son taxonomía estable de producto).
+- Modalidad (`in_person`, `telehealth`) si no depende de parametrización por tenant.
+
+Regla práctica para minimizar tablas no esenciales:
+
+- Si cambia por configuración frecuente de negocio por tenant => tabla.
+- Si es semántica de dominio estable y compartida en todos los tenants => código.
+
+### SQLite preproduction guardrails to match cloud target
+
+- Activar `PRAGMA foreign_keys = ON` en todas las conexiones y tests.
+- Usar índices equivalentes a los que existirán en cloud (`professional_id + starts_at`, `patient_id + starts_at`, `status + starts_at`).
+- Guardar fechas en UTC ISO-8601 y normalizar en capa de aplicación; no depender de funciones de zona horaria del motor.
+- Evitar JSON opaco para campos críticos de consulta; preferir columnas explícitas.
+- Definir migraciones idempotentes y forward-only con versionado estricto.
+
+## 7) Operational migration guide: SQLite preprod -> cloud provider
+
+Objetivo operativo: ejecutar el pase a proveedor cloud sin cambios funcionales en frontend ni en contratos de adapters de dominio.
+
+### Step-by-step playbook
+
+1. **Schema parity freeze**
+   - Congelar DDL del módulo `appointments` en SQLite y validar que refleja el contrato final.
+   - Prohibir nuevas tablas de catálogo salvo excepción aprobada en ADR.
+
+2. **Compatibility validation**
+   - Ejecutar suite de migraciones sobre instancia limpia y snapshot realista de preprod.
+   - Verificar constraints, índices y cardinalidades esperadas.
+
+3. **Data classification check**
+   - Confirmar que solo datos transaccionales están en DB.
+   - Mover catálogos estables a código antes del corte si quedó alguno en tablas legacy.
+
+4. **Cloud bootstrap**
+   - Provisionar base cloud, aplicar mismas migraciones y crear observabilidad (latencia, locks, errores SQL).
+   - Configurar backups, retención y política de restore testada.
+
+5. **Controlled cutover (no frontend changes)**
+   - Mantener mismos endpoints `/api/appointments/v1/*` y contratos de respuesta.
+   - Cambiar únicamente configuración de conexión en backend (feature flag/env).
+   - Ejecutar smoke/regresión de flujos críticos de agenda y cancelación/reprogramación.
+
+6. **Post-cutover verification**
+   - Monitorear errores, tiempos de respuesta y consistencia de estados por al menos 1 ciclo operativo completo.
+   - Mantener rollback plan documentado (revert de connection target + replay de eventos pendientes).
+
+### Non-functional acceptance criteria
+
+- Cero cambios en componentes frontend para operar contra cloud.
+- Cero cambios de contrato en adapters de dominio.
+- Migraciones reproducibles en ambientes limpios (determinísticas).
+- Integridad referencial y reglas de estado equivalentes entre SQLite y cloud.
+
