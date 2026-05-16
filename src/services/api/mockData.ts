@@ -68,6 +68,8 @@ export const mockProfessional: Professional = {
   kycStatus: "approved",
   licenseStatus: "valid",
   licenseLastCheckedAt: "2026-04-05T10:00:00Z", emailVerifiedAt: "2024-01-15T10:00:00Z",
+  plan: "professional",
+  activeModules: ["turnos", "pacientes", "consultas", "configuracion"],
   specialty: "Medicina General",
   licenseNumber: "12345678",
   codingConfig: { cie10: true, cie11: false, snomedCt: false },
@@ -263,17 +265,17 @@ export const mockReportMetrics: ReportMetrics = {
 };
 
 export const mockUsers: User[] = [
-  { id: "prof-1", email: encrypt("dra.garcia@email.com"), firstName: "María", lastName: "Pérez", role: "profesional", phone: encrypt("+52 55 9876 5432"), createdAt: "2024-01-15", status: "activo", kycStatus: "approved", licenseStatus: "valid", licenseLastCheckedAt: "2026-04-05T10:00:00Z", emailVerifiedAt: "2024-01-15T10:00:00Z" },
-  { id: "prof-2", email: encrypt("dr.mendoza@email.com"), firstName: "Julián", lastName: "Mendoza", role: "profesional", phone: encrypt("+52 55 8765 4321"), createdAt: "2024-03-20", status: "activo", kycStatus: "approved", licenseStatus: "pending", trialExpired: false, emailVerifiedAt: "2024-03-20T10:00:00Z" },
-  { id: "prof-3", email: encrypt("dra.lopez@email.com"), firstName: "Ana", lastName: "López", role: "profesional", phone: encrypt("+52 55 7654 3210"), createdAt: "2024-06-10", status: "activo", kycStatus: "none", licenseStatus: "unverifiable", trialExpired: true },
-  { id: "pat-1", email: encrypt("laura@email.com"), firstName: "Laura", lastName: "Martínez", role: "paciente", createdAt: "2024-03-10", status: "activo", kycStatus: "approved", emailVerifiedAt: "2024-03-10T10:00:00Z" },
-  { id: "pat-2", email: encrypt("pedro@email.com"), firstName: "Pedro", lastName: "Sánchez", role: "paciente", createdAt: "2024-05-12", status: "activo", kycStatus: "none" },
-  { id: "pat-3", email: encrypt("ana@email.com"), firstName: "Ana", lastName: "Rodríguez", role: "paciente", createdAt: "2025-01-20", status: "activo", kycStatus: "pending" },
-  { id: "pat-4", email: encrypt("miguel@email.com"), firstName: "Miguel", lastName: "Torres", role: "paciente", createdAt: "2023-09-05", status: "activo", kycStatus: "approved" },
-  { id: "pat-5", email: encrypt("sofia@email.com"), firstName: "Sofía", lastName: "Hernández", role: "paciente", createdAt: "2024-11-15", status: "activo", kycStatus: "approved" },
-  { id: "pat-6", email: encrypt("julian@email.com"), firstName: "Julián", lastName: "Ruiz", role: "paciente", createdAt: "2022-06-20", status: "activo", kycStatus: "approved" },
-  { id: "pat-7", email: encrypt("roberto@email.com"), firstName: "Roberto", lastName: "Díaz", role: "paciente", createdAt: "2024-08-10", status: "inactivo", kycStatus: "none" },
-  { id: "admin-1", email: encrypt("admin@miconsultorio.ar"), firstName: "Admin", lastName: "Sistema", role: "admin", createdAt: "2023-01-01", status: "activo", kycStatus: "approved" },
+  { id: "prof-1", email: encrypt("dra.garcia@email.com"), firstName: "María", lastName: "Pérez", role: "profesional", phone: encrypt("+52 55 9876 5432"), createdAt: "2024-01-15", status: "activo", kycStatus: "approved", licenseStatus: "valid", licenseLastCheckedAt: "2026-04-05T10:00:00Z", emailVerifiedAt: "2024-01-15T10:00:00Z", plan: "professional", activeModules: ["turnos", "pacientes", "consultas", "configuracion"] },
+  { id: "prof-2", email: encrypt("dr.mendoza@email.com"), firstName: "Julián", lastName: "Mendoza", role: "profesional", phone: encrypt("+52 55 8765 4321"), createdAt: "2024-03-20", status: "activo", kycStatus: "approved", licenseStatus: "pending", trialExpired: false, emailVerifiedAt: "2024-03-20T10:00:00Z", plan: "basic", activeModules: ["turnos", "configuracion"] },
+  { id: "prof-3", email: encrypt("dra.lopez@email.com"), firstName: "Ana", lastName: "López", role: "profesional", phone: encrypt("+52 55 7654 3210"), createdAt: "2024-06-10", status: "activo", kycStatus: "none", licenseStatus: "unverifiable", trialExpired: true, plan: "basic", activeModules: ["turnos", "configuracion"] },
+  { id: "pat-1", email: encrypt("laura@email.com"), firstName: "Laura", lastName: "Martínez", role: "paciente", createdAt: "2024-03-10", status: "activo", kycStatus: "approved", emailVerifiedAt: "2024-03-10T10:00:00Z", activeModules: ["turnos", "portal"] },
+  { id: "pat-2", email: encrypt("pedro@email.com"), firstName: "Pedro", lastName: "Sánchez", role: "paciente", createdAt: "2024-05-12", status: "activo", kycStatus: "none", activeModules: ["turnos", "portal"] },
+  { id: "pat-3", email: encrypt("ana@email.com"), firstName: "Ana", lastName: "Rodríguez", role: "paciente", createdAt: "2025-01-20", status: "activo", kycStatus: "pending", activeModules: ["turnos", "portal"] },
+  { id: "pat-4", email: encrypt("miguel@email.com"), firstName: "Miguel", lastName: "Torres", role: "paciente", createdAt: "2023-09-05", status: "activo", kycStatus: "approved", activeModules: ["turnos", "portal"] },
+  { id: "pat-5", email: encrypt("sofia@email.com"), firstName: "Sofía", lastName: "Hernández", role: "paciente", createdAt: "2024-11-15", status: "activo", kycStatus: "approved", activeModules: ["turnos", "portal"] },
+  { id: "pat-6", email: encrypt("julian@email.com"), firstName: "Julián", lastName: "Ruiz", role: "paciente", createdAt: "2022-06-20", status: "activo", kycStatus: "approved", activeModules: ["turnos", "portal"] },
+  { id: "pat-7", email: encrypt("roberto@email.com"), firstName: "Roberto", lastName: "Díaz", role: "paciente", createdAt: "2024-08-10", status: "inactivo", kycStatus: "none", activeModules: ["turnos", "portal"] },
+  { id: "admin-1", email: encrypt("admin@miconsultorio.ar"), firstName: "Admin", lastName: "Sistema", role: "admin", createdAt: "2023-01-01", status: "activo", kycStatus: "approved", plan: "enterprise", activeModules: ["turnos", "admin"] },
 ];
 
 export const mockAuditLogs: AuditLog[] = [

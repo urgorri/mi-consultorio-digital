@@ -14,28 +14,29 @@ export type Capability =
 
 export type ModuleKey = "turnos" | "pacientes" | "consultas" | "reportes" | "configuracion" | "portal" | "admin";
 
+export type PlanType = "basic" | "professional" | "premium" | "enterprise";
+
 export interface ModuleDefinition {
   key: ModuleKey;
   label: string;
-  requiredForMvp: boolean;
-  futureOptional: boolean;
+  isCore: boolean;
   enabled: boolean;
   roles: AppRole[];
   capabilities: Capability[];
 }
 
-const roleCapabilities: Record<AppRole, Capability[]> = {
-  profesional: ["turnos.view", "turnos.manage", "pacientes.view", "consultas.manage", "reportes.view", "configuracion.manage"],
-  paciente: ["turnos.view", "portal.self"],
-  admin: ["turnos.view", "admin.system"],
+export const PLAN_MODULES: Record<PlanType, ModuleKey[]> = {
+  basic: ["turnos", "configuracion"],
+  professional: ["turnos", "configuracion", "pacientes", "consultas"],
+  premium: ["turnos", "configuracion", "pacientes", "consultas", "reportes"],
+  enterprise: ["turnos", "configuracion", "pacientes", "consultas", "reportes", "admin"],
 };
 
 export const MODULE_CATALOG: Record<ModuleKey, ModuleDefinition> = {
   turnos: {
     key: "turnos",
     label: "Turnos",
-    requiredForMvp: true,
-    futureOptional: false,
+    isCore: true,
     enabled: true,
     roles: ["profesional", "paciente", "admin"],
     capabilities: ["turnos.view", "turnos.manage"],
@@ -43,8 +44,7 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleDefinition> = {
   pacientes: {
     key: "pacientes",
     label: "Pacientes",
-    requiredForMvp: false,
-    futureOptional: true,
+    isCore: false,
     enabled: true,
     roles: ["profesional"],
     capabilities: ["pacientes.view"],
@@ -52,8 +52,7 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleDefinition> = {
   consultas: {
     key: "consultas",
     label: "Consultas",
-    requiredForMvp: false,
-    futureOptional: true,
+    isCore: false,
     enabled: true,
     roles: ["profesional"],
     capabilities: ["consultas.manage"],
@@ -61,8 +60,7 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleDefinition> = {
   reportes: {
     key: "reportes",
     label: "Reportes",
-    requiredForMvp: false,
-    futureOptional: true,
+    isCore: false,
     enabled: true,
     roles: ["profesional"],
     capabilities: ["reportes.view"],
@@ -70,8 +68,7 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleDefinition> = {
   configuracion: {
     key: "configuracion",
     label: "Configuración",
-    requiredForMvp: false,
-    futureOptional: true,
+    isCore: true,
     enabled: true,
     roles: ["profesional"],
     capabilities: ["configuracion.manage"],
@@ -79,8 +76,7 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleDefinition> = {
   portal: {
     key: "portal",
     label: "Portal Paciente",
-    requiredForMvp: false,
-    futureOptional: true,
+    isCore: true,
     enabled: true,
     roles: ["paciente"],
     capabilities: ["portal.self"],
@@ -88,17 +84,36 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleDefinition> = {
   admin: {
     key: "admin",
     label: "Administración",
-    requiredForMvp: false,
-    futureOptional: true,
+    isCore: false,
     enabled: true,
     roles: ["admin"],
     capabilities: ["admin.system"],
   },
 };
 
-export const canAccessModule = (role: AppRole, moduleKey: ModuleKey) => {
+export const canAccessModule = (user: { role: AppRole; plan?: PlanType; activeModules?: ModuleKey[] }, moduleKey: ModuleKey) => {
   const module = MODULE_CATALOG[moduleKey];
-  return module.enabled && module.roles.includes(role);
+  if (!module || !module.enabled || !module.roles.includes(user.role)) return false;
+
+  // Core modules are always accessible to their roles
+  if (module.isCore) return true;
+
+  // Check if explicitly enabled
+  if (user.activeModules?.includes(moduleKey)) return true;
+
+  // Check if included in plan
+  if (user.plan && PLAN_MODULES[user.plan].includes(moduleKey)) return true;
+
+  return false;
 };
 
-export const canUseCapability = (role: AppRole, capability: Capability) => roleCapabilities[role].includes(capability);
+export const canUseCapability = (user: { role: AppRole; plan?: PlanType; activeModules?: ModuleKey[] }, capability: Capability) => {
+  // Find which module this capability belongs to
+  const moduleKey = (Object.keys(MODULE_CATALOG) as ModuleKey[]).find(key =>
+    MODULE_CATALOG[key].capabilities.includes(capability)
+  );
+
+  if (!moduleKey) return false;
+
+  return canAccessModule(user, moduleKey);
+};
