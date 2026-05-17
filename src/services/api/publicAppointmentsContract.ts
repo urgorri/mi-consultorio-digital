@@ -40,13 +40,26 @@ export const availabilityResponseSchema = z.object({
   data: z.array(timeOnly),
 });
 
+export const patientDataSchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(1),
+  documentNumber: z.string().min(1),
+  documentType: z.enum(["dni", "pasaporte", "cedula", "otro"]),
+});
+
 export const reservationsRequestSchema = z.object({
-  patientId: z.string().min(1),
+  patientId: z.string().min(1).optional(),
+  patientData: patientDataSchema.optional(),
   professionalId: z.string().min(1),
   date: dateOnly,
   time: timeOnly,
   endTime: timeOnly,
   clinicId: z.string().nullable().optional(),
+}).refine((data) => data.patientId || data.patientData, {
+  message: "Debe proporcionar patientId o patientData",
+  path: ["patientId"],
 });
 
 const appointmentStatusSchema = z.string().min(1);

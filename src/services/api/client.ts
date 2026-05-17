@@ -1096,9 +1096,28 @@ export const publicAppointmentsApi = {
     const response = await appointmentsApi.getAvailableSlots(input.professionalId, input.date);
     return validateResponse(availabilityResponseSchema, response);
   },
-  async reservations(payload: { patientId: string; professionalId: string; date: string; time: string; endTime: string; clinicId?: string | null }) {
+  async reservations(payload: any) {
     const input = validateRequest(reservationsRequestSchema, payload);
-    const response = await appointmentsApi.create({ ...input, createdByRole: "paciente" });
+    if (input.patientData) {
+      const response = await bookingApi.createBooking({
+        professionalId: input.professionalId,
+        date: input.date,
+        time: input.time,
+        endTime: input.endTime,
+        patientData: input.patientData as any,
+        clinicId: input.clinicId,
+      });
+      return validateResponse(reservationResponseSchema, response);
+    }
+    const response = await appointmentsApi.create({
+      patientId: input.patientId!,
+      professionalId: input.professionalId,
+      date: input.date,
+      time: input.time,
+      endTime: input.endTime,
+      clinicId: input.clinicId,
+      createdByRole: "paciente"
+    });
     return validateResponse(reservationResponseSchema, response);
   },
   async tokenStatus(token: string) {
@@ -1830,7 +1849,7 @@ export const bookingApi = {
   async getAvailableSlots(professionalId: string, date: string) {
     return appointmentsApi.getAvailableSlots(professionalId, date);
   },
-  async createBooking(data: { professionalId: string; typeId?: string; date: string; time: string; patientData: Record<string, string> }) {
+  async createBooking(data: { professionalId: string; typeId?: string; date: string; time: string; endTime?: string; patientData: Record<string, string>; clinicId?: string | null }) {
     await delay(500);
     const repo = await getRepo();
 
@@ -1856,14 +1875,15 @@ export const bookingApi = {
       id: `apt-${Date.now()}`,
       patientId: `public-${Date.now()}`,
       patientName: `${data.patientData.firstName || "Paciente"} ${data.patientData.lastName || ""}`.trim(),
+      patientPhone: data.patientData.phone,
       professionalId: data.professionalId,
       professionalName: "Profesional",
       locationId: schedulingConfig.locations[0]?.id || "loc-default",
       locationName: schedulingConfig.locations[0]?.name || "Consultorio",
-      clinicId: null,
+      clinicId: data.clinicId || null,
       date: data.date,
       time: data.time,
-      endTime: data.time,
+      endTime: data.endTime || data.time,
       type: visitType || "Primera vez",
       status: "pendiente",
       confirmationSource: null,
@@ -1873,6 +1893,7 @@ export const bookingApi = {
 
     return success({
       id: newAppointment.id,
+      status: newAppointment.status,
       message: "Cita agendada exitosamente.",
       type: visitType
     });
