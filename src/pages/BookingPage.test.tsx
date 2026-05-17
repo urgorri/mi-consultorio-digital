@@ -73,6 +73,40 @@ describe("BookingPage Integration", () => {
     (appointmentsAdapter.createBooking as any).mockResolvedValue({ id: "apt-new" });
   });
 
+  it("should complete the booking flow and show management link", async () => {
+    const mockManagementUrl = "http://localhost:3000/citas/v/token-123";
+    (appointmentsAdapter.createBooking as any).mockResolvedValue({
+      id: "apt-new",
+      type: "Primera vez",
+      managementUrl: mockManagementUrl
+    });
+
+    render(
+      <BrowserRouter>
+        <BookingPage />
+      </BrowserRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText(doctorFixtures[0].name)).toBeInTheDocument());
+    fireEvent.click(screen.getByText(doctorFixtures[0].name));
+
+    await waitFor(() => expect(screen.getByText("Select Date 15")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Select Date 15"));
+    await waitFor(() => expect(screen.getByText(slotFixtures[0])).toBeInTheDocument());
+    fireEvent.click(screen.getByText(slotFixtures[0]));
+
+    await waitFor(() => expect(screen.getByText("Submit Booking")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Submit Booking"));
+
+    await waitFor(() => expect(screen.getByText(/¡Cita confirmada!/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Primera vez")).toBeInTheDocument());
+
+    // Verify management link
+    expect(screen.getByText(mockManagementUrl)).toBeInTheDocument();
+    expect(screen.getByText(mockManagementUrl).closest("a")).toHaveAttribute("href", mockManagementUrl);
+    expect(screen.getByText(/Usa este enlace para gestionar tu cita/i)).toBeInTheDocument();
+  });
+
   it("should complete the booking flow without visit type selection", async () => {
     (appointmentsAdapter.createBooking as any).mockResolvedValue({ id: "apt-new", type: "Primera vez" });
 
