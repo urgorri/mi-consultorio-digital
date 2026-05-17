@@ -92,7 +92,7 @@ describe("Appointment Transactional History", () => {
 
     // Try to save the same history entry again via repository (simulation of duplicate event)
     const { getAppointmentsRepository } = await import("../../features/appointments/infrastructure/repositoryFactory");
-    const repo = getAppointmentsRepository();
+    const repo = await getAppointmentsRepository();
     await repo.saveStatusHistory(initialHistoryEntry);
 
     const historyAfter = await appointmentsApi.getStatusHistory(apt.data.id);

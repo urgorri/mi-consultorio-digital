@@ -41,7 +41,7 @@ import {
 
 // Simulate network delay
 const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
-const appointmentsRepository = getAppointmentsRepository();
+const getRepo = async () => await getAppointmentsRepository();
 
 // Centralized Audit Pipeline (simulated server-side)
 const recordAuditEvent = async (event: Omit<AuditLog, "id" | "timestamp" | "hash" | "previousHash">) => {
@@ -800,7 +800,8 @@ export const appointmentsApi = {
   async list(params?: { date?: string; patientId?: string; status?: string }) {
     await authorize(mockProfessional.id, params?.patientId, null, "profesional", "turnos", "turnos.view");
     await delay();
-    let results = await appointmentsRepository.listAppointmentsByProfessional(mockProfessional.id);
+    const repo = await getRepo();
+    let results = await repo.listAppointmentsByProfessional(mockProfessional.id);
     if (params?.date) results = results.filter(a => a.date === params.date);
     if (params?.patientId) results = results.filter(a => a.patientId === params.patientId);
     if (params?.status) results = results.filter(a => a.status === params.status);
@@ -809,7 +810,8 @@ export const appointmentsApi = {
   async getById(id: string) {
     await authorize(mockProfessional.id, undefined, null, "profesional", "turnos", "turnos.view");
     await delay();
-    const list = await appointmentsRepository.listAppointmentsByProfessional(mockProfessional.id);
+    const repo = await getRepo();
+    const list = await repo.listAppointmentsByProfessional(mockProfessional.id);
     const apt = list.find(a => a.id === id);
     if (!apt) throw new Error("Cita no encontrada");
     return success(apt);
@@ -817,13 +819,15 @@ export const appointmentsApi = {
   async getStatusHistory(id: string) {
     await authorize(mockProfessional.id, undefined, null, "profesional", "turnos", "turnos.view");
     await delay();
-    const history = await appointmentsRepository.listStatusHistory(id);
+    const repo = await getRepo();
+    const history = await repo.listStatusHistory(id);
     return success(history);
   },
   async create(data: Partial<Appointment>) {
     await authorize(mockProfessional.id, data.patientId, data.clinicId || null, "profesional", "turnos", "turnos.manage");
     await delay();
     const professionalId = mockProfessional.id;
+    const repo = await getRepo();
 
     // Validate active access grant
     const hasAuth = hasActiveAccessGrant(data.patientId!, professionalId, data.clinicId || null);
@@ -841,7 +845,7 @@ export const appointmentsApi = {
       visitType = (auth && auth.totalVisits > 0) ? "Seguimiento" : "Primera vez";
     }
 
-    const existingAppointments = await appointmentsRepository.listAppointmentsByProfessional(professionalId);
+    const existingAppointments = await repo.listAppointmentsByProfessional(professionalId);
     if (appointmentPolicyEngine.hasScheduleConflict(existingAppointments, {
       id: "new",
       professionalId,
@@ -866,11 +870,11 @@ export const appointmentsApi = {
       cancellationDeadlineHours: data.cancellationDeadlineHours || getAppointmentTypePolicy(undefined, visitType)?.cancellationDeadlineHours || DEFAULT_CANCELLATION_DEADLINE_HOURS,
     } as Appointment;
 
-    await appointmentsRepository.createAppointment(newAppointment);
+    await repo.createAppointment(newAppointment);
 
     // Initial history entry
     const actor = mockProfessional; // Default for internal API
-    await appointmentsRepository.saveStatusHistory({
+    await repo.saveStatusHistory({
       id: `hist-${Date.now()}`,
       appointmentId,
       timestamp: new Date().toISOString(),
@@ -885,7 +889,8 @@ export const appointmentsApi = {
   },
   async update(id: string, data: Partial<Appointment> & { transitionReason?: string; transitionActor?: "paciente" | "profesional" | "admin" | "system"; transitionActorName?: string; transitionActorRole?: string }) {
     await delay();
-    const existing = (await appointmentsRepository.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === id);
+    const repo = await getRepo();
+    const existing = (await repo.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === id);
     if (!existing) throw new Error("Cita no encontrada");
 
     if (data.status && data.status !== existing.status) {
@@ -898,14 +903,14 @@ export const appointmentsApi = {
         correlationId,
       });
 
-      const saved = await appointmentsRepository.updateAppointmentStatus(id, transitioned.status, transitioned);
+      const saved = await repo.updateAppointmentStatus(id, transitioned.status, transitioned);
 
       // Record history
       const actorId = data.transitionActor === "profesional" ? mockProfessional.id : "system";
       const actorName = data.transitionActorName || (data.transitionActor === "profesional" ? `${mockProfessional.firstName} ${mockProfessional.lastName}` : "Sistema");
       const actorRole = data.transitionActorRole || (data.transitionActor === "profesional" ? "profesional" : "system");
 
-      await appointmentsRepository.saveStatusHistory({
+      await repo.saveStatusHistory({
         id: `hist-${Date.now()}`,
         appointmentId: id,
         timestamp: new Date().toISOString(),
@@ -924,7 +929,7 @@ export const appointmentsApi = {
     }
 
     const updatedApt = { ...existing, ...data } as Appointment;
-    const saved = await appointmentsRepository.updateAppointmentStatus(id, updatedApt.status, updatedApt);
+    const saved = await repo.updateAppointmentStatus(id, updatedApt.status, updatedApt);
     return success(saved);
   },
   async cancel(id: string, reason = "Cancelación solicitada", actor: "paciente" | "profesional" | "admin" | "system" = "profesional", metadata?: { actorName?: string; actorRole?: string; correlationId?: string }) {
@@ -949,18 +954,19 @@ export const appointmentsApi = {
   },
   async reschedule(id: string, data: { date: string; time: string; endTime: string; reason?: string; actor?: "paciente" | "profesional" | "admin" | "system"; actorName?: string; actorRole?: string; correlationId?: string }) {
     await delay();
-    const existing = (await appointmentsRepository.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === id);
+    const repo = await getRepo();
+    const existing = (await repo.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === id);
     if (!existing) throw new Error("Cita no encontrada");
     if (!appointmentPolicyEngine.canRescheduleAppointment(existing)) {
       throw new Error("La cita está fuera de la ventana de reprogramación.");
     }
-    const professionalAppointments = await appointmentsRepository.listAppointmentsByProfessional(existing.professionalId);
+    const professionalAppointments = await repo.listAppointmentsByProfessional(existing.professionalId);
     if (appointmentPolicyEngine.hasScheduleConflict(professionalAppointments, { ...existing, ...data })) {
       throw new Error("Ya existe una cita en ese horario para el profesional.");
     }
 
     const correlationId = data.correlationId || `resched-${id}-${Date.now()}`;
-    const updatedApt = await appointmentsRepository.rescheduleAppointment(id, { ...data });
+    const updatedApt = await repo.rescheduleAppointment(id, { ...data });
     const now = new Date().toISOString();
     const reason = data.reason || "Reprogramación";
     const actor = data.actor || "profesional";
@@ -972,14 +978,14 @@ export const appointmentsApi = {
 ` : ""}[${now}] ${actor}: RESCHEDULE | ${reason}`
     } as Appointment;
 
-    const saved = await appointmentsRepository.updateAppointmentStatus(id, withAudit.status, withAudit);
+    const saved = await repo.updateAppointmentStatus(id, withAudit.status, withAudit);
 
     // Record history
     const actorId = actor === "profesional" ? mockProfessional.id : "system";
     const actorName = data.actorName || (actor === "profesional" ? `${mockProfessional.firstName} ${mockProfessional.lastName}` : "Sistema");
     const actorRole = data.actorRole || (actor === "profesional" ? "profesional" : "system");
 
-    await appointmentsRepository.saveStatusHistory({
+    await repo.saveStatusHistory({
       id: `hist-${Date.now()}`,
       appointmentId: id,
       timestamp: now,
@@ -994,18 +1000,19 @@ export const appointmentsApi = {
   },
   async getAvailableSlots(professionalId: string, date: string) {
     await delay();
+    const repo = await getRepo();
     const tenantId = mockProfessional.clinicMemberships[0]?.clinicId || "tenant-default";
     const dayOfWeek = new Date(`${date}T12:00:00Z`).getUTCDay();
-    const weekly = await appointmentsRepository.listWeeklyAvailability(tenantId, professionalId);
+    const weekly = await repo.listWeeklyAvailability(tenantId, professionalId);
     if (weekly.length === 0) {
-      await appointmentsRepository.upsertWeeklyAvailability(
+      await repo.upsertWeeklyAvailability(
         schedulingConfig.schedules.map((s, index) => ({ ...s, id: `wa-${index}`, tenantId, professionalId }))
       );
     }
-    const runtimeWeekly = (await appointmentsRepository.listWeeklyAvailability(tenantId, professionalId)).filter(s => s.dayOfWeek === dayOfWeek && s.enabled);
+    const runtimeWeekly = (await repo.listWeeklyAvailability(tenantId, professionalId)).filter(s => s.dayOfWeek === dayOfWeek && s.enabled);
     if (!runtimeWeekly.length) return success([]);
 
-    const exceptions = await appointmentsRepository.listAvailabilityExceptions(tenantId, professionalId, date);
+    const exceptions = await repo.listAvailabilityExceptions(tenantId, professionalId, date);
     const blocked = exceptions.filter(e => e.kind === "blocked").map(e => `${e.startTime}-${e.endTime}`);
     const slots: string[] = [];
     for (const schedule of runtimeWeekly) {
@@ -1022,7 +1029,7 @@ export const appointmentsApi = {
       }
     }
 
-    const booked = (await appointmentsRepository.listAppointmentsByProfessional(professionalId))
+    const booked = (await repo.listAppointmentsByProfessional(professionalId))
       .filter(a => a.date === date)
       .filter(a => {
         const s = new Date(`${a.date}T${a.time}:00Z`).getTime();
@@ -1035,7 +1042,8 @@ export const appointmentsApi = {
   },
   async getByToken(token: string) {
     await delay();
-    const apt = await appointmentsRepository.findAppointmentByToken(token);
+    const repo = await getRepo();
+    const apt = await repo.findAppointmentByToken(token);
     if (!apt) throw new Error("Token de acceso no válido o expirado");
 
     // Enrich with patient phone if missing
@@ -1050,7 +1058,8 @@ export const appointmentsApi = {
   },
   async generateSignedUrl(appointmentId: string) {
     await delay();
-    let tokenData = await appointmentsRepository.findTokenByAppointmentId(appointmentId);
+    const repo = await getRepo();
+    let tokenData = await repo.findTokenByAppointmentId(appointmentId);
 
     if (!tokenData) {
       tokenData = {
@@ -1059,10 +1068,10 @@ export const appointmentsApi = {
         expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
         permissions: ["confirm", "cancel"]
       };
-      await appointmentsRepository.saveAccessToken(tokenData);
+      await repo.saveAccessToken(tokenData);
     }
 
-    const apt = (await appointmentsRepository.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === appointmentId);
+    const apt = (await repo.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === appointmentId);
     if (apt && !apt.patientPhone) {
       const patient = mockPatients.find(p => p.id === apt.patientId);
       if (patient) {
@@ -1335,10 +1344,11 @@ export const settingsApi = {
   },
   async getAppointmentTypes() {
     await delay();
+    const repo = await getRepo();
     const tenantId = mockProfessional.clinicMemberships[0]?.clinicId || "tenant-default";
-    const runtime = await appointmentsRepository.listProfessionalAppointmentTypes(tenantId, mockProfessional.id);
+    const runtime = await repo.listProfessionalAppointmentTypes(tenantId, mockProfessional.id);
     if (runtime.length === 0) {
-      await appointmentsRepository.upsertProfessionalAppointmentTypes(
+      await repo.upsertProfessionalAppointmentTypes(
         schedulingConfig.appointmentTypes.map((t) => ({ id: `pat-${t.id}`, tenantId, professionalId: mockProfessional.id, appointmentTypeId: t.id, duration: t.duration, enabled: t.visible }))
       );
       return success(schedulingConfig.appointmentTypes);
@@ -1351,10 +1361,11 @@ export const settingsApi = {
   },
   async getSchedules() {
     await delay();
+    const repo = await getRepo();
     const tenantId = mockProfessional.clinicMemberships[0]?.clinicId || "tenant-default";
-    const runtime = await appointmentsRepository.listWeeklyAvailability(tenantId, mockProfessional.id);
+    const runtime = await repo.listWeeklyAvailability(tenantId, mockProfessional.id);
     if (runtime.length === 0) {
-      await appointmentsRepository.upsertWeeklyAvailability(
+      await repo.upsertWeeklyAvailability(
         schedulingConfig.schedules.map((s, index) => ({ ...s, id: `wa-${index}`, tenantId, professionalId: mockProfessional.id }))
       );
       return success(schedulingConfig.schedules);
@@ -1821,6 +1832,7 @@ export const bookingApi = {
   },
   async createBooking(data: { professionalId: string; typeId?: string; date: string; time: string; patientData: Record<string, string> }) {
     await delay(500);
+    const repo = await getRepo();
 
     // Determine visit type automatically if not provided
     let visitType = data.typeId ? schedulingConfig.appointmentTypes.find(t => t.id === data.typeId)?.name : null;
@@ -1830,7 +1842,7 @@ export const bookingApi = {
       const patient = mockPatients.find(p => decrypt(p.documentNumber) === docNumber);
 
       if (patient) {
-        const hasPreviousVisits = (await appointmentsRepository.listAppointmentsByPatient(patient.id)).some(
+        const hasPreviousVisits = (await repo.listAppointmentsByPatient(patient.id)).some(
           a => a.professionalId === data.professionalId
         );
         visitType = hasPreviousVisits ? "Seguimiento" : "Primera vez";
@@ -1857,7 +1869,7 @@ export const bookingApi = {
       confirmationSource: null,
       createdByRole: "paciente",
     };
-    await appointmentsRepository.createAppointment(newAppointment);
+    await repo.createAppointment(newAppointment);
 
     return success({
       id: newAppointment.id,
