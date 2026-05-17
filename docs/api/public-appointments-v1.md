@@ -84,6 +84,46 @@ Retención sugerida: 90 días operativos + política extendida en bitácora de s
 ### 2) Crear reserva
 `POST /api/appointments-public/v1/reservations`
 
+#### Request (con patientId - existente)
+```json
+{
+  "patientId": "p-123",
+  "professionalId": "prof-1",
+  "date": "2026-05-20",
+  "time": "10:00",
+  "endTime": "10:30"
+}
+```
+
+#### Request (con patientData - landing pública)
+```json
+{
+  "professionalId": "prof-1",
+  "date": "2026-05-20",
+  "time": "10:00",
+  "endTime": "10:30",
+  "patientData": {
+    "firstName": "Juan",
+    "lastName": "Pérez",
+    "email": "juan.perez@example.com",
+    "phone": "+541122334455",
+    "documentNumber": "20123456",
+    "documentType": "dni"
+  }
+}
+```
+
+#### Response
+```json
+{
+  "success": true,
+  "data": {
+    "id": "apt-987",
+    "status": "pendiente"
+  }
+}
+```
+
 ### 3) Consultar estado por token
 `GET /api/appointments-public/v1/reservations/token/{token}`
 

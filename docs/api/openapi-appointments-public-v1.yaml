@@ -29,9 +29,17 @@ paths:
       operationId: reservations
       requestBody:
         required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationsRequest'
       responses:
         '200':
           description: Reserva creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResponse'
   /reservations/token/{token}:
     get:
       operationId: tokenStatus
@@ -67,6 +75,40 @@ paths:
           description: Reserva cancelada
 components:
   schemas:
+    PatientData:
+      type: object
+      properties:
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        documentNumber: { type: string }
+        documentType: { type: string, enum: [dni, pasaporte, cedula, otro] }
+      required: [firstName, lastName, email, phone, documentNumber, documentType]
+    ReservationsRequest:
+      type: object
+      properties:
+        patientId: { type: string }
+        patientData: { $ref: '#/components/schemas/PatientData' }
+        professionalId: { type: string }
+        date: { type: string, format: date }
+        time: { type: string, pattern: '^\d{2}:\d{2}$' }
+        endTime: { type: string, pattern: '^\d{2}:\d{2}$' }
+        clinicId: { type: string, nullable: true }
+      required: [professionalId, date, time, endTime]
+      oneOf:
+        - required: [patientId]
+        - required: [patientData]
+    ReservationResponse:
+      type: object
+      properties:
+        success: { type: boolean, const: true }
+        data:
+          type: object
+          properties:
+            id: { type: string }
+            status: { type: string }
+      required: [success, data]
     PublicError:
       type: object
       properties:
