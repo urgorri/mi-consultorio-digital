@@ -17,6 +17,11 @@ export default defineConfig(({ mode }) => {
       entries: ["index.html", "src/main.tsx"],
       exclude: ["msw", "@mswjs/interceptors", "@open-draft/deferred-promise"],
     },
+    build: {
+      rollupOptions: {
+        external: ["node:sqlite"],
+      },
+    },
     plugins: [react()],
 
     resolve: {

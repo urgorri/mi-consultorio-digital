@@ -12,7 +12,7 @@ describe("repositoryFactory", () => {
   it("should return MockAppointmentsRepository by default", async () => {
     const { getAppointmentsRepository } = await import("../repositoryFactory");
     const { MockAppointmentsRepository } = await import("../mockAppointmentsRepository");
-    const repo = getAppointmentsRepository();
+    const repo = await getAppointmentsRepository();
     expect(repo).toBeInstanceOf(MockAppointmentsRepository);
   });
 
@@ -22,14 +22,14 @@ describe("repositoryFactory", () => {
 
     const { getAppointmentsRepository } = await import("../repositoryFactory");
     const { SqliteAppointmentsRepository } = await import("../sqliteAppointmentsRepository");
-    const repo = getAppointmentsRepository();
+    const repo = await getAppointmentsRepository();
     expect(repo).toBeInstanceOf(SqliteAppointmentsRepository);
   });
 
   it("should return the same instance (singleton)", async () => {
     const { getAppointmentsRepository } = await import("../repositoryFactory");
-    const repo1 = getAppointmentsRepository();
-    const repo2 = getAppointmentsRepository();
+    const repo1 = await getAppointmentsRepository();
+    const repo2 = await getAppointmentsRepository();
     expect(repo1).toBe(repo2);
   });
 });
