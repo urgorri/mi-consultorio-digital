@@ -2,7 +2,6 @@ export * from "./types";
 export {
   authApi,
   patientsApi,
-  appointmentsApi,
   consultationsApi,
   diagnosesApi,
   notificationsApi,
@@ -16,3 +15,5 @@ export {
   kycApi,
   consentApi,
 } from "./client";
+
+export { appointmentsApi, publicAppointmentsApi } from "@/adapters/domains/appointments";

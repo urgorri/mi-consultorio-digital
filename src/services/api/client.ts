@@ -40,11 +40,11 @@ import {
 } from "./mockData";
 
 // Simulate network delay
-const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
-const getRepo = async () => await getAppointmentsRepository();
+export const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
+export const getRepo = async () => await getAppointmentsRepository();
 
 // Centralized Audit Pipeline (simulated server-side)
-const recordAuditEvent = async (event: Omit<AuditLog, "id" | "timestamp" | "hash" | "previousHash">) => {
+export const recordAuditEvent = async (event: Omit<AuditLog, "id" | "timestamp" | "hash" | "previousHash">) => {
   const previousLog = mockAuditLogs[mockAuditLogs.length - 1];
   const previousHash = previousLog ? previousLog.hash : "0";
 
@@ -117,7 +117,7 @@ export const SECURITY_HEADERS = {
   "Referrer-Policy": "strict-origin-when-cross-origin"
 };
 
-const authorize = async (actorId: string, patientId?: string, clinicId: string | null = null, requiredRole?: string, requiredModule?: ModuleKey, requiredCapability?: Capability) => {
+export const authorize = async (actorId: string, patientId?: string, clinicId: string | null = null, requiredRole?: string, requiredModule?: ModuleKey, requiredCapability?: Capability) => {
   const user = mockUsers.find(u => u.id === actorId) || (mockProfessional.id === actorId ? mockProfessional : undefined);
   if (!user) throw new Error("Usuario no encontrado");
 
@@ -191,11 +191,11 @@ const encryptConsultation = (c: Partial<Consultation>): Consultation => {
   return e as Consultation;
 };
 
-function success<T>(data: T): ApiResponse<T> {
+export function success<T>(data: T): ApiResponse<T> {
   return { data, success: true };
 }
 
-function paginated<T>(data: T[], total: number, page = 1, limit = 20): PaginatedResponse<T> {
+export function paginated<T>(data: T[], total: number, page = 1, limit = 20): PaginatedResponse<T> {
   return { data, success: true, total, page, limit };
 }
 
@@ -503,7 +503,7 @@ const resolvePatientIdentity = (data: Partial<Patient>): Patient | undefined => 
   });
 };
 
-const hasActiveAccessGrant = (patientId: string, professionalId: string, clinicId: string | null): boolean => {
+export const hasActiveAccessGrant = (patientId: string, professionalId: string, clinicId: string | null): boolean => {
   return mockAccessGrants.some(
     g => g.patientId === patientId &&
          g.professionalId === professionalId &&
@@ -795,377 +795,6 @@ export const patientsApi = {
   },
 };
 
-// ===== APPOINTMENTS =====
-export const appointmentsApi = {
-  async list(params?: { date?: string; patientId?: string; status?: string }) {
-    await authorize(mockProfessional.id, params?.patientId, null, "profesional", "turnos", "turnos.view");
-    await delay();
-    const repo = await getRepo();
-    let results = await repo.listAppointmentsByProfessional(mockProfessional.id);
-    if (params?.date) results = results.filter(a => a.date === params.date);
-    if (params?.patientId) results = results.filter(a => a.patientId === params.patientId);
-    if (params?.status) results = results.filter(a => a.status === params.status);
-    return success(results);
-  },
-  async getById(id: string) {
-    await authorize(mockProfessional.id, undefined, null, "profesional", "turnos", "turnos.view");
-    await delay();
-    const repo = await getRepo();
-    const list = await repo.listAppointmentsByProfessional(mockProfessional.id);
-    const apt = list.find(a => a.id === id);
-    if (!apt) throw new Error("Cita no encontrada");
-    return success(apt);
-  },
-  async getStatusHistory(id: string) {
-    await authorize(mockProfessional.id, undefined, null, "profesional", "turnos", "turnos.view");
-    await delay();
-    const repo = await getRepo();
-    const history = await repo.listStatusHistory(id);
-    return success(history);
-  },
-  async create(data: Partial<Appointment>) {
-    await authorize(mockProfessional.id, data.patientId, data.clinicId || null, "profesional", "turnos", "turnos.manage");
-    await delay();
-    const professionalId = mockProfessional.id;
-    const repo = await getRepo();
-
-    // Validate active access grant
-    const hasAuth = hasActiveAccessGrant(data.patientId!, professionalId, data.clinicId || null);
-
-    if (!hasAuth) {
-      throw new Error("No existe una autorización vigente para agendar citas con este paciente en el ámbito seleccionado.");
-    }
-
-    // Determine visit type automatically if not provided
-    let visitType = data.type;
-    if (!visitType) {
-      const auth = mockCareAuthorizations.find(
-        a => a.patientId === data.patientId && a.professionalId === professionalId
-      );
-      visitType = (auth && auth.totalVisits > 0) ? "Seguimiento" : "Primera vez";
-    }
-
-    const existingAppointments = await repo.listAppointmentsByProfessional(professionalId);
-    if (appointmentPolicyEngine.hasScheduleConflict(existingAppointments, {
-      id: "new",
-      professionalId,
-      date: data.date as string,
-      time: data.time as string,
-      endTime: data.endTime as string,
-    })) {
-      throw new Error("Ya existe una cita en ese horario para el profesional.");
-    }
-
-    const appointmentId = `apt-${Date.now()}`;
-    const correlationId = data.correlationId || `create-${appointmentId}-${Date.now()}`;
-
-    const newAppointment: Appointment = {
-      ...data,
-      type: visitType,
-      id: appointmentId,
-      status: data.status || APPOINTMENT_STATUS.SCHEDULED,
-      correlationId,
-      createdByRole: data.createdByRole || "profesional",
-      confirmationSource: data.confirmationSource || (data.status === "confirmada" ? "profesional" : null),
-      cancellationDeadlineHours: data.cancellationDeadlineHours || getAppointmentTypePolicy(undefined, visitType)?.cancellationDeadlineHours || DEFAULT_CANCELLATION_DEADLINE_HOURS,
-    } as Appointment;
-
-    await repo.createAppointment(newAppointment);
-
-    // Initial history entry
-    const actor = mockProfessional; // Default for internal API
-    await repo.saveStatusHistory({
-      id: `hist-${Date.now()}`,
-      appointmentId,
-      timestamp: new Date().toISOString(),
-      previousStatus: null,
-      newStatus: newAppointment.status,
-      actor: { id: actor.id, name: `${actor.firstName} ${actor.lastName}`, role: actor.role },
-      reason: "Cita agendada",
-      correlationId,
-    });
-
-    return success(newAppointment);
-  },
-  async update(id: string, data: Partial<Appointment> & { transitionReason?: string; transitionActor?: "paciente" | "profesional" | "admin" | "system"; transitionActorName?: string; transitionActorRole?: string }) {
-    await delay();
-    const repo = await getRepo();
-    const existing = (await repo.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === id);
-    if (!existing) throw new Error("Cita no encontrada");
-
-    if (data.status && data.status !== existing.status) {
-      const correlationId = data.correlationId || `trans-${id}-${Date.now()}`;
-      const transitioned = appointmentPolicyEngine.buildTransition({
-        appointment: existing,
-        toStatus: data.status,
-        actor: data.transitionActor || "profesional",
-        reason: data.transitionReason || "Cambio de estado",
-        correlationId,
-      });
-
-      const saved = await repo.updateAppointmentStatus(id, transitioned.status, transitioned);
-
-      // Record history
-      const actorId = data.transitionActor === "profesional" ? mockProfessional.id : "system";
-      const actorName = data.transitionActorName || (data.transitionActor === "profesional" ? `${mockProfessional.firstName} ${mockProfessional.lastName}` : "Sistema");
-      const actorRole = data.transitionActorRole || (data.transitionActor === "profesional" ? "profesional" : "system");
-
-      await repo.saveStatusHistory({
-        id: `hist-${Date.now()}`,
-        appointmentId: id,
-        timestamp: new Date().toISOString(),
-        previousStatus: existing.status,
-        newStatus: transitioned.status,
-        actor: { id: actorId, name: actorName, role: actorRole },
-        reason: data.transitionReason || "Cambio de estado",
-        correlationId,
-      });
-
-      return success(saved);
-    }
-
-    if ("status" in data) {
-      throw new Error("Los cambios de estado deben pasar por AppointmentPolicyEngine.");
-    }
-
-    const updatedApt = { ...existing, ...data } as Appointment;
-    const saved = await repo.updateAppointmentStatus(id, updatedApt.status, updatedApt);
-    return success(saved);
-  },
-  async cancel(id: string, reason = "Cancelación solicitada", actor: "paciente" | "profesional" | "admin" | "system" = "profesional", metadata?: { actorName?: string; actorRole?: string; correlationId?: string }) {
-    return this.update(id, {
-      status: APPOINTMENT_STATUS.CANCELLED,
-      transitionReason: reason,
-      transitionActor: actor,
-      transitionActorName: metadata?.actorName,
-      transitionActorRole: metadata?.actorRole,
-      correlationId: metadata?.correlationId,
-    });
-  },
-  async transitionStatus(id: string, status: Appointment["status"], reason: string, actor: "paciente" | "profesional" | "admin" | "system" = "profesional", metadata?: { actorName?: string; actorRole?: string; correlationId?: string }) {
-    return this.update(id, {
-      status,
-      transitionReason: reason,
-      transitionActor: actor,
-      transitionActorName: metadata?.actorName,
-      transitionActorRole: metadata?.actorRole,
-      correlationId: metadata?.correlationId,
-    });
-  },
-  async reschedule(id: string, data: { date: string; time: string; endTime: string; reason?: string; actor?: "paciente" | "profesional" | "admin" | "system"; actorName?: string; actorRole?: string; correlationId?: string }) {
-    await delay();
-    const repo = await getRepo();
-    const existing = (await repo.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === id);
-    if (!existing) throw new Error("Cita no encontrada");
-    if (!appointmentPolicyEngine.canRescheduleAppointment(existing)) {
-      throw new Error("La cita está fuera de la ventana de reprogramación.");
-    }
-    const professionalAppointments = await repo.listAppointmentsByProfessional(existing.professionalId);
-    if (appointmentPolicyEngine.hasScheduleConflict(professionalAppointments, { ...existing, ...data })) {
-      throw new Error("Ya existe una cita en ese horario para el profesional.");
-    }
-
-    const correlationId = data.correlationId || `resched-${id}-${Date.now()}`;
-    const updatedApt = await repo.rescheduleAppointment(id, { ...data });
-    const now = new Date().toISOString();
-    const reason = data.reason || "Reprogramación";
-    const actor = data.actor || "profesional";
-
-    const withAudit = {
-      ...updatedApt,
-      correlationId,
-      notes: `${updatedApt.notes ? `${updatedApt.notes}
-` : ""}[${now}] ${actor}: RESCHEDULE | ${reason}`
-    } as Appointment;
-
-    const saved = await repo.updateAppointmentStatus(id, withAudit.status, withAudit);
-
-    // Record history
-    const actorId = actor === "profesional" ? mockProfessional.id : "system";
-    const actorName = data.actorName || (actor === "profesional" ? `${mockProfessional.firstName} ${mockProfessional.lastName}` : "Sistema");
-    const actorRole = data.actorRole || (actor === "profesional" ? "profesional" : "system");
-
-    await repo.saveStatusHistory({
-      id: `hist-${Date.now()}`,
-      appointmentId: id,
-      timestamp: now,
-      previousStatus: existing.status,
-      newStatus: existing.status, // Status doesn't change on reschedule usually, but it's a lifecycle event
-      actor: { id: actorId, name: actorName, role: actorRole },
-      reason: `Reprogramada: ${data.date} ${data.time}. Motivo: ${reason}`,
-      correlationId,
-    });
-
-    return success(saved);
-  },
-  async getAvailableSlots(professionalId: string, date: string) {
-    await delay();
-    const repo = await getRepo();
-    const tenantId = mockProfessional.clinicMemberships[0]?.clinicId || "tenant-default";
-    const dayOfWeek = new Date(`${date}T12:00:00Z`).getUTCDay();
-    const weekly = await repo.listWeeklyAvailability(tenantId, professionalId);
-    if (weekly.length === 0) {
-      await repo.upsertWeeklyAvailability(
-        schedulingConfig.schedules.map((s, index) => ({ ...s, id: `wa-${index}`, tenantId, professionalId }))
-      );
-    }
-    const runtimeWeekly = (await repo.listWeeklyAvailability(tenantId, professionalId)).filter(s => s.dayOfWeek === dayOfWeek && s.enabled);
-    if (!runtimeWeekly.length) return success([]);
-
-    const exceptions = await repo.listAvailabilityExceptions(tenantId, professionalId, date);
-    const blocked = exceptions.filter(e => e.kind === "blocked").map(e => `${e.startTime}-${e.endTime}`);
-    const slots: string[] = [];
-    for (const schedule of runtimeWeekly) {
-      const [startH, startM] = schedule.startTime.split(":").map(Number);
-      const [endH, endM] = schedule.endTime.split(":").map(Number);
-      let currentTotal = startH * 60 + startM;
-      const endTotal = endH * 60 + endM;
-      while (currentTotal < endTotal) {
-        const h = Math.floor(currentTotal / 60);
-        const m = currentTotal % 60;
-        const hhmm = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-        if (!blocked.some((b) => { const [bs, be] = b.split("-"); return hhmm >= bs && hhmm < be; })) slots.push(hhmm);
-        currentTotal += schedulingConfig.slotIntervalMinutes;
-      }
-    }
-
-    const booked = (await repo.listAppointmentsByProfessional(professionalId))
-      .filter(a => a.date === date)
-      .filter(a => {
-        const s = new Date(`${a.date}T${a.time}:00Z`).getTime();
-        const e = new Date(`${a.date}T${a.endTime}:00Z`).getTime();
-        return e > s;
-      })
-      .map(a => a.time);
-
-    return success(slots.filter(s => !booked.includes(s)));
-  },
-  async getByToken(token: string) {
-    await delay();
-    const repo = await getRepo();
-    const apt = await repo.findAppointmentByToken(token);
-    if (!apt) throw new Error("Token de acceso no válido o expirado");
-
-    // Enrich with patient phone if missing
-    if (!apt.patientPhone) {
-      const patient = mockPatients.find(p => p.id === apt.patientId);
-      if (patient) {
-        apt.patientPhone = decrypt(patient.phone);
-      }
-    }
-
-    return success(apt);
-  },
-  async generateSignedUrl(appointmentId: string) {
-    await delay();
-    const repo = await getRepo();
-    let tokenData = await repo.findTokenByAppointmentId(appointmentId);
-
-    if (!tokenData) {
-      tokenData = {
-        token: `token-${appointmentId}-${Date.now()}`,
-        appointmentId,
-        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-        permissions: ["confirm", "cancel"]
-      };
-      await repo.saveAccessToken(tokenData);
-    }
-
-    const apt = (await repo.listAppointmentsByProfessional(mockProfessional.id)).find(a => a.id === appointmentId);
-    if (apt && !apt.patientPhone) {
-      const patient = mockPatients.find(p => p.id === apt.patientId);
-      if (patient) {
-        apt.patientPhone = decrypt(patient.phone);
-      }
-    }
-
-    const url = `${window.location.origin}/citas/v/${tokenData.token}`;
-    return success({ url });
-  },
-};
-
-
-export const publicAppointmentsApi = {
-  meta: {
-    basePath: PUBLIC_APPOINTMENTS_API_V1.basePath,
-    semver: API_SEMVER,
-    deprecation: API_DEPRECATION_POLICY,
-  },
-  async availability(query: { professionalId: string; date: string }) {
-    const input = validateRequest(availabilityQuerySchema, query);
-    const response = await appointmentsApi.getAvailableSlots(input.professionalId, input.date);
-    return validateResponse(availabilityResponseSchema, response);
-  },
-  async reservations(payload: any) {
-    const input = validateRequest(reservationsRequestSchema, payload);
-    if (input.patientData) {
-      const response = await bookingApi.createBooking({
-        professionalId: input.professionalId,
-        date: input.date,
-        time: input.time,
-        endTime: input.endTime,
-        patientData: input.patientData as any,
-        clinicId: input.clinicId,
-      });
-      return validateResponse(reservationResponseSchema, response);
-    }
-    const response = await appointmentsApi.create({
-      patientId: input.patientId!,
-      professionalId: input.professionalId,
-      date: input.date,
-      time: input.time,
-      endTime: input.endTime,
-      clinicId: input.clinicId,
-      createdByRole: "paciente"
-    });
-    return validateResponse(reservationResponseSchema, response);
-  },
-  async tokenStatus(token: string) {
-    const correlationId = `corr-${Date.now()}`;
-    try {
-      const response = await appointmentsApi.getByToken(token);
-      return validateResponse(tokenStatusResponseSchema, response);
-    } catch {
-      throw toPublicTokenError(correlationId, "TOKEN_EXPIRED");
-    }
-  },
-  async confirm(token: string) {
-    const correlationId = `pub-conf-${Date.now()}`;
-    try {
-      const byToken = await appointmentsApi.getByToken(token);
-      const response = await appointmentsApi.transitionStatus(byToken.data.id, APPOINTMENT_STATUS.CONFIRMED, "Confirmación por token", "paciente", {
-        actorName: byToken.data.patientName,
-        actorRole: "paciente",
-        correlationId
-      });
-      return validateResponse(tokenActionResponseSchema, response);
-    } catch (e: any) {
-      if (e.message?.includes("Transición inválida") || e.message?.includes("ventana")) {
-        throw e;
-      }
-      throw toPublicTokenError(correlationId, "TOKEN_EXPIRED");
-    }
-  },
-  async cancel(token: string) {
-    const correlationId = `pub-canc-${Date.now()}`;
-    try {
-      const byToken = await appointmentsApi.getByToken(token);
-      const response = await appointmentsApi.cancel(byToken.data.id, "Cancelación por token", "paciente", {
-        actorName: byToken.data.patientName,
-        actorRole: "paciente",
-        correlationId
-      });
-      return validateResponse(tokenActionResponseSchema, response);
-    } catch (e: any) {
-      if (e.message?.includes("Transición inválida") || e.message?.includes("ventana")) {
-        throw e;
-      }
-      throw toPublicTokenError(correlationId, "TOKEN_EXPIRED");
-    }
-  },
-};
-
-// ===== CONSULTATIONS =====
 export const consultationsApi = {
   async list(params?: { patientId?: string; type?: string; reason?: string; context?: string }) {
     await authorize(mockProfessional.id, params?.patientId, null, "profesional", "consultas", "consultas.manage");
@@ -1832,83 +1461,6 @@ export const kycApi = {
   },
 };
 
-// ===== BOOKING (PUBLIC) =====
-export const bookingApi = {
-  async getDoctors() {
-    await delay();
-    return success([
-      { id: "prof-1", name: "Dra. María Pérez", specialty: "Medicina General", location: schedulingConfig.locations[0]?.name || "Consultorio" },
-      { id: "prof-2", name: "Dr. Julián Mendoza", specialty: "Pediatría", location: schedulingConfig.locations[1]?.name || schedulingConfig.locations[0]?.name || "Consultorio" },
-      { id: "prof-3", name: "Dra. Ana López", specialty: "Dermatología", location: schedulingConfig.locations[0]?.name || "Consultorio" },
-    ]);
-  },
-  async getVisitTypes() {
-    await delay();
-    return success(schedulingConfig.appointmentTypes.filter(t => t.visible));
-  },
-  async getAvailableSlots(professionalId: string, date: string) {
-    return appointmentsApi.getAvailableSlots(professionalId, date);
-  },
-  async createBooking(data: { professionalId: string; typeId?: string; date: string; time: string; endTime?: string; patientData: Record<string, string>; clinicId?: string | null }) {
-    await delay(500);
-    const repo = await getRepo();
-
-    // Determine visit type automatically if not provided
-    let visitType = data.typeId ? schedulingConfig.appointmentTypes.find(t => t.id === data.typeId)?.name : null;
-
-    if (!visitType) {
-      const docNumber = data.patientData.documentNumber;
-      const patient = mockPatients.find(p => decrypt(p.documentNumber) === docNumber);
-
-      if (patient) {
-        const hasPreviousVisits = (await repo.listAppointmentsByPatient(patient.id)).some(
-          a => a.professionalId === data.professionalId
-        );
-        visitType = hasPreviousVisits ? "Seguimiento" : "Primera vez";
-      } else {
-        // New patient
-        visitType = "Primera vez";
-      }
-    }
-
-    const newAppointment: Appointment = {
-      id: `apt-${Date.now()}`,
-      patientId: `public-${Date.now()}`,
-      patientName: `${data.patientData.firstName || "Paciente"} ${data.patientData.lastName || ""}`.trim(),
-      patientPhone: data.patientData.phone,
-      professionalId: data.professionalId,
-      professionalName: "Profesional",
-      locationId: schedulingConfig.locations[0]?.id || "loc-default",
-      locationName: schedulingConfig.locations[0]?.name || "Consultorio",
-      clinicId: data.clinicId || null,
-      date: data.date,
-      time: data.time,
-      endTime: data.endTime || data.time,
-      type: visitType || "Primera vez",
-      status: "pendiente",
-      confirmationSource: null,
-      createdByRole: "paciente",
-    };
-    await repo.createAppointment(newAppointment);
-
-    // Generate signed URL for management
-    const signedUrlResponse = await appointmentsApi.generateSignedUrl(newAppointment.id);
-    const managementUrl = signedUrlResponse.data.url;
-
-    // Simulate notification trigger
-    console.log(`[NOTIFICATION] Link de autogestión generado para el paciente: ${managementUrl}`);
-
-    return success({
-      id: newAppointment.id,
-      status: newAppointment.status,
-      message: "Cita agendada exitosamente.",
-      type: visitType,
-      managementUrl
-    });
-  },
-};
-
-// ===== PATIENT SEARCH & PROFESSIONAL REQUESTS =====
 export const patientSearchApi = {
   async findPatientByDocument(documentType: DocumentType, documentNumber: string) {
     await delay();
