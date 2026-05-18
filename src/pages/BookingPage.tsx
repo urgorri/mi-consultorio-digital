@@ -5,6 +5,7 @@ import {
   CheckCircle,
   Stethoscope,
   MessageSquare,
+  ExternalLink,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +41,7 @@ const BookingPage = () => {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [confirmedType, setConfirmedType] = useState<string | null>(null);
+  const [managementUrl, setManagementUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -93,8 +95,13 @@ const BookingPage = () => {
         patientData
       });
 
-      if (result && (result as any).type) {
-        setConfirmedType((result as any).type);
+      if (result) {
+        if ((result as any).type) {
+          setConfirmedType((result as any).type);
+        }
+        if ((result as any).managementUrl) {
+          setManagementUrl((result as any).managementUrl);
+        }
       }
 
       setStep(4);
@@ -147,9 +154,26 @@ const BookingPage = () => {
             <h2 className="text-2xl font-bold text-foreground mb-2">¡Cita confirmada!</h2>
             <div className="text-muted-foreground mb-6 space-y-2">
               <p>Tu cita ha sido agendada exitosamente.</p>
-              <p className="text-sm">
-                Recibirás un correo con un enlace para gestionar tu cita <span className="font-medium text-foreground">sin necesidad de iniciar sesión</span>.
-              </p>
+              {managementUrl ? (
+                <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                  <p className="text-sm mb-2 text-foreground font-medium">Usa este enlace para gestionar tu cita:</p>
+                  <a
+                    href={managementUrl}
+                    className="text-primary font-medium break-all flex items-center justify-center gap-1 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {managementUrl} <ExternalLink className="w-3 h-3" />
+                  </a>
+                  <p className="text-xs mt-2 text-muted-foreground">
+                    Guarda este enlace para confirmar o cancelar tu cita sin necesidad de iniciar sesión.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm">
+                  Recibirás un correo con un enlace para gestionar tu cita <span className="font-medium text-foreground">sin necesidad de iniciar sesión</span>.
+                </p>
+              )}
             </div>
             <div className="bg-card rounded-xl border border-border p-5 text-left space-y-3 text-sm mb-8 max-w-sm mx-auto">
               <div className="flex justify-between items-start">

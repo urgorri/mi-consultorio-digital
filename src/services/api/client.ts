@@ -1891,11 +1891,19 @@ export const bookingApi = {
     };
     await repo.createAppointment(newAppointment);
 
+    // Generate signed URL for management
+    const signedUrlResponse = await appointmentsApi.generateSignedUrl(newAppointment.id);
+    const managementUrl = signedUrlResponse.data.url;
+
+    // Simulate notification trigger
+    console.log(`[NOTIFICATION] Link de autogestión generado para el paciente: ${managementUrl}`);
+
     return success({
       id: newAppointment.id,
       status: newAppointment.status,
       message: "Cita agendada exitosamente.",
-      type: visitType
+      type: visitType,
+      managementUrl
     });
   },
 };
