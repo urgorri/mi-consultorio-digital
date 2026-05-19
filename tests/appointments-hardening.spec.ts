@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Appointments Hardening Critical Flows', () => {
   test('professional can configure agenda', async ({ page }) => {
     // 1. Login as professional
+    await page.setExtraHTTPHeaders({ 'x-msw-force-401': 'true' });
     await page.goto('/login/profesional');
     await page.waitForFunction(() => (window as any).mswReady === true, { timeout: 30000 });
     await page.waitForLoadState("networkidle");
@@ -11,8 +12,10 @@ test.describe('Appointments Hardening Critical Flows', () => {
     await page.getByLabel('Contraseña').fill('password123');
 
     const loginBtn = page.getByRole('button', { name: /Iniciar sesión/i });
-    await loginBtn.waitFor({ state: 'attached', timeout: 10000 });
+    await loginBtn.waitFor({ state: 'visible', timeout: 10000 });
     await expect(loginBtn).toBeVisible({ timeout: 10000 });
+
+    await page.setExtraHTTPHeaders({}); // Clear the header BEFORE click
     await loginBtn.click();
 
     // 2. Go to settings/agenda
@@ -21,7 +24,7 @@ test.describe('Appointments Hardening Critical Flows', () => {
     await expect(page.getByText('Horario de atención')).toBeVisible({ timeout: 15000 });
 
     // 3. Verify types are visible
-    await page.click('button:has-text("Citas")');
+    await page.click('button:has-text("Tipos de cita")');
     await expect(page.getByText('Primera vez')).toBeVisible({ timeout: 10000 });
   });
 
@@ -29,6 +32,12 @@ test.describe('Appointments Hardening Critical Flows', () => {
     // 1. Go to public booking page
     await page.goto('/agendar');
     await page.waitForFunction(() => (window as any).mswReady === true, { timeout: 30000 });
+
+    // Enable interceptors
+    await page.evaluate(() => {
+       const API_BASE_URL = ''; // Ensure it uses MSW
+       (window as any).VITE_APPOINTMENTS_API_URL = '';
+    });
 
     // 2. Select professional
     // Wait for the text to appear as it's loaded from MSW

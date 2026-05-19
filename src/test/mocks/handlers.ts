@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { mockUsers, mockProfessional, mockAppointmentTypes } from '@/services/api/mockData'
+import { mockUsers, mockProfessional, mockAppointmentTypes, mockAppointments } from '@/services/api/mockData'
 import { decrypt } from "../../lib/crypto";
 import { SECURITY_HEADERS } from "@/services/api/client";
 
@@ -21,7 +21,10 @@ export const handlers = [
     const mfaRequired = user.role === "admin" || (user.role === "profesional" && email.includes("mfa"));
     return secureResponse({ success: true, data: { user, mfaRequired } })
   }),
-  http.get('/auth/me', () => {
+  http.get('/auth/me', ({ request }) => {
+    if (request.headers.get('x-msw-force-401') === 'true') {
+      return secureResponse({ success: false, message: "No autenticado" }, { status: 401 });
+    }
     return secureResponse({ success: true, data: mockProfessional })
   }),
   http.post('/auth/logout', () => {
@@ -77,6 +80,12 @@ export const handlers = [
   // Appointments API v1 Handlers
   http.get('/api/appointments/v1', () => {
     return secureResponse({ success: true, data: [] });
+  }),
+  http.get('/api/appointments/v1/:id', ({ params }) => {
+    const { id } = params;
+    const appointment = mockAppointments.find(a => a.id === id);
+    if (!appointment) return secureResponse({ success: false, message: "Cita no encontrada" }, { status: 404 });
+    return secureResponse({ success: true, data: appointment });
   }),
   http.post('/api/appointments/v1', async ({ request }) => {
     const data = await request.json() as any;
