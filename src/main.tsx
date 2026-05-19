@@ -2,6 +2,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
+if (typeof window !== "undefined") {
+  (window as any).mswReady = false;
+}
+
 const deferRender = async () => {
   // Use a cleaner check for MSW activation - enabled by default unless explicitly disabled
   if (typeof window !== "undefined") {

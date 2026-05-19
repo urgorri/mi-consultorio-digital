@@ -4,7 +4,7 @@ test.describe('Public Appointments API v1 Contract', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     // Wait for MSW to be ready
-    await page.waitForFunction(() => (window as any).mswReady !== false);
+    await page.waitForFunction(() => (window as any).mswReady === true, { timeout: 30000 });
   });
 
   test('should return availability for a professional', async ({ page }) => {

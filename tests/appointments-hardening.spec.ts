@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Appointments Hardening Critical Flows', () => {
   test('professional can configure agenda', async ({ page }) => {
     // 1. Login as professional
-    await page.goto('/login');
-    await page.fill('input[type="email"]', 'profesional@example.com');
+    await page.goto('/login/profesional');
+    await page.fill('input[type="email"]', 'dra.garcia@email.com');
     await page.fill('input[type="password"]', 'password123');
     await page.click('button[type="submit"]');
 
