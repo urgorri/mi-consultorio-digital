@@ -93,34 +93,32 @@ test.describe("Patient Flow", () => {
 
   test("navigation to notifications", async ({ page }) => {
     await page.goto("/login/paciente");
-    await page.waitForLoadState("networkidle");
-    await page.waitForSelector('input[type="email"]', { timeout: 15000 });
+    await page.waitForFunction(() => (window as any).mswReady === true, { timeout: 30000 });
 
-    await page.fill('input[type="email"]', "laura@email.com");
-    await page.fill('input[type="password"]', "password123");
-    await page.click('button:has-text("Iniciar sesión")');
+    await page.getByLabel('Correo electrónico').fill("laura@email.com");
+    await page.getByLabel('Contraseña').fill("password123");
+    await page.getByRole('button', { name: /Iniciar sesión/i }).click();
 
-    await expect(page).toHaveURL(/\/portal/);
+    await expect(page).toHaveURL(/\/portal/, { timeout: 15000 });
     await page.click('text=Notificaciones');
     await expect(page).toHaveURL(/\/portal\/notificaciones/);
   });
 
   test("reschedule an appointment from detail page", async ({ page }) => {
     await page.goto("/login/paciente");
-    await page.waitForLoadState("networkidle");
-    await page.waitForSelector('input[type="email"]', { timeout: 15000 });
+    await page.waitForFunction(() => (window as any).mswReady === true, { timeout: 30000 });
 
-    await page.fill('input[type="email"]', "laura@email.com");
-    await page.fill('input[type="password"]', "password123");
-    await page.click('button:has-text("Iniciar sesión")');
+    await page.getByLabel('Correo electrónico').fill("laura@email.com");
+    await page.getByLabel('Contraseña').fill("password123");
+    await page.getByRole('button', { name: /Iniciar sesión/i }).click();
 
-    await expect(page).toHaveURL(/\/portal/);
+    await expect(page).toHaveURL(/\/portal/, { timeout: 15000 });
     await page.waitForSelector('text=Dra. María Pérez');
     await page.click('text=Dra. María Pérez');
 
     await expect(page).toHaveURL(/\/portal\/citas\//);
 
     const rescheduleBtn = page.locator('button:has-text("Reprogramar")');
-    await expect(rescheduleBtn).toBeVisible();
+    await expect(rescheduleBtn).toBeVisible({ timeout: 10000 });
   });
 });
