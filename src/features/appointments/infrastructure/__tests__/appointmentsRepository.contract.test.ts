@@ -3,6 +3,7 @@ import type { AppointmentRepository } from "../../domain/appointmentsRepository"
 import { MockAppointmentsRepository } from "../mockAppointmentsRepository";
 import { SqliteAppointmentsRepository } from "../sqliteAppointmentsRepository";
 import type { Appointment } from "@/services/api/types";
+import { APPOINTMENT_STATUS } from "../../domain/appointmentStatus";
 
 const baseAppointment: Appointment = {
   id: "apt-contract-1",
@@ -17,7 +18,7 @@ const baseAppointment: Appointment = {
   time: "09:00",
   endTime: "09:30",
   type: "Primera vez",
-  status: "pendiente",
+  status: APPOINTMENT_STATUS.SCHEDULED,
   confirmationSource: null,
   createdByRole: "paciente",
 };
@@ -30,14 +31,14 @@ const runContract = (name: string, build: () => AppointmentRepository) => {
       const byPro = await repo.listAppointmentsByProfessional("prof-contract");
       expect(byPro.length).toBeGreaterThan(0);
 
-      const updated = await repo.updateAppointmentStatus(`id-${name}`, "confirmada", { confirmationSource: "profesional" });
-      expect(updated.status).toBe("confirmada");
+      const updated = await repo.updateAppointmentStatus(`id-${name}`, APPOINTMENT_STATUS.CONFIRMED, { confirmationSource: "profesional" });
+      expect(updated.status).toBe(APPOINTMENT_STATUS.CONFIRMED);
 
       const rescheduled = await repo.rescheduleAppointment(`id-${name}`, { date: "2026-06-01", time: "10:00", endTime: "10:30" });
       expect(rescheduled.date).toBe("2026-06-01");
 
       const cancelled = await repo.cancelAppointment(`id-${name}`);
-      expect(cancelled.status).toBe("cancelada");
+      expect(cancelled.status).toBe(APPOINTMENT_STATUS.CANCELLED);
 
 
       await repo.upsertWeeklyAvailability([{ id: `wa-${name}`, tenantId: "t-1", professionalId: "prof-contract", dayOfWeek: 1, enabled: true, startTime: "09:00", endTime: "12:00", locationId: "loc-1" }]);

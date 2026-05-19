@@ -1,4 +1,5 @@
 export const APPOINTMENT_STATUS = {
+  PENDING: "pending",
   SCHEDULED: "scheduled",
   CONFIRMED: "confirmed",
   COMPLETED: "completed",
@@ -10,6 +11,7 @@ export type AppointmentStatus = typeof APPOINTMENT_STATUS[keyof typeof APPOINTME
 
 const LABELS: Record<string, Record<AppointmentStatus, string>> = {
   "es-MX": {
+    pending: "Pendiente de acción",
     scheduled: "Pendiente",
     confirmed: "Confirmada",
     completed: "Completada",
@@ -17,6 +19,7 @@ const LABELS: Record<string, Record<AppointmentStatus, string>> = {
     no_show: "No asistió",
   },
   en: {
+    pending: "Pending action",
     scheduled: "Scheduled",
     confirmed: "Confirmed",
     completed: "Completed",

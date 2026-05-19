@@ -4,15 +4,18 @@ import { useParams, Link } from "react-router-dom";
 import { appointmentsApi } from "@/services/api";
 import type { Appointment } from "@/services/api";
 import { Button } from "@/components/ui/button";
+import { APPOINTMENT_STATUS, getAppointmentStatusLabel } from "@/features/appointments/domain/appointmentStatus";
 import { canCancelAppointment, canRescheduleAppointment } from "@/features/appointments/domain/rules";
 import { ArrowLeft, CalendarDays, Clock, MapPin, User, AlertCircle } from "lucide-react";
 import { RescheduleAppointmentDialog } from "@/components/dialogs/RescheduleAppointmentDialog";
 
 const statusColors: Record<string, string> = {
-  confirmada: "bg-success/10 text-success",
-  pendiente: "bg-warning/10 text-warning",
-  cancelada: "bg-destructive/10 text-destructive",
-  completada: "bg-muted text-muted-foreground",
+  [APPOINTMENT_STATUS.CONFIRMED]: "bg-success/10 text-success",
+  [APPOINTMENT_STATUS.PENDING]: "bg-warning/10 text-warning",
+  [APPOINTMENT_STATUS.SCHEDULED]: "bg-warning/10 text-warning",
+  [APPOINTMENT_STATUS.CANCELLED]: "bg-destructive/10 text-destructive",
+  [APPOINTMENT_STATUS.COMPLETED]: "bg-muted text-muted-foreground",
+  // Fallbacks
 };
 
 interface PatientAppointmentDetailPageProps {
@@ -51,7 +54,7 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
   const handleConfirm = async () => {
     if (!appointment) return;
     try {
-      await appointmentsApi.transitionStatus(appointment.id, "confirmada", "Confirmación desde portal paciente", "paciente");
+      await appointmentsApi.transitionStatus(appointment.id, APPOINTMENT_STATUS.CONFIRMED, "Confirmación desde portal paciente", "paciente");
       await fetchAppointment();
     } catch (err: any) {
       console.error(err);
@@ -125,7 +128,7 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
     );
   }
 
-  const isPast = appointment.status === "completada" || appointment.status === "cancelada";
+  const isPast = appointment.status === APPOINTMENT_STATUS.COMPLETED || appointment.status === APPOINTMENT_STATUS.CANCELLED;
 
   const content = (
       <div className={`space-y-6 ${isPublic ? "max-w-2xl mx-auto" : ""}`}>
@@ -146,7 +149,7 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
             <h1 className="text-2xl font-bold text-foreground">Detalle de cita</h1>
           </div>
           <span className={`text-xs font-medium px-3 py-1.5 rounded-full ${statusColors[appointment.status]}`}>
-            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+            {getAppointmentStatusLabel(appointment.status as any)}
           </span>
         </div>
 
@@ -198,7 +201,7 @@ const PatientAppointmentDetailPage = ({ isPublic = false }: PatientAppointmentDe
         {!isPast && (
           <div className="space-y-3">
             <div className="flex flex-wrap gap-3">
-              {appointment.status === "pendiente" && (
+              {(appointment.status === APPOINTMENT_STATUS.PENDING) && (
                 <Button className="flex-1" onClick={handleConfirm}>Confirmar cita</Button>
               )}
               <Button

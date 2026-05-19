@@ -10,6 +10,8 @@ export const visitTypeFixtures = [
 
 export const slotFixtures = ["09:00", "09:30", "10:00", "10:30"];
 
+import { APPOINTMENT_STATUS } from "@/features/appointments/domain/appointmentStatus";
+
 export const appointmentFixtures = {
   id: "apt-123",
   patientId: "p-1",
@@ -19,7 +21,7 @@ export const appointmentFixtures = {
   date: "2026-05-15",
   time: "10:00",
   type: "Seguimiento",
-  status: "confirmada",
+  status: APPOINTMENT_STATUS.CONFIRMED,
   cancellationDeadlineHours: 24,
 };
 

@@ -3,7 +3,14 @@ import { bookingApi } from "@/services/api";
 export const appointmentsAdapter = {
   getDoctors: async () => {
     const response = await bookingApi.getDoctors();
-    return response.data;
+    return response.data.map((doc: any) => ({
+      id: doc.id,
+      name: doc.name || `${doc.role === 'profesional' ? 'Dra. ' : ''}${doc.firstName} ${doc.lastName}`,
+      specialty: doc.specialty || 'Especialista',
+      location: doc.locations?.[0]?.name || 'Consultorio',
+      address: doc.locations?.[0]?.address || '',
+      whatsapp: doc.phone
+    }));
   },
 
   getVisitTypes: async () => {

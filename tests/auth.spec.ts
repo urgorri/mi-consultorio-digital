@@ -31,15 +31,19 @@ test.describe("Patient Auth Flow @smoke", () => {
 
   test("login, navigate and logout", async ({ page }) => {
     await page.goto("/login/paciente");
+    await page.waitForFunction(() => (window as any).mswReady === true, { timeout: 30000 });
     await page.waitForLoadState("networkidle");
-    await page.waitForSelector('input[type="email"]', { timeout: 15000 });
 
-    await page.fill('input[type="email"]', "laura@email.com");
-    await page.fill('input[type="password"]', "password123");
-    await page.click('button:has-text("Iniciar sesión")');
+    await page.getByLabel('Correo electrónico').fill("laura@email.com");
+    await page.getByLabel('Contraseña').fill("password123");
 
-    await expect(page).toHaveURL(/\/portal/);
-    await expect(page.locator("text=Mis citas")).toBeVisible();
+    const loginBtn = page.getByRole('button', { name: /Iniciar sesión/i });
+    await loginBtn.waitFor({ state: 'attached', timeout: 10000 });
+    await expect(loginBtn).toBeVisible({ timeout: 10000 });
+    await loginBtn.click();
+
+    await expect(page).toHaveURL(/\/portal/, { timeout: 15000 });
+    await expect(page.locator("text=Mis citas")).toBeVisible({ timeout: 10000 });
 
     const logoutButton = page.locator('button:has(svg.lucide-log-out)');
     if (await logoutButton.isVisible()) {
@@ -49,6 +53,6 @@ test.describe("Patient Auth Flow @smoke", () => {
         await page.click('text=Cerrar sesión');
     }
 
-    await expect(page).toHaveURL(/\/login\/paciente/);
+    await expect(page).toHaveURL(/\/login\/paciente/, { timeout: 10000 });
   });
 });

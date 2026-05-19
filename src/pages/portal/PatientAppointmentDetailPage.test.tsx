@@ -2,10 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import PatientAppointmentDetailPage from "./PatientAppointmentDetailPage";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { appointmentsApi } from "@/services/api/client";
+import { appointmentsApi } from "@/services/api";
 import { appointmentFixtures } from "@/test/fixtures/apiFixtures";
+import { APPOINTMENT_STATUS } from "@/features/appointments/domain/appointmentStatus";
 
-vi.mock("@/services/api/client", () => ({
+vi.mock("@/adapters/domains/appointments", () => ({
   appointmentsApi: {
     getByToken: vi.fn(),
     getById: vi.fn(),
@@ -58,7 +59,7 @@ describe("PatientAppointmentDetailPage Integration", () => {
     (appointmentsApi.getByToken as any).mockResolvedValue({ success: true, data: appointmentFixtures });
     (appointmentsApi.cancel as any).mockResolvedValue({ success: true });
 
-    const pendingApt = { ...appointmentFixtures, status: "pendiente" };
+    const pendingApt = { ...appointmentFixtures, status: APPOINTMENT_STATUS.PENDING };
     (appointmentsApi.getByToken as any).mockResolvedValue({ success: true, data: pendingApt });
 
     renderWithRouter(<PatientAppointmentDetailPage isPublic={true} />, { route: "/citas/v/some-token" });

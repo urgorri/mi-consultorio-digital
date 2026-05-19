@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { patientsApi, appointmentsApi, consultationsApi, patientPortalApi } from "./client";
+import { describe, it, expect } from "vitest";
+import { patientsApi, consultationsApi, patientPortalApi, appointmentsApi } from "./index";
 import {
   mockPatients,
   mockAccessGrants,

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { patientsApi, appointmentsApi, settingsApi } from "@/services/api";
 import { useClinicFilter } from "@/contexts/ClinicFilterContext";
 import type { Patient, Appointment, AppointmentType } from "@/services/api/types";
+import { APPOINTMENT_STATUS } from "@/features/appointments/domain/appointmentStatus";
 
 interface NewAppointmentDialogProps {
   open: boolean;
@@ -92,7 +93,7 @@ const NewAppointmentDialog = ({ open, onOpenChange, onCreated, defaultDate }: Ne
         time: form.time,
         endTime: getEndTime(),
         type: form.type,
-        status: "confirmada",
+        status: APPOINTMENT_STATUS.CONFIRMED,
         reason: form.reason,
       });
 
