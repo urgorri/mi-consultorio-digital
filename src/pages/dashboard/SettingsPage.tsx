@@ -17,8 +17,11 @@ import { UserSession } from "@/services/api/types";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, RefreshCw } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 const SettingsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "perfil";
   const { user, refreshUser } = useAuth();
   const [isRevalidating, setIsRevalidating] = useState(false);
   const [sessions, setSessions] = useState<UserSession[]>([]);
@@ -98,7 +101,7 @@ const SettingsPage = () => {
           <p className="text-sm text-muted-foreground">Administra tu perfil y tu práctica</p>
         </div>
 
-        <Tabs defaultValue="perfil">
+        <Tabs value={activeTab} onValueChange={(val) => setSearchParams({ tab: val })}>
           <TabsList className="bg-muted">
             <TabsTrigger value="perfil">Perfil</TabsTrigger>
             <TabsTrigger value="consultorio">Consultorio</TabsTrigger>

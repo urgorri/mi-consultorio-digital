@@ -92,6 +92,7 @@ test.describe("Patient Flow", () => {
   });
 
   test("navigation to notifications", async ({ page }) => {
+    await page.setExtraHTTPHeaders({ 'x-msw-force-401': 'true' });
     await page.goto("/login/paciente");
     await page.waitForFunction(() => (window as any).mswReady === true, { timeout: 30000 });
     await page.waitForLoadState("networkidle");
@@ -100,8 +101,10 @@ test.describe("Patient Flow", () => {
     await page.getByLabel('Contraseña').fill("password123");
 
     const loginBtn = page.getByRole('button', { name: /Iniciar sesión/i });
-    await loginBtn.waitFor({ state: 'attached', timeout: 10000 });
+    await loginBtn.waitFor({ state: 'visible', timeout: 10000 });
     await expect(loginBtn).toBeVisible({ timeout: 10000 });
+
+    await page.setExtraHTTPHeaders({}); // Clear the header BEFORE click
     await loginBtn.click();
 
     await expect(page).toHaveURL(/\/portal/, { timeout: 15000 });
@@ -110,6 +113,7 @@ test.describe("Patient Flow", () => {
   });
 
   test("reschedule an appointment from detail page", async ({ page }) => {
+    await page.setExtraHTTPHeaders({ 'x-msw-force-401': 'true' });
     await page.goto("/login/paciente");
     await page.waitForFunction(() => (window as any).mswReady === true, { timeout: 30000 });
     await page.waitForLoadState("networkidle");
@@ -118,8 +122,10 @@ test.describe("Patient Flow", () => {
     await page.getByLabel('Contraseña').fill("password123");
 
     const loginBtn = page.getByRole('button', { name: /Iniciar sesión/i });
-    await loginBtn.waitFor({ state: 'attached', timeout: 10000 });
+    await loginBtn.waitFor({ state: 'visible', timeout: 10000 });
     await expect(loginBtn).toBeVisible({ timeout: 10000 });
+
+    await page.setExtraHTTPHeaders({}); // Clear the header BEFORE click
     await loginBtn.click();
 
     await expect(page).toHaveURL(/\/portal/, { timeout: 15000 });
