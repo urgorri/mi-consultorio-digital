@@ -23,7 +23,6 @@ app.get('/api/appointments-public/v1/availability', async (req, res) => {
   try {
     const { professionalId, date } = req.query;
     // In a real implementation, this would query the repo for schedules and exceptions
-    // For now, we return a realistic set of slots
     const slots = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00"];
     res.json({ success: true, data: slots });
   } catch (error) {
@@ -65,6 +64,7 @@ app.post('/api/appointments-public/v1/reservations/token/:token/confirm', async 
     const appointment = await repo.findAppointmentByToken(token);
     if (!appointment) return res.status(404).json({ success: false, error: { code: 'TOKEN_EXPIRED', message: 'Token no válido' } });
 
+    const previousStatus = appointment.status;
     appointment.status = 'confirmed';
     await repo.updateAppointment(appointment.id, appointment);
 
@@ -72,7 +72,7 @@ app.post('/api/appointments-public/v1/reservations/token/:token/confirm', async 
       id: `hist-${Date.now()}`,
       appointmentId: appointment.id,
       timestamp: new Date().toISOString(),
-      previousStatus: 'pending',
+      previousStatus,
       newStatus: 'confirmed',
       actor: { id: 'patient', name: 'Paciente', role: 'paciente' },
       reason: 'Confirmación por token',
@@ -91,6 +91,7 @@ app.post('/api/appointments-public/v1/reservations/token/:token/cancel', async (
     const appointment = await repo.findAppointmentByToken(token);
     if (!appointment) return res.status(404).json({ success: false, error: { code: 'TOKEN_EXPIRED', message: 'Token no válido' } });
 
+    const previousStatus = appointment.status;
     appointment.status = 'cancelled';
     await repo.updateAppointment(appointment.id, appointment);
 
@@ -98,7 +99,7 @@ app.post('/api/appointments-public/v1/reservations/token/:token/cancel', async (
       id: `hist-${Date.now()}`,
       appointmentId: appointment.id,
       timestamp: new Date().toISOString(),
-      previousStatus: appointment.status,
+      previousStatus,
       newStatus: 'cancelled',
       actor: { id: 'patient', name: 'Paciente', role: 'paciente' },
       reason: 'Cancelación por token',
@@ -157,9 +158,35 @@ app.patch('/api/appointments/v1/:id', async (req, res) => {
     const existing = await repo.getAppointmentById(id);
     if (!existing) return res.status(404).json({ success: false, message: 'Cita no encontrada' });
 
+    const previousStatus = existing.status;
     const updated = { ...existing, ...req.body };
     await repo.updateAppointment(id, updated);
+
+    if (updated.status !== previousStatus) {
+       await repo.saveStatusHistory({
+          id: `hist-${Date.now()}`,
+          appointmentId: id,
+          timestamp: new Date().toISOString(),
+          previousStatus,
+          newStatus: updated.status,
+          actor: req.body.transitionActor || { id: 'system', name: 'Sistema', role: 'admin' },
+          reason: req.body.transitionReason || 'Cambio de estado',
+          correlationId: req.body.correlationId || `trans-${id}-${Date.now()}`
+       });
+    }
+
     res.json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get('/api/appointments/v1/availability', async (req, res) => {
+  try {
+    const { professionalId, date } = req.query;
+    // Equiv to internal availability
+    const slots = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00"];
+    res.json({ success: true, data: slots });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

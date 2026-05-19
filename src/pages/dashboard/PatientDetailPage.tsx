@@ -8,12 +8,15 @@ import { patientsApi, appointmentsApi, consultationsApi } from "@/services/api";
 import type { Patient, Appointment, Consultation } from "@/services/api";
 import EditPatientDialog from "@/components/dialogs/EditPatientDialog";
 import NewAppointmentDialog from "@/components/dialogs/NewAppointmentDialog";
+import { APPOINTMENT_STATUS, getAppointmentStatusLabel } from "@/features/appointments/domain/appointmentStatus";
 
 const statusColors: Record<string, string> = {
-  completada: "bg-success/10 text-success",
-  confirmada: "bg-primary/10 text-primary",
-  cancelada: "bg-destructive/10 text-destructive",
-  pendiente: "bg-warning/10 text-warning",
+  [APPOINTMENT_STATUS.COMPLETED]: "bg-success/10 text-success",
+  [APPOINTMENT_STATUS.CONFIRMED]: "bg-primary/10 text-primary",
+  [APPOINTMENT_STATUS.CANCELLED]: "bg-destructive/10 text-destructive",
+  [APPOINTMENT_STATUS.PENDING]: "bg-warning/10 text-warning",
+  [APPOINTMENT_STATUS.SCHEDULED]: "bg-warning/10 text-warning",
+  // Fallbacks
 };
 
 const PatientDetailPage = () => {
@@ -147,7 +150,7 @@ const PatientDetailPage = () => {
                       <p className="text-xs text-muted-foreground">{apt.professionalName}</p>
                     </div>
                     <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusColors[apt.status]}`}>
-                      {apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}
+                      {getAppointmentStatusLabel(apt.status as any)}
                     </span>
                   </div>
                 ))}

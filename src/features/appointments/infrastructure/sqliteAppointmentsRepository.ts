@@ -2,6 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import type { Appointment, AppointmentAccessToken, AppointmentStatusHistory } from "@/services/api/types";
 import type { AvailabilityException, ProfessionalAppointmentType, Schedule } from "@/services/api/types";
 import type { AppointmentRepository } from "../domain/appointmentsRepository";
+import { APPOINTMENT_STATUS } from "../domain/appointmentStatus";
 
 const MIGRATIONS = [
   `CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL);`,
@@ -101,7 +102,7 @@ export class SqliteAppointmentsRepository implements AppointmentRepository {
     return updated;
   }
   async cancelAppointment(id: string, cancelledAt = new Date().toISOString()) {
-    return this.updateAppointmentStatus(id, "cancelada", { cancelledAt });
+    return this.updateAppointmentStatus(id, APPOINTMENT_STATUS.CANCELLED, { cancelledAt });
   }
   async listAppointmentsByProfessional(professionalId: string) {
     const rows = this.db.prepare("SELECT payload FROM appointments WHERE professional_id = ?").all(professionalId) as Array<{ payload: string }>;

@@ -10,10 +10,11 @@ export {
   settingsApi,
   adminApi,
   patientPortalApi,
-  bookingApi,
   patientSearchApi,
   kycApi,
   consentApi,
+  authorize,
+  PUBLIC_APPOINTMENTS_API_V1
 } from "./client";
 
-export { appointmentsApi, publicAppointmentsApi } from "@/adapters/domains/appointments";
+export { appointmentsApi, publicAppointmentsApi, bookingApi } from "@/adapters/domains/appointments";

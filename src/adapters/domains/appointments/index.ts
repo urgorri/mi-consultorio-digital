@@ -1,7 +1,9 @@
 import { Appointment, ApiResponse } from "@/services/api/types";
 import {
-  PUBLIC_APPOINTMENTS_API_V1
+  PUBLIC_APPOINTMENTS_API_V1,
+  authorize
 } from "@/services/api/client";
+import { mockProfessional } from "@/services/api/mockData";
 import {
   validateRequest,
   availabilityQuerySchema,
@@ -38,8 +40,12 @@ async function fetchApi<T>(path: string, options: RequestInit = {}): Promise<Api
 
 // ===== APPOINTMENTS =====
 export const appointmentsApi = {
-  async list(params?: { date?: string; patientId?: string; status?: string }) {
-    const query = new URLSearchParams(params as any).toString();
+  async list(params?: { date?: string; patientId?: string; status?: string; professionalId?: string }) {
+    const queryParams = { ...params };
+    if (!queryParams.professionalId) {
+       queryParams.professionalId = mockProfessional.id;
+    }
+    const query = new URLSearchParams(queryParams as any).toString();
     return fetchApi<Appointment[]>(`/api/appointments/v1?${query}`);
   },
   async getById(id: string) {
@@ -49,6 +55,7 @@ export const appointmentsApi = {
     return fetchApi<any[]>(`/api/appointments/v1/${id}/history`);
   },
   async create(data: Partial<Appointment>) {
+    await authorize(mockProfessional.id, data.patientId, data.clinicId || null, "profesional", "turnos", "turnos.manage");
     return fetchApi<Appointment>(`/api/appointments/v1`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -60,10 +67,10 @@ export const appointmentsApi = {
       body: JSON.stringify(data),
     });
   },
-  async cancel(id: string, reason: string) {
+  async cancel(id: string, reason: string, actor?: string, metadata?: any) {
      return this.update(id, { status: 'cancelled', notes: reason } as any);
   },
-  async transitionStatus(id: string, status: string, reason: string) {
+  async transitionStatus(id: string, status: string, reason: string, actor?: string, metadata?: any) {
      return this.update(id, { status, notes: reason } as any);
   },
   async getAvailableSlots(professionalId: string, date: string) {
@@ -71,6 +78,9 @@ export const appointmentsApi = {
   },
   async generateSignedUrl(appointmentId: string) {
     return fetchApi<{ url: string }>(`/api/appointments/v1/${appointmentId}/signed-url`, { method: 'POST' });
+  },
+  async getByToken(token: string) {
+    return fetchApi<Appointment>(PUBLIC_APPOINTMENTS_API_V1.reservationByToken(token));
   }
 };
 

@@ -4,12 +4,15 @@ import { patientPortalApi } from "@/services/api";
 import type { Appointment } from "@/services/api";
 import { CalendarDays, Clock, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import { APPOINTMENT_STATUS, getAppointmentStatusLabel } from "@/features/appointments/domain/appointmentStatus";
 
 const statusColors: Record<string, string> = {
-  confirmada: "bg-success/10 text-success",
-  pendiente: "bg-warning/10 text-warning",
-  cancelada: "bg-destructive/10 text-destructive",
-  completada: "bg-muted text-muted-foreground",
+  [APPOINTMENT_STATUS.CONFIRMED]: "bg-success/10 text-success",
+  [APPOINTMENT_STATUS.PENDING]: "bg-warning/10 text-warning",
+  [APPOINTMENT_STATUS.SCHEDULED]: "bg-warning/10 text-warning",
+  [APPOINTMENT_STATUS.CANCELLED]: "bg-destructive/10 text-destructive",
+  [APPOINTMENT_STATUS.COMPLETED]: "bg-muted text-muted-foreground",
+  // Fallbacks
 };
 
 const PatientHistoryPage = () => {
@@ -56,7 +59,7 @@ const PatientHistoryPage = () => {
                   </div>
                 </div>
                 <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusColors[apt.status]}`}>
-                  {apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}
+                  {getAppointmentStatusLabel(apt.status as any)}
                 </span>
               </Link>
             ))}

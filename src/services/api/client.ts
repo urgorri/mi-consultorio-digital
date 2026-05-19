@@ -1092,7 +1092,12 @@ export const adminApi = {
 export const patientPortalApi = {
   async getDashboard() {
     await delay();
-    const upcoming = mockPatientPortalAppointments.filter(a => a.status !== "completada" && a.status !== "cancelada");
+    const upcoming = mockPatientPortalAppointments.filter(a =>
+      a.status !== APPOINTMENT_STATUS.COMPLETED &&
+      a.status !== APPOINTMENT_STATUS.CANCELLED &&
+      a.status !== APPOINTMENT_STATUS.COMPLETED &&
+      a.status !== APPOINTMENT_STATUS.CANCELLED
+    );
     return success({ upcoming, totalAppointments: mockPatientPortalAppointments.length });
   },
   async getAppointments() {

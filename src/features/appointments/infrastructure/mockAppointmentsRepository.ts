@@ -2,6 +2,7 @@ import type { Appointment, AppointmentAccessToken, AppointmentStatusHistory } fr
 import { mockAppointments, mockAppointmentTokens } from "@/services/api/mockData";
 import type { AvailabilityException, ProfessionalAppointmentType, Schedule } from "@/services/api/types";
 import type { AppointmentRepository } from "../domain/appointmentsRepository";
+import { APPOINTMENT_STATUS } from "../domain/appointmentStatus";
 
 export class MockAppointmentsRepository implements AppointmentRepository {
   private weeklyAvailability: Schedule[] = [];
@@ -25,7 +26,7 @@ export class MockAppointmentsRepository implements AppointmentRepository {
     return updated;
   }
   async cancelAppointment(id: string, cancelledAt = new Date().toISOString()) {
-    return this.updateAppointmentStatus(id, "cancelada", { cancelledAt });
+    return this.updateAppointmentStatus(id, APPOINTMENT_STATUS.CANCELLED, { cancelledAt });
   }
   async listAppointmentsByProfessional(professionalId: string) { return mockAppointments.filter(a => a.professionalId === professionalId); }
   async listAppointmentsByPatient(patientId: string) { return mockAppointments.filter(a => a.patientId === patientId); }

@@ -10,11 +10,15 @@ import type { Appointment, DashboardStats } from "@/services/api";
 import AppointmentDetailDialog from "@/components/dialogs/AppointmentDetailDialog";
 import PremiumUpgradeDialog from "@/components/dialogs/PremiumUpgradeDialog";
 import { Zap } from "lucide-react";
+import { APPOINTMENT_STATUS, getAppointmentStatusLabel } from "@/features/appointments/domain/appointmentStatus";
 
 const statusColors: Record<string, string> = {
-  confirmada: "bg-success/10 text-success",
-  pendiente: "bg-warning/10 text-warning",
-  cancelada: "bg-destructive/10 text-destructive",
+  [APPOINTMENT_STATUS.CONFIRMED]: "bg-success/10 text-success",
+  [APPOINTMENT_STATUS.PENDING]: "bg-warning/10 text-warning",
+  [APPOINTMENT_STATUS.SCHEDULED]: "bg-warning/10 text-warning",
+  [APPOINTMENT_STATUS.CANCELLED]: "bg-destructive/10 text-destructive",
+  [APPOINTMENT_STATUS.COMPLETED]: "bg-muted text-muted-foreground",
+  // Fallbacks
 };
 
 const DashboardPage = () => {
@@ -134,7 +138,7 @@ const DashboardPage = () => {
                   <p className="text-sm text-muted-foreground">{apt.type}</p>
                 </div>
                 <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusColors[apt.status]}`}>
-                  {apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}
+                  {getAppointmentStatusLabel(apt.status as any)}
                 </span>
               </div>
             ))}
