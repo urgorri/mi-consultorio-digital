@@ -37,7 +37,8 @@ test.describe("Patient Auth Flow @smoke", () => {
     await page.getByLabel('Correo electrónico').fill("laura@email.com");
     await page.getByLabel('Contraseña').fill("password123");
 
-    const loginBtn = page.getByRole('button', { name: 'Iniciar sesión', exact: true });
+    const loginBtn = page.getByRole('button', { name: /Iniciar sesión/i });
+    await page.waitForSelector('button:has-text("Iniciar sesión")', { timeout: 10000 });
     await expect(loginBtn).toBeVisible({ timeout: 10000 });
     await loginBtn.click();
 

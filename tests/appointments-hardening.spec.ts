@@ -10,7 +10,8 @@ test.describe('Appointments Hardening Critical Flows', () => {
     await page.getByLabel('Correo electrónico').fill('dra.garcia@email.com');
     await page.getByLabel('Contraseña').fill('password123');
 
-    const loginBtn = page.getByRole('button', { name: 'Iniciar sesión', exact: true });
+    const loginBtn = page.getByRole('button', { name: /Iniciar sesión/i });
+    await page.waitForSelector('button:has-text("Iniciar sesión")', { timeout: 10000 });
     await expect(loginBtn).toBeVisible({ timeout: 10000 });
     await loginBtn.click();
 
