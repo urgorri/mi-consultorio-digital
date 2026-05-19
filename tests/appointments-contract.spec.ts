@@ -10,10 +10,17 @@ test.describe('Public Appointments API v1 Contract', () => {
   test('should return availability for a professional', async ({ page }) => {
     const data = await page.evaluate(async () => {
       const response = await fetch(`/api/appointments-public/v1/availability?professionalId=prof-1&date=2026-05-20`);
+      let body;
+      const text = await response.text();
+      try {
+        body = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Failed to parse JSON: ${text.substring(0, 100)}...`);
+      }
       return {
         ok: response.ok,
         status: response.status,
-        body: await response.json()
+        body
       };
     });
 
@@ -25,10 +32,17 @@ test.describe('Public Appointments API v1 Contract', () => {
   test('should handle invalid token error payload', async ({ page }) => {
     const data = await page.evaluate(async () => {
       const response = await fetch(`/api/appointments-public/v1/reservations/token/invalid-token`);
+      let body;
+      const text = await response.text();
+      try {
+        body = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Failed to parse JSON: ${text.substring(0, 100)}...`);
+      }
       return {
         ok: response.ok,
         status: response.status,
-        body: await response.json()
+        body
       };
     });
 

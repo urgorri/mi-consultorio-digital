@@ -94,10 +94,14 @@ test.describe("Patient Flow", () => {
   test("navigation to notifications", async ({ page }) => {
     await page.goto("/login/paciente");
     await page.waitForFunction(() => (window as any).mswReady === true, { timeout: 30000 });
+    await page.waitForLoadState("networkidle");
 
     await page.getByLabel('Correo electrónico').fill("laura@email.com");
     await page.getByLabel('Contraseña').fill("password123");
-    await page.getByRole('button', { name: /Iniciar sesión/i }).click();
+
+    const loginBtn = page.getByRole('button', { name: 'Iniciar sesión', exact: true });
+    await expect(loginBtn).toBeVisible({ timeout: 10000 });
+    await loginBtn.click();
 
     await expect(page).toHaveURL(/\/portal/, { timeout: 15000 });
     await page.click('text=Notificaciones');
@@ -107,10 +111,14 @@ test.describe("Patient Flow", () => {
   test("reschedule an appointment from detail page", async ({ page }) => {
     await page.goto("/login/paciente");
     await page.waitForFunction(() => (window as any).mswReady === true, { timeout: 30000 });
+    await page.waitForLoadState("networkidle");
 
     await page.getByLabel('Correo electrónico').fill("laura@email.com");
     await page.getByLabel('Contraseña').fill("password123");
-    await page.getByRole('button', { name: /Iniciar sesión/i }).click();
+
+    const loginBtn = page.getByRole('button', { name: 'Iniciar sesión', exact: true });
+    await expect(loginBtn).toBeVisible({ timeout: 10000 });
+    await loginBtn.click();
 
     await expect(page).toHaveURL(/\/portal/, { timeout: 15000 });
     await page.waitForSelector('text=Dra. María Pérez');

@@ -5,10 +5,14 @@ test.describe('Appointments Hardening Critical Flows', () => {
     // 1. Login as professional
     await page.goto('/login/profesional');
     await page.waitForFunction(() => (window as any).mswReady === true, { timeout: 30000 });
+    await page.waitForLoadState("networkidle");
 
     await page.getByLabel('Correo electrónico').fill('dra.garcia@email.com');
     await page.getByLabel('Contraseña').fill('password123');
-    await page.getByRole('button', { name: /Iniciar sesión/i }).click();
+
+    const loginBtn = page.getByRole('button', { name: 'Iniciar sesión', exact: true });
+    await expect(loginBtn).toBeVisible({ timeout: 10000 });
+    await loginBtn.click();
 
     // 2. Go to settings/agenda
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
