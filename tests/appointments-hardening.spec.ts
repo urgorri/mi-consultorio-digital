@@ -9,7 +9,7 @@ test.describe('Appointments Hardening Critical Flows', () => {
     await page.click('button[type="submit"]');
 
     // 2. Go to settings/agenda
-    await page.goto('/configuracion?tab=agenda');
+    await page.goto('/dashboard/configuracion?tab=agenda');
     await expect(page.getByText('Horarios de Atención')).toBeVisible();
 
     // 3. Verify types are visible
@@ -21,6 +21,8 @@ test.describe('Appointments Hardening Critical Flows', () => {
     await page.goto('/agendar');
 
     // 2. Select professional
+    // Wait for the text to appear as it's loaded from MSW
+    await page.waitForSelector('text=Dra. María Pérez');
     await page.click('text=Dra. María Pérez');
 
     // 3. Select a date and slot

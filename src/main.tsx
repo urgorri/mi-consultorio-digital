@@ -7,9 +7,11 @@ const deferRender = async () => {
   if (typeof window !== "undefined") {
     try {
       const { worker } = await import("./test/mocks/browser");
-      return await worker.start({
+      await worker.start({
         onUnhandledRequest: "bypass",
       });
+      (window as any).mswReady = true;
+      return;
     } catch (error) {
       console.error("MSW failed to start:", error);
     }

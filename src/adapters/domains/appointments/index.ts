@@ -130,5 +130,8 @@ export const bookingApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+  async getAvailableSlots(professionalId: string, date: string) {
+    return fetchApi<string[]>(`/api/booking/v1/availability?professionalId=${professionalId}&date=${date}`);
   }
 };

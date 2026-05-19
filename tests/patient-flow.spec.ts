@@ -28,6 +28,60 @@ test.describe("Patient Flow", () => {
       }
     });
 
+    // Mock dashboard data to ensure "Reprogramar" is visible
+    await page.route("**/api/portal/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            upcoming: [
+              {
+                id: "apt-1",
+                patientId: "p-1",
+                patientName: "Laura Gomez",
+                professionalId: "prof-1",
+                professionalName: "Dra. María Pérez",
+                locationName: "Consultorio Centro",
+                date: "2030-01-01", // Far in the future to ensure canReschedule is true
+                time: "10:00",
+                endTime: "10:30",
+                type: "Seguimiento",
+                status: "confirmed",
+                cancellationDeadlineHours: 24
+              }
+            ],
+            history: []
+          }
+        }),
+      });
+    });
+
+    await page.route("**/api/appointments/v1/apt-1", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            id: "apt-1",
+            patientId: "p-1",
+            patientName: "Laura Gomez",
+            professionalId: "prof-1",
+            professionalName: "Dra. María Pérez",
+            locationName: "Consultorio Centro",
+            date: "2030-01-01",
+            time: "10:00",
+            endTime: "10:30",
+            type: "Seguimiento",
+            status: "confirmed",
+            cancellationDeadlineHours: 24
+          }
+        }),
+      });
+    });
+
     await page.route("**/auth/logout", async (route) => {
       await route.fulfill({
         status: 200,
